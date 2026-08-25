@@ -86,6 +86,13 @@ added:
       has real coverage). CodeQL alert 7 (js/polynomial-redos, high) fixed:
       backupLinkUrl trimmed trailing slashes with /\/+$/ on a value that comes
       out of the backup; it now scans linearly, with a regression test.
+  - date: 2026-08-25
+    note: >-
+      Modules Moodle has retired (chat/survey 5.0 MDL-82457, assignment 4.2
+      MDL-72350) are labelled "retired" next to the module name, with a notice
+      saying no current Moodle can restore them and MBZoo still reads them.
+      Releases verified in the Moodle tree (mod/UPGRADING.md and the removal
+      commits), not from memory.
 
 risks:
   RISK-001:

@@ -12,7 +12,7 @@
  * ADR-0012's single sanitization path is untouched.
  */
 
-import type { ActivityInfo } from '@mbzoo/core'
+import { type ActivityInfo, legacyModule } from '@mbzoo/core'
 import { buildActivityZip, exportFileName } from './lib/export.ts'
 import { t } from './lib/i18n.ts'
 import { formatBytes, formatDate } from './lib/preview-utils.ts'
@@ -421,6 +421,14 @@ export async function renderDetail(
     activity.moduleName,
   )
   titleRow.append(title, badge)
+  // A module Moodle has retired still renders here — say so where the module
+  // is named, not buried in the metadata.
+  const retired = legacyModule(activity.moduleName)
+  if (retired) {
+    const pill = el('span', 'legacy-pill', t('legacy.badge'))
+    pill.title = t('legacy.tooltip', { version: retired.removedIn, issue: retired.issue })
+    titleRow.appendChild(pill)
+  }
   if (activity.settings && !activity.settings.visible) {
     titleRow.appendChild(el('span', 'hidden-pill', t('badge.hidden')))
   }

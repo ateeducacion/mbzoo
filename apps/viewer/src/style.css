@@ -1539,3 +1539,23 @@ audio.media-preview {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Modules Moodle has retired: still readable here, and labelled where the
+   module is named rather than buried in the metadata. */
+.legacy-pill {
+  font: 700 10.5px var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9a5b12;
+  background: rgba(230, 126, 34, 0.14);
+  border: 1px solid rgba(230, 126, 34, 0.3);
+  border-radius: 999px;
+  padding: 2px 9px;
+  cursor: help;
+  white-space: nowrap;
+}
+.legacy-notice {
+  background: rgba(230, 126, 34, 0.08);
+  border-color: rgba(230, 126, 34, 0.28);
+  color: #9a5b12;
+}

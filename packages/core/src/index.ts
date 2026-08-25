@@ -26,6 +26,7 @@ export {
 } from './moodle/feedback-xml.ts'
 export { fileKey, NULL_SENTINEL, parseFilesXml } from './moodle/files-xml.ts'
 export { type GlossaryEntry, parseGlossaryXml } from './moodle/glossary-xml.ts'
+export { type LegacyModule, legacyModule } from './moodle/legacy-modules.ts'
 export {
   type LessonAnswer,
   type LessonJump,

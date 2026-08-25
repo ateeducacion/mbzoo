@@ -143,3 +143,27 @@ describe('parseNestedRecords', () => {
     expect(options.map((o) => o.get('id'))).toContain('9')
   })
 })
+
+// mod/UPGRADING.md names 5.0 for chat and survey; the commit removing
+// mod_assignment first ships in v4.2.0 (REPO-005).
+describe('legacyModule', () => {
+  test('names the release that dropped each retired module', async () => {
+    const { legacyModule } = await import('../src/moodle/legacy-modules.ts')
+    expect(legacyModule('chat')).toEqual({ removedIn: '5.0', issue: 'MDL-82457' })
+    expect(legacyModule('survey')?.removedIn).toBe('5.0')
+    expect(legacyModule('assignment')?.removedIn).toBe('4.2')
+  })
+
+  test('a module that still exists is not labelled', async () => {
+    const { legacyModule } = await import('../src/moodle/legacy-modules.ts')
+    expect(legacyModule('assign')).toBeUndefined()
+    expect(legacyModule('forum')).toBeUndefined()
+  })
+
+  // Third-party plugins are none of our business: we cannot know whether one
+  // was retired, and guessing would put a false label on someone's module.
+  test('an unknown third-party module is not labelled', async () => {
+    const { legacyModule } = await import('../src/moodle/legacy-modules.ts')
+    expect(legacyModule('supermodule')).toBeUndefined()
+  })
+})

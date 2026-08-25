@@ -17,6 +17,7 @@ import {
   backupLinkUrl,
   contentHashPath,
   decodeBackupLink,
+  legacyModule,
   matchFileRecord,
   parseActivityXml,
   parseBookXml,
@@ -132,6 +133,21 @@ export class Renderer {
     const fields = parsedActivity.fields
     const contextId = parsedActivity.contextId
     const mod = activity.moduleName
+
+    // Moodle can no longer restore a retired module, which makes reading it
+    // the whole point of an inspector. Lead with that rather than rendering
+    // it as if nothing had changed.
+    const retired = legacyModule(mod)
+    if (retired) {
+      const note = document.createElement('p')
+      note.className = 'quiz-notice legacy-notice'
+      note.textContent = t('legacy.notice', {
+        mod,
+        version: retired.removedIn,
+        issue: retired.issue,
+      })
+      container.appendChild(note)
+    }
 
     if (mod === 'page') {
       await this.renderHtmlActivity(

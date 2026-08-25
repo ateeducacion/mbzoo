@@ -19,7 +19,7 @@ vista del curso.
 | Base de datos | ✅ | ✅ esquema de campos | los campos que recoge; las entradas solo existen con datos de usuario |
 | Taller (Workshop) | ✅ | ✅ instrucciones + ejemplos | envíos de ejemplo y ambos bloques de instrucciones; el trabajo entre pares es dato de usuario |
 | Paquete IMS (imscp) | ✅ | ✅ índice + páginas en sandbox | índice leído del campo `structure` serializado en PHP (ADR-0021) |
-| Chat · Wiki | ✅ | ✅ resumen con tipo | horario / modo del wiki; mensajes y páginas son datos de usuario |
+| Chat · Wiki | ✅ | ✅ resumen con tipo | horario / modo del wiki; mensajes y páginas son datos de usuario. El chat se marca como *retirado*: Moodle lo eliminó en 5.0 (MDL-82457) |
 | Glosario | ✅ | ✅ entradas renderizadas | concepto + definición; las entradas las escriben los usuarios, así que una copia hecha sin datos de usuario no trae ninguna y el visor lo indica |
 | Tarea (Assignment) | ✅ | ✅ resumen | fechas de entrega/cierre y tipos de entrega |
 | Encuesta (Feedback) | ✅ | ✅ elementos renderizados | etiquetas, preguntas y sus opciones en el orden del autor; las respuestas solo existen con datos de usuario |
@@ -33,6 +33,14 @@ Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-
 
 Los archivos de vídeo y audio se previsualizan en línea con los controles
 nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
+
+## Módulos retirados
+
+Moodle ha eliminado `chat` y `survey` del núcleo (5.0, MDL-82457) y
+`assignment` (4.2, MDL-72350), así que ningún Moodle actual puede
+restaurarlos, pero las copias anteriores a esas versiones siguen
+llevándolos. MBZoo los lee como cualquier otro módulo y los marca como
+*retirado* junto al nombre del módulo, con la versión que los quitó.
 
 ## Enlaces del curso
 

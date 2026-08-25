@@ -675,6 +675,14 @@ test('chat and wiki name their settings and say where the content went', async (
   await expect(page.locator('#detail .fallback-note')).toContainText(
     /without user data|sin datos de usuario/,
   )
+  // mod_chat is gone from Moodle core, so reading it is the whole point.
+  await expect(page.locator('.legacy-pill')).toBeVisible()
+  await expect(page.locator('.legacy-notice')).toContainText('5.0')
+  await expect(page.locator('.legacy-notice')).toContainText('MDL-82457')
+
+  // A module that still exists carries no such label.
+  await page.getByRole('button', { name: /Demo forum/ }).click()
+  await expect(page.locator('.legacy-pill')).toHaveCount(0)
 
   await page.getByRole('button', { name: /Demo wiki/ }).click()
   await expect(page.locator('#detail')).toContainText(/Collaborative wiki|Wiki colaborativo/)

@@ -99,6 +99,10 @@ const STRINGS = {
     'workshop.instructReviewers': 'Instructions for assessment',
     'workshop.examples': 'Example submissions',
     'imscp.contents': 'Package contents',
+    'legacy.badge': 'retired',
+    'legacy.tooltip': 'Removed from Moodle core in {version} ({issue})',
+    'legacy.notice':
+      'Moodle removed “{mod}” from core in {version} ({issue}), so no current Moodle can restore this activity. MBZoo still reads it.',
     'forum.type': 'Forum type',
     'forum.type.general': 'Standard forum for general use',
     'forum.type.news': 'Announcements',
@@ -290,6 +294,10 @@ const STRINGS = {
     'workshop.instructReviewers': 'Instrucciones para la evaluación',
     'workshop.examples': 'Envíos de ejemplo',
     'imscp.contents': 'Contenido del paquete',
+    'legacy.badge': 'retirado',
+    'legacy.tooltip': 'Eliminado del núcleo de Moodle en {version} ({issue})',
+    'legacy.notice':
+      'Moodle eliminó «{mod}» del núcleo en {version} ({issue}), así que ningún Moodle actual puede restaurar esta actividad. MBZoo sigue leyéndola.',
     'forum.type': 'Tipo de foro',
     'forum.type.general': 'Foro para uso general',
     'forum.type.news': 'Avisos',
