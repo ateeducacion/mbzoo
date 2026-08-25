@@ -1,0 +1,15 @@
+{
+  "name": "@mbzoo/docs",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "rspress dev",
+    "build": "rspress build && node ./scripts/copy-dist.mjs",
+    "typecheck": "echo 'docs: nothing to typecheck'"
+  },
+  "devDependencies": {
+    "@rspress/core": "2.0.19"
+  }
+}

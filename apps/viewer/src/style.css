@@ -1081,3 +1081,51 @@ footer a {
   color: var(--orange-deep);
   font-weight: 600;
 }
+
+.brand-home {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  border-radius: 8px;
+}
+.brand-home:focus-visible {
+  outline: 2px solid var(--orange);
+}
+.brand-logo.small {
+  height: 34px;
+}
+.drop-hint {
+  font: 500 12px var(--font-body);
+  color: var(--muted);
+  cursor: pointer;
+  border: 1px dashed var(--line-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.drop-hint:hover {
+  color: var(--orange-deep);
+  border-color: var(--orange);
+}
+#drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(253, 252, 250, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+#drop-overlay[hidden] {
+  display: none;
+}
+.drop-overlay-box {
+  border: 3px dashed var(--orange);
+  border-radius: 20px;
+  background: var(--white);
+  padding: 48px 64px;
+  font: 800 22px var(--font-head);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(35, 48, 71, 0.15);
+}

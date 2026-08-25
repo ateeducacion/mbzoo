@@ -46,7 +46,7 @@ export async function parseBookXml(xml: string): Promise<MoodleBook> {
         current = { id: Number.NaN, title: '', content: '', subchapter: false, weight: 0 }
         titleDone = false
         contentDone = false
-        const idAttr = ev.attributes['id']
+        const idAttr = ev.attributes.id
         if (current && idAttr !== undefined) current.id = Number(idAttr)
       }
       path.push(ev.name)

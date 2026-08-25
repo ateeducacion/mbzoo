@@ -232,3 +232,12 @@ test('steps are hidden on mobile', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.steps')).toBeHidden()
 })
+
+test('logo returns home and global drop hint is available', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await expect(page.locator('#course-title')).toBeVisible()
+  await expect(page.locator('.explorer-topbar .btn-choose')).toHaveCount(0) // replaced by global drag & drop
+  await page.locator('#home-btn').click()
+  await expect(page.locator('#landing')).toBeVisible()
+})

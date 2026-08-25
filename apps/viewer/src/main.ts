@@ -4,6 +4,10 @@ import { formatBytes } from './lib/preview-utils.ts'
 
 /** Applies data-i18n / data-i18n-ph attributes after DOM is ready. */
 function applyI18nDom(): void {
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-title]')) {
+    const key = el.getAttribute('data-i18n-title') as StringKey
+    if (key) el.title = t(key)
+  }
   for (const el of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
     const key = el.getAttribute('data-i18n') as StringKey
     if (key) el.textContent = t(key)
@@ -44,6 +48,8 @@ const sectionsList = document.getElementById('sections') as HTMLElement
 const searchInput = document.getElementById('activity-search') as HTMLInputElement
 const warningsBox = document.getElementById('warnings') as HTMLElement
 const detail = document.getElementById('detail') as HTMLElement
+const homeBtn = document.getElementById('home-btn') as HTMLButtonElement
+const dropOverlay = document.getElementById('drop-overlay') as HTMLElement
 
 let worker: Worker | undefined
 let requestId = 0
@@ -248,12 +254,37 @@ async function handleBlob(blob: Blob, name: string): Promise<void> {
   }
 }
 
-for (const btn of document.querySelectorAll('.btn-choose')) {
-  btn.addEventListener('click', () => {
-    show('landing')
-    fileInput.click()
-  })
-}
+// Logo always returns to the landing page.
+homeBtn.addEventListener('click', () => {
+  renderer?.dispose()
+  currentBackup = undefined
+  setStatus('')
+  show('landing')
+})
+
+// Global drag & drop: an .mbz can be dropped anywhere, in any state.
+let dragDepth = 0
+window.addEventListener('dragenter', (ev) => {
+  if (!ev.dataTransfer?.types.includes('Files')) return
+  ev.preventDefault()
+  dragDepth++
+  dropOverlay.hidden = false
+})
+window.addEventListener('dragover', (ev) => {
+  ev.preventDefault()
+})
+window.addEventListener('dragleave', (ev) => {
+  ev.preventDefault()
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) dropOverlay.hidden = true
+})
+window.addEventListener('drop', (ev) => {
+  ev.preventDefault()
+  dragDepth = 0
+  dropOverlay.hidden = true
+  const f = ev.dataTransfer?.files[0]
+  if (f) void handleBlob(f, f.name)
+})
 
 fileInput.addEventListener('change', () => {
   const f = fileInput.files?.[0]

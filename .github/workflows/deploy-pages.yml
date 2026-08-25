@@ -34,6 +34,9 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
       - run: bun install --frozen-lockfile
+      # Docs are built first and copied into the viewer's public dir,
+      # so one Pages artifact serves viewer + docs (AN-007).
+      - run: bun run docs:build
       - run: bun run build:viewer
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5

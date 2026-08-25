@@ -21,6 +21,8 @@
     "build": "bun run --filter '*' build",
     "dev:viewer": "bun run --filter '@mbzoo/viewer' dev",
     "build:viewer": "bun run --filter '@mbzoo/viewer' build",
+    "docs:dev": "bun run --filter '@mbzoo/docs' dev",
+    "docs:build": "bun run --filter '@mbzoo/docs' build",
     "preview:viewer": "bun run --filter '@mbzoo/viewer' preview",
     "cli": "bun run --filter '@mbzoo/cli' start --",
     "test:e2e": "playwright test",

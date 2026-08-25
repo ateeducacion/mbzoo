@@ -1,92 +1,50 @@
 <p align="center">
-  <img src="docs/media/mbzoo-logo.png" alt="MBZoo logo — See what's inside your MBZ." width="480" />
+  <img src="docs/media/mbzoo-logo.png" alt="MBZoo logo — See what's inside your MBZ." width="420" />
 </p>
 
 # MBZoo
 
 [![CI](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml/badge.svg)](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ateeducacion/mbzoo/graph/badge.svg)](https://codecov.io/gh/ateeducacion/mbzoo)
-[![Deploy viewer to GitHub Pages](https://github.com/ateeducacion/mbzoo/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ateeducacion/mbzoo/actions/workflows/deploy-pages.yml)
+[![Docs](https://img.shields.io/badge/docs-ateeducacion.github.io%2Fmbzoo%2Fdocs-blue)](https://ateeducacion.github.io/mbzoo/docs/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 *See what's inside your MBZ.*
 
-MBZoo opens **Moodle course backups** (`.mbz` files) directly in your browser —
-no Moodle installation required. Drop a backup and inspect its structure
-locally: your file never leaves your device.
+MBZoo opens **Moodle course backups** (`.mbz`) directly in your browser — no
+Moodle installation, no upload. Drop a backup and inspect its structure,
+content and files locally.
 
-**Status: experimental.** The architecture works end-to-end, but feature
-coverage is deliberately small. Everything below is labeled honestly.
+**Status: bootstrap / experimental.** Works today: ZIP + TAR.GZ detection,
+metadata parsing, course tree, and content previews for pages, labels, URLs,
+resources (PDF via pdf.js, images, text, sandboxed HTML websites), quizzes
+(read-only question navigation), glossaries, books, assignment summaries and
+unknown-plugin fallbacks. Everything else is planned — see the
+[activity support guide](https://ateeducacion.github.io/mbzoo/docs/guide/activity-support.html).
 
-## What works today (Implemented)
+## Try it
 
-- Drag & drop a `.mbz` onto [the web viewer](https://ateeducacion.github.io/mbzoo/) —
-  parsed locally in your browser via a Web Worker; nothing is uploaded. Also via
-  `?url=…` (server must allow CORS).
-- Archive format detection: both **ZIP** and **TAR.GZ** containers (real-world
-  `.mbz` files are frequently tar.gz, not ZIP).
-- Metadata parsing of `moodle_backup.xml`, `course/course.xml`,
-  `sections/section_*/section.xml` and `files.xml`.
-- Course title + section/activity tree in a two-column explorer.
-- CLI inspection from the terminal (`bun run cli -- <file.mbz>`).
-
-## Activity & content support
-
-| Moodle module | Inspect | Render / preview | Notes |
-|---|---|---|---|
-| Page | ✅ | ✅ sanitized HTML | ADR-0012/0013 |
-| Label | ✅ | ✅ sanitized HTML | |
-| URL | ✅ | ✅ external link | never fetched automatically |
-| Resource / File | ✅ | ✅ inline preview | PDF via pdf.js canvas, images, text, sandboxed HTML (ADR-0014) |
-| Folder | ✅ | ✅ file cards | |
-| HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014) |
-| Book | ✅ metadata | 🔜 planned | chapters renderable from activity XML |
-| Forum | ✅ metadata | 🔜 planned (read-only) | discussions only exist if backup included user data |
-| Glossary | ✅ metadata | 🔜 planned (read-only) | |
-| Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
-| Quiz | ✅ metadata + question bank | 🔜 inspection-first | faithful execution requires Moodle's Question Engine — not a goal; practice mode is a separate idea (prompt §6) |
-| SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
-| H5P | ✅ metadata + package file | ⏳ research | h5p-standalone candidate (Q-013) |
-| eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |
-| Unknown third-party plugins | ✅ | ✅ metadata fallback | never break the course view |
-
-Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
-
-## Experimental
-
-- Parser coverage is verified against synthetic fixtures plus a small set of
-  real-world backups (Moodle 3.3/38-era). Course-format edge cases (e.g.
-  flexsections nesting) may render incompletely — warnings are surfaced rather
-  than hidden.
-
-## Planned (not implemented)
-
-Do not expect these yet:
-
-- Dedicated renderers for Book, Forum, Glossary, Assignment and other modules
-- SCORM / H5P launching in sandboxed frames
-- Quiz preview or practice mode
-- Static HTML export / re-packaging
-- Multi-gigabyte backup support (streaming/lazy access)
+- **Viewer**: https://ateeducacion.github.io/mbzoo/ (example backups included)
+- **Documentation**: https://ateeducacion.github.io/mbzoo/docs/
+- **CLI**: `bun run cli -- <file.mbz>`
 
 ## Privacy
 
-Local-first by construction: the deployed viewer is static files with no
-backend; parsing happens on your device. See `docs/PRIVACY.md`.
+Local-first by construction: the viewer is a static site with no backend;
+parsing happens on your device. See `docs/PRIVACY.md`.
 
 ## Development
 
-Bun 1.4.0 is pinned through the root `packageManager` field so local and CI
-execution use the same runtime family.
-
 ```bash
 bun install
-bun run dev:viewer      # open http://localhost:5173
-bun run check           # lint + typecheck + tests + build + research validation
+bun run dev:viewer      # viewer at http://localhost:5173
+bun run docs:dev        # documentation site
+bun run check           # lint + typecheck + tests + coverage + build + research validation
 ```
 
-More: `DEVELOPMENT.md`, `docs/ARCHITECTURE.md`,
-`CONTRIBUTING.md`. Research and decision records live under `research/`.
+More: the [documentation site](https://ateeducacion.github.io/mbzoo/docs/),
+`DEVELOPMENT.md`, `docs/ARCHITECTURE.md`, `CONTRIBUTING.md`. Decision records
+and the evidence system live under `research/`.
 
 ## License
 

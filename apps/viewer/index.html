@@ -83,13 +83,14 @@
       <section id="course" hidden aria-labelledby="course-title">
         <div class="explorer-topbar">
           <div class="brand">
-            <img src="/favicon.png" alt="" class="brand-icon small" />
-            <span class="wordmark small">mb<em>zoo</em></span>
+            <button type="button" class="brand-home" id="home-btn" data-i18n-title="home.title">
+              <img src="/logo.png" alt="MBZoo home" class="brand-logo small" />
+            </button>
             <span class="file-chip"><span id="file-name"></span><span class="file-size" id="file-size"></span></span>
           </div>
           <div class="explorer-topbar-right">
             <span class="course-stats" id="course-meta"></span>
-            <button type="button" class="btn-outline btn-choose" data-i18n="openAnother">Open another</button>
+            <label class="drop-hint" for="file-input" data-i18n="home.dropHint">Drop another .mbz anywhere — or click to browse</label>
           </div>
         </div>
 
@@ -115,6 +116,7 @@
       <p><span data-i18n="footer.note">MBZoo is experimental software — see the</span> <a href="https://github.com/ateeducacion/mbzoo#readme">README</a> · <span id="status" role="status" aria-live="polite"></span></p>
     </footer>
 
+    <div id="drop-overlay" hidden aria-hidden="true"><div class="drop-overlay-box">Drop your <code>.mbz</code> to open it</div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
