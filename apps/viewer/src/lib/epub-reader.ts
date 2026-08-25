@@ -36,6 +36,15 @@ export interface EpubBook {
 
 const CONTAINER_PATH = 'META-INF/container.xml'
 
+/** Reads a ZIP into memory, dropping directory entries. */
+export function unzipPackage(data: Uint8Array): EpubEntries {
+  const entries: EpubEntries = new Map()
+  for (const [path, bytes] of Object.entries(unzipSync(data))) {
+    if (!path.endsWith('/')) entries.set(path, bytes)
+  }
+  return entries
+}
+
 export function unzipEpub(data: Uint8Array): EpubEntries {
   const entries: EpubEntries = new Map()
   for (const [path, bytes] of Object.entries(unzipSync(data))) {

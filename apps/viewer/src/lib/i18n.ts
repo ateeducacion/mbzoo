@@ -218,6 +218,22 @@ const STRINGS = {
       'Chapters are opened from this list; links between them inside the page are inactive.',
     'epub.invalid': 'This file is not a readable EPUB package.',
     'epub.empty': 'This EPUB declares no readable chapters.',
+    'exe.pages': 'Pages in this package',
+    'exe.pagesHint':
+      'Pages are opened from this list; links between them inside the page are inactive.',
+    'exe.files': 'Files in this package',
+    'exe.invalid': 'This file is not a readable eXeLearning package.',
+    'exe.noSite':
+      'This package carries the editable project but no exported site, so there is nothing to display.',
+    'exe.opaque':
+      'This legacy project stores its content as a binary Twisted jelly stream, which cannot be decoded in a browser.',
+    'exe.unknown': 'This archive does not match any eXeLearning layout MBZoo recognises.',
+    'exe.kind.exe-site-modern': 'eXeLearning exported site',
+    'exe.kind.exe-site-legacy': 'eXeLearning exported site (legacy layout)',
+    'exe.kind.elpx-source': 'eXeLearning project (.elpx)',
+    'exe.kind.elp-legacy-xml': 'eXeLearning legacy project (.elp)',
+    'exe.kind.elp-legacy-opaque': 'eXeLearning legacy project (.elp)',
+    'exe.kind.unknown': 'Unrecognised archive',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -489,6 +505,23 @@ const STRINGS = {
       'Los capítulos se abren desde esta lista; los enlaces entre ellos dentro de la página no navegan.',
     'epub.invalid': 'Este fichero no es un paquete EPUB legible.',
     'epub.empty': 'Este EPUB no declara ningún capítulo legible.',
+    'exe.pages': 'Páginas de este paquete',
+    'exe.pagesHint':
+      'Las páginas se abren desde esta lista; los enlaces entre ellas dentro de la página no navegan.',
+    'exe.files': 'Ficheros de este paquete',
+    'exe.invalid': 'Este fichero no es un paquete de eXeLearning legible.',
+    'exe.noSite':
+      'Este paquete lleva el proyecto editable pero no el sitio exportado, así que no hay nada que mostrar.',
+    'exe.opaque':
+      'Este proyecto antiguo guarda su contenido como un flujo binario Twisted jelly, que no se puede decodificar en un navegador.',
+    'exe.unknown':
+      'Este archivo no coincide con ninguna estructura de eXeLearning que MBZoo reconozca.',
+    'exe.kind.exe-site-modern': 'Sitio exportado de eXeLearning',
+    'exe.kind.exe-site-legacy': 'Sitio exportado de eXeLearning (estructura antigua)',
+    'exe.kind.elpx-source': 'Proyecto de eXeLearning (.elpx)',
+    'exe.kind.elp-legacy-xml': 'Proyecto antiguo de eXeLearning (.elp)',
+    'exe.kind.elp-legacy-opaque': 'Proyecto antiguo de eXeLearning (.elp)',
+    'exe.kind.unknown': 'Archivo no reconocido',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',

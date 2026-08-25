@@ -787,6 +787,15 @@ async function main(): Promise<void> {
     },
     {
       filepath: '',
+      filename: 'demo-project.elpx',
+      content: elpxBytes(),
+      component: 'mod_folder',
+      contextId: '120',
+      filearea: 'content',
+      mimetype: 'application/zip',
+    },
+    {
+      filepath: '',
       filename: 'demo-book.epub',
       content: epubBytes(),
       component: 'mod_folder',

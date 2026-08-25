@@ -37,7 +37,9 @@ import {
   isEpubFileName,
   readEpub,
   unzipEpub,
+  unzipPackage,
 } from './lib/epub-reader.ts'
+import { exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
 import { scanExternalRefs } from './lib/external-refs.ts'
 import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
@@ -315,6 +317,10 @@ export class Renderer {
     }
     if (mod === 'assign') {
       await this.renderAssign(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'exeweb') {
+      await this.renderExeweb(fields, contextId, container)
       return
     }
     if (mod === 'scorm' || mod === 'exescorm') {
@@ -768,6 +774,14 @@ export class Renderer {
     if (!data) return card
 
     const mime = rec.mimeType || guessMime(rec.fileName)
+    if (isExeFileName(rec.fileName)) {
+      try {
+        await this.renderExePackage(data, card)
+      } finally {
+        addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      }
+      return card
+    }
     if (isEpubFileName(rec.fileName)) {
       try {
         await this.renderEpub(data, card)
@@ -916,6 +930,58 @@ export class Renderer {
     frame.sandbox.add('allow-popups')
     frame.sandbox.add('allow-popups-to-escape-sandbox')
     card.appendChild(frame)
+  }
+
+  /**
+   * mod_exeweb (ADR-0025): an eXeLearning site published straight into a
+   * Moodle activity. Its backup names the landing page explicitly in
+   * `entrypath`/`entryname`, which beats the filename heuristic
+   * `pickWebsiteEntry` has to use for a plain file resource.
+   */
+  private async renderExeweb(
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const introHtml = await this.resolveHtml(fields.get('intro'), 'mod_exeweb', 'intro', contextId)
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+    }
+
+    const records = [...this.ctx.backup.files.values()].filter(
+      (f) =>
+        f.component === 'mod_exeweb' &&
+        f.fileArea === 'content' &&
+        f.fileName !== '.' &&
+        f.fileSize > 0 &&
+        (contextId === '' || f.contextId === contextId),
+    )
+    if (records.length === 0) {
+      notAvailable(container)
+      return
+    }
+
+    const wantedPath = (fields.get('entrypath') ?? '').trim()
+    const wantedName = (fields.get('entryname') ?? '').trim()
+    const declared =
+      wantedName === ''
+        ? undefined
+        : (records.find(
+            (r) =>
+              r.fileName === wantedName &&
+              (wantedPath === '' ||
+                r.filePath === wantedPath ||
+                `${r.filePath}` === `/${wantedPath}`),
+          ) ?? records.find((r) => r.fileName === wantedName))
+    const entry = declared ?? pickWebsiteEntry(records)
+    if (!entry) {
+      for (const rec of sortRecords(records)) container.appendChild(await this.filePreview(rec))
+      return
+    }
+    await this.renderWebsite(records, entry, container)
   }
 
   /**
@@ -1146,6 +1212,79 @@ export class Renderer {
   }
 
   /**
+   * eXeLearning package (ADR-0025). A `.elpx` carries both the re-importable
+   * project and a rendered site; when the site is there it is what a reader
+   * wants, and it renders through the same in-memory pipeline as an EPUB
+   * chapter. A legacy `.elp` has no site — its project data is a binary
+   * Twisted jelly stream this browser cannot decode — so MBZoo says what the
+   * file is instead of pretending.
+   */
+  private async renderExePackage(data: Uint8Array, card: HTMLElement): Promise<void> {
+    const note = (text: string): void => {
+      const p = document.createElement('p')
+      p.className = 'fallback-note'
+      p.textContent = text
+      card.appendChild(p)
+    }
+    let pkg: ReturnType<typeof readExePackage>
+    try {
+      pkg = readExePackage(unzipPackage(data))
+    } catch {
+      note(t('exe.invalid'))
+      return
+    }
+
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t(`exe.kind.${pkg.kind}`)
+    card.appendChild(chip)
+
+    if (pkg.kind === 'exe-site-modern' || pkg.kind === 'exe-site-legacy') {
+      this.renderZipPages(exeSiteBook(pkg), card, {
+        list: t('exe.pages'),
+        previous: t('epub.previous'),
+        next: t('epub.next'),
+        hint: t('exe.pagesHint'),
+      })
+      return
+    }
+    if (pkg.kind === 'elpx-source' && pkg.entry !== '') {
+      // A source package that also shipped its export.
+      this.renderZipPages(exeSiteBook(pkg), card, {
+        list: t('exe.pages'),
+        previous: t('epub.previous'),
+        next: t('epub.next'),
+        hint: t('exe.pagesHint'),
+      })
+      return
+    }
+    if (pkg.title !== '') {
+      const title = document.createElement('p')
+      title.className = 'website-note'
+      title.textContent = pkg.title
+      card.appendChild(title)
+    }
+    if (pkg.kind === 'elp-legacy-opaque') note(t('exe.opaque'))
+    else if (pkg.kind === 'unknown') note(t('exe.unknown'))
+    else note(t('exe.noSite'))
+
+    const list = document.createElement('details')
+    list.className = 'advanced'
+    const summary = document.createElement('summary')
+    summary.textContent = `${t('exe.files')} (${pkg.entries.size})`
+    list.appendChild(summary)
+    const ul = document.createElement('ul')
+    ul.className = 'resource-files'
+    for (const path of [...pkg.entries.keys()].sort()) {
+      const li = document.createElement('li')
+      li.textContent = path
+      ul.appendChild(li)
+    }
+    list.appendChild(ul)
+    card.appendChild(list)
+  }
+
+  /**
    * EPUB reading (ADR-0024): the spine becomes a chapter row, and each
    * chapter renders in the same opaque-origin sandbox with the same injected
    * CSP as any other archive HTML. Nothing is fetched; every asset the
@@ -1171,7 +1310,25 @@ export class Renderer {
       fallback('epub.empty')
       return
     }
+    this.renderZipPages(book, card, {
+      list: t('epub.chapters'),
+      previous: t('epub.previous'),
+      next: t('epub.next'),
+      hint: t('epub.hint'),
+    })
+  }
 
+  /**
+   * Renders the pages of an in-memory ZIP package — an EPUB's spine, an
+   * eXeLearning export's HTML — as one sandboxed document at a time, with
+   * MBZoo's own list and previous/next controls. Every asset is inlined from
+   * the package; nothing is fetched (ADR-0024, ADR-0025).
+   */
+  private renderZipPages(
+    book: EpubBook,
+    card: HTMLElement,
+    labels: { list: string; previous: string; next: string; hint: string },
+  ): void {
     if (book.title !== '') {
       const title = document.createElement('p')
       title.className = 'website-note'
@@ -1184,7 +1341,7 @@ export class Renderer {
     bar.className = 'site-pages'
     const label = document.createElement('span')
     label.className = 'site-pages-label'
-    label.textContent = `${t('epub.chapters')} (${book.chapters.length})`
+    label.textContent = `${labels.list} (${book.chapters.length})`
     bar.appendChild(label)
 
     let index = 0
@@ -1239,19 +1396,19 @@ export class Renderer {
     const prev = document.createElement('button')
     prev.type = 'button'
     prev.className = 'btn-outline'
-    prev.textContent = t('epub.previous')
+    prev.textContent = labels.previous
     prev.addEventListener('click', () => show(index - 1))
     const next_ = document.createElement('button')
     next_.type = 'button'
     next_.className = 'btn-outline'
-    next_.textContent = t('epub.next')
+    next_.textContent = labels.next
     next_.addEventListener('click', () => show(index + 1))
     nav.append(prev, next_)
     card.appendChild(nav)
 
     const hint = document.createElement('p')
     hint.className = 'fallback-note site-pages-hint'
-    hint.textContent = t('epub.hint')
+    hint.textContent = labels.hint
     card.appendChild(hint)
     card.appendChild(holder)
     show(0)

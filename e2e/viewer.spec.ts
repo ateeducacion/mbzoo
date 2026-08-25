@@ -824,12 +824,14 @@ test('an EPUB is read chapter by chapter in the sandbox (ADR-0024)', async ({ pa
   await page.setInputFiles('#file-input', FIXTURE)
   await page.getByRole('button', { name: /Demo folder/ }).click()
 
+  // The folder holds several packages, so everything is scoped to this card.
+  const card = page.locator('.file-card', { hasText: 'demo-book.epub' })
   // The chapter row comes from the OPF spine, in reading order.
-  const chapters = page.locator('button[data-chapter]')
+  const chapters = card.locator('button[data-chapter]')
   await expect(chapters).toHaveCount(2)
   await expect(chapters.first()).toHaveText('First chapter')
 
-  const frame = page.frameLocator('.html-frame')
+  const frame = card.frameLocator('.html-frame')
   await expect(frame.locator('#chapter-title')).toHaveText('First chapter')
   // The chapter's relative stylesheet and image are inlined from the package,
   // so the chapter renders styled with nothing fetched.
@@ -846,10 +848,35 @@ test('an EPUB is read chapter by chapter in the sandbox (ADR-0024)', async ({ pa
   await expect(frame.locator('#chapter-link')).not.toHaveAttribute('href', /./)
 
   // Next moves through the spine.
-  await page.getByRole('button', { name: 'Next →' }).click()
-  await expect(page.frameLocator('.html-frame').locator('#chapter-title')).toHaveText(
+  await card.getByRole('button', { name: 'Next →' }).click()
+  await expect(card.frameLocator('.html-frame').locator('#chapter-title')).toHaveText(
     'Second chapter',
   )
+
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+})
+
+test('an eXeLearning package shows its exported site (ADR-0025)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo folder/ }).click()
+
+  // A .elpx carries both the re-importable project and the render; the
+  // render is what a reader wants, and it is recognised by the site's own
+  // marker files rather than by the extension.
+  const card = page.locator('.file-card', { hasText: 'demo-project.elpx' })
+  await expect(card.getByText('eXeLearning exported site')).toBeVisible()
+
+  const pages = card.locator('button[data-chapter]')
+  await expect(pages.first()).toHaveText('Demo eXeLearning site')
+
+  const frame = card.frameLocator('.html-frame')
+  await expect(frame.locator('#exe-title')).toHaveText('Demo eXeLearning site')
+  // Its relative stylesheet and image are inlined straight from the package.
+  await expect(frame.locator('#exe-title')).toHaveCSS('color', 'rgb(128, 0, 128)')
 
   expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
 })
