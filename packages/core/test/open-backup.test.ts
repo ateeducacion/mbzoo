@@ -24,12 +24,14 @@ describe('openBackup (synthetic ZIP fixture)', () => {
 
   test('reconstructs sections with ordered activities', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
-    expect(b.sections.map((s) => s.number)).toEqual([1, 2])
+    expect(b.sections.map((s) => s.number)).toEqual([1, 3, 2])
     expect(b.sections[0]?.name).toBe('Introduction')
     expect(b.sections[0]?.activityIds).toEqual([
-      3001, 3002, 3004, 3006, 3007, 3012, 3013, 3014, 3015, 3019, 3021, 3022,
+      3001, 3002, 3004, 3006, 3007, 3012, 3013, 3014, 3015, 3019, 3021, 3022, 3025,
     ])
-    expect(b.sections[1]?.activityIds).toEqual([
+    // Index 1 is the delegated section, which sits between the two numbered
+    // ones in document order; "Resources" is index 2.
+    expect(b.sections[2]?.activityIds).toEqual([
       3003, 3005, 3008, 3009, 3010, 3011, 3016, 3017, 3018, 3020, 3023, 3024,
     ])
   })
@@ -132,5 +134,28 @@ describe('unnamed sections', () => {
     )
     const b = await openBackup(new Blob([zipSync(entries)]))
     expect(b.sections[0]?.name).toBe('1')
+  })
+})
+
+// Moodle 4.5+ lets a module own a section. Verified against two real backups:
+// Moodle's own mod_subsection test fixture and a Moodle 5.2.2 course built for
+// this purpose. The section names its owner by *instance* id, which only the
+// activity payload carries.
+describe('delegated sections', () => {
+  test('ordinary sections are not delegated', async () => {
+    const b = await openBackup(Bun.file(FIXTURE))
+    const plain = b.sections.filter((s) => s.number === 1 || s.number === 2)
+    expect(plain).toHaveLength(2)
+    expect(plain.every((s) => s.delegatedTo === undefined)).toBe(true)
+  })
+
+  test('a delegated section resolves to the course-module that owns it', async () => {
+    const b = await openBackup(Bun.file(FIXTURE))
+    const delegated = b.sections.find((s) => s.delegatedTo !== undefined)
+    expect(delegated?.name).toBe('Demo subsection')
+    expect(delegated?.delegatedTo?.component).toBe('mod_subsection')
+    // <itemid> is the instance id (25); this resolves it to the cmid.
+    expect(delegated?.delegatedTo?.activityId).toBe(3025)
+    expect(delegated?.activityIds).toEqual([3026])
   })
 })

@@ -1652,3 +1652,16 @@ audio.media-preview {
   border-color: rgba(230, 126, 34, 0.28);
   color: #9a5b12;
 }
+
+/* Delegated sections (mod_subsection): their activities hang off the module
+   that owns them, so the tree keeps the course's real shape. */
+.subsection-list {
+  margin: 4px 0 2px 14px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+.subsection-empty {
+  font: 400 12px var(--font-body);
+  color: var(--faint);
+  padding: 3px 8px;
+}

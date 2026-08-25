@@ -103,6 +103,17 @@ added:
       Footer reworked (single line, ATE credit, Moodle trademark notice, repo
       link) and t() now treats an empty translation as deliberate rather than
       missing, which had printed the key itself on the Spanish landing page.
+  - date: 2026-08-25
+    note: >-
+      Parsers built from the Moodle schema are now verified against real Moodle
+      output: a Moodle 5.2.2 course generated in erseco/alpine-moodle and backed
+      up with users=0, plus Moodle's own mod_subsection and backup_controller
+      test fixtures (all recorded in fixtures/manifest.yaml, none committed).
+      That caught a real bug — lesson answers whose jumpto is page id 1 or 2
+      were read as LESSON_UNSEENPAGE/UNANSWEREDPAGE, which belong to the
+      lesson-level nextpagedefault setting and never to an answer. Delegated
+      sections (Moodle 4.5+ mod_subsection) now resolve to the module that owns
+      them and nest under it in the tree, instead of appearing as siblings.
 
 risks:
   RISK-001:

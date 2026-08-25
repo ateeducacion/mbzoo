@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseLessonXml } from '../src/moodle/lesson-xml.ts'
+import { type LessonJumpKind, parseLessonXml } from '../src/moodle/lesson-xml.ts'
 
 // mod/lesson writes <page> and <answer> unconditionally and gates only
 // attempts/branches/grades/timers behind userinfo, so this is what a
@@ -131,5 +131,47 @@ describe('parseLessonXml', () => {
   test('a lesson with no pages parses to none', async () => {
     const empty = await parseLessonXml(LESSON.replace(/<pages>[\s\S]*<\/pages>/, '<pages></pages>'))
     expect(empty.pages).toEqual([])
+  })
+})
+
+// Verified against a real Moodle 5.2.2 content-only backup: an answer whose
+// jumpto is page id 2 was being read as LESSON_UNANSWEREDPAGE. Moodle's own
+// lesson_page::get_jump_name() only special-cases 0 and the negatives; 1 and 2
+// belong to the lesson-level nextpagedefault setting, never to an answer.
+describe('jump targets that collide with page ids', () => {
+  const withJump = (jumpto: number): string =>
+    `<?xml version="1.0"?>
+<activity id="1" moduleid="1" modulename="lesson" contextid="1"><lesson id="1"><pages>
+  <page id="1"><prevpageid>0</prevpageid><nextpageid>2</nextpageid><qtype>20</qtype>
+    <title>First</title><contents>a</contents>
+    <answers><answer id="1"><jumpto>${jumpto}</jumpto><grade>0</grade>
+      <answer_text>Go</answer_text><response></response></answer></answers>
+  </page>
+  <page id="2"><prevpageid>1</prevpageid><nextpageid>0</nextpageid><qtype>3</qtype>
+    <title>Second</title><contents>b</contents></page>
+</pages></lesson></activity>`
+
+  test('a small positive jumpto is a page id, not a constant', async () => {
+    for (const id of [1, 2]) {
+      const lesson = await parseLessonXml(withJump(id))
+      expect(lesson.pages[0]?.answers[0]?.jump).toEqual({ kind: 'page', pageId: id })
+    }
+  })
+
+  test('the constants Moodle does test are still named', async () => {
+    const cases: Array<[number, LessonJumpKind]> = [
+      [0, 'thisPage'],
+      [-1, 'nextPage'],
+      [-9, 'endOfLesson'],
+      [-40, 'previousPage'],
+      [-50, 'unseenBranchPage'],
+      [-60, 'randomPage'],
+      [-70, 'randomBranch'],
+      [-80, 'clusterJump'],
+    ]
+    for (const [value, kind] of cases) {
+      const lesson = await parseLessonXml(withJump(value))
+      expect(lesson.pages[0]?.answers[0]?.jump.kind).toBe(kind)
+    }
   })
 })

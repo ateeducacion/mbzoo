@@ -58,11 +58,17 @@ export async function parseSectionXml(xml: string): Promise<{
   number: number | undefined
   name: string
   sequence: number[]
+  /** Owning plugin for a delegated section, e.g. "mod_subsection"; '' if none. */
+  component: string
+  /** Instance id of the owning activity — not its course-module id. */
+  itemId: number
 }> {
   let id: number | undefined
   let number: number | undefined
   let name = ''
   let sequence: number[] = []
+  let component = ''
+  let itemId = Number.NaN
   const path: string[] = []
   let text = ''
   await parseXmlEvents(xml, (ev) => {
@@ -89,6 +95,10 @@ export async function parseSectionXml(xml: string): Promise<{
         if (Number.isFinite(n)) number = n
       } else if (field === 'name') {
         name = value
+      } else if (field === 'component') {
+        component = value
+      } else if (field === 'itemid') {
+        itemId = Number(value)
       } else if (field === 'sequence') {
         sequence = text
           .split(',')
@@ -101,5 +111,5 @@ export async function parseSectionXml(xml: string): Promise<{
     path.pop()
     text = ''
   })
-  return { id, number, name, sequence }
+  return { id, number, name, sequence, component, itemId }
 }

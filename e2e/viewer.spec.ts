@@ -114,8 +114,8 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
-  expect(meta).toContain('2 sections')
-  expect(meta).toContain('24 activities')
+  expect(meta).toContain('3 sections')
+  expect(meta).toContain('26 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -788,6 +788,33 @@ test('concurrent activity opens both finish', async ({ page }) => {
   // And the one that lost the race still renders when reopened.
   await page.getByRole('button', { name: /Demo lesson/ }).click()
   await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
+})
+
+// Moodle 4.5+ delegated sections: the section belongs under the module that
+// owns it, so the tree must nest rather than list it as a sibling. Verified
+// additionally against Moodle's own mod_subsection fixture and a Moodle 5.2.2
+// course built for this purpose.
+test('a delegated section nests under the module that owns it', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  // Three sections exist, but only the two numbered ones head the tree.
+  const headings = page.locator('#sections > li > h3')
+  await expect(headings).toHaveCount(2)
+  await expect(headings.nth(0)).toHaveText('Introduction')
+  await expect(headings.nth(1)).toHaveText('Resources')
+
+  const owner = page.locator('li.has-subsection', {
+    has: page.getByRole('button', { name: /Demo subsection/ }),
+  })
+  await expect(owner).toHaveCount(1)
+  const nested = owner.locator('.subsection-list .activity-button')
+  await expect(nested).toHaveCount(1)
+  await expect(nested).toContainText('Page inside the subsection')
+
+  // And it is a real activity, not just a label in the tree.
+  await nested.click()
+  await expect(page.locator('#in-subsection')).toBeVisible()
 })
 
 /**

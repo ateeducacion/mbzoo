@@ -118,7 +118,30 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
     ? await parseFilesXml(decoder.decode(filesBytes))
     : emptyFilesWithWarning(warnings)
 
-  const sections = assembleSections(sectionRefs, sectionDetails, activities)
+  // A delegated section (Moodle 4.5+ mod_subsection) names its owner by
+  // *instance* id, which only the activity payload carries — moodle_backup.xml
+  // and module.xml both know the course-module id instead.
+  const owners = new Map<string, number>()
+  const delegating = new Set(
+    [...sectionDetails.values()]
+      .map((d) => d.component)
+      .filter((c) => c !== '')
+      .map((c) => c.replace(/^mod_/, '')),
+  )
+  for (const activity of activities) {
+    if (!delegating.has(activity.moduleName) || !Number.isFinite(activity.id)) continue
+    const dir = `activities/${activity.moduleName}_${activity.id}`
+    const bytes = await safeReadEntry(reader, `${dir}/${activity.moduleName}.xml`)
+    if (!bytes) continue
+    const instanceId = Number(
+      /<activity\s[^>]*\bid="(\d+)"/.exec(decoder.decode(bytes))?.[1] ?? Number.NaN,
+    )
+    if (Number.isFinite(instanceId)) {
+      owners.set(`mod_${activity.moduleName}:${instanceId}`, activity.id)
+    }
+  }
+
+  const sections = assembleSections(sectionRefs, sectionDetails, activities, owners)
   return {
     format: reader.format,
     includesUserData,
@@ -161,6 +184,7 @@ function assembleSections(
   refs: SectionInfo[],
   details: Map<number, Awaited<ReturnType<typeof parseSectionXml>>>,
   activities: ParsedBackup['activities'],
+  owners: ReadonlyMap<string, number>,
 ): SectionInfo[] {
   const byId = new Map(activities.map((a) => [a.id, a]))
   const out: SectionInfo[] = []
@@ -184,12 +208,19 @@ function assembleSections(
     // genuinely named "1" (SMR_SOR) still keeps its name.
     const detailName = d?.name ?? ''
     const refName = ref.name === String(number) ? '' : ref.name
+    const owner =
+      d && d.component !== '' && Number.isFinite(d.itemId)
+        ? owners.get(`${d.component}:${d.itemId}`)
+        : undefined
     out.push({
       ...ref,
       number,
       name: detailName !== '' ? detailName : refName,
       summary: '',
       activityIds: ordered,
+      ...(d && d.component !== ''
+        ? { delegatedTo: { component: d.component, activityId: owner ?? Number.NaN } }
+        : {}),
     })
   }
   return out

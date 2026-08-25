@@ -173,7 +173,16 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   }
 
   sectionsList.replaceChildren()
+  // A delegated section belongs under the activity that owns it, not beside
+  // the numbered ones (Moodle 4.5+ mod_subsection).
+  const delegated = new Map<number, (typeof backup.sections)[number]>()
   for (const section of backup.sections) {
+    const owner = section.delegatedTo?.activityId
+    if (owner !== undefined && Number.isFinite(owner)) delegated.set(owner, section)
+  }
+
+  for (const section of backup.sections) {
+    if (section.delegatedTo) continue
     const li = document.createElement('li')
     const heading = document.createElement('h3')
     // An unnamed section serializes its name as Moodle's NULL sentinel, so it
@@ -189,9 +198,9 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     li.appendChild(heading)
     const ul = document.createElement('ul')
     ul.className = 'activity-list'
-    for (const activityId of section.activityIds) {
+    const addActivity = (activityId: number, into: HTMLElement): void => {
       const activity = backup.activities.find((a) => a.id === activityId)
-      if (!activity) continue
+      if (!activity) return
       const item = document.createElement('li')
       const button = document.createElement('button')
       button.type = 'button'
@@ -215,8 +224,26 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
         () => void openActivity(activity.id, heading.textContent ?? ''),
       )
       item.appendChild(button)
-      ul.appendChild(item)
+
+      // The activities this one owns hang off it, so the tree keeps the
+      // shape the course actually has.
+      const owned = delegated.get(activity.id)
+      if (owned) {
+        item.classList.add('has-subsection')
+        const nested = document.createElement('ul')
+        nested.className = 'activity-list subsection-list'
+        for (const childId of owned.activityIds) addActivity(childId, nested)
+        if (nested.children.length === 0) {
+          const empty = document.createElement('li')
+          empty.className = 'subsection-empty'
+          empty.textContent = t('section.emptySubsection')
+          nested.appendChild(empty)
+        }
+        item.appendChild(nested)
+      }
+      into.appendChild(item)
     }
+    for (const activityId of section.activityIds) addActivity(activityId, ul)
     if (ul.children.length === 0) li.classList.add('empty-section')
     li.appendChild(ul)
     sectionsList.appendChild(li)

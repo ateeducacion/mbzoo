@@ -45,13 +45,19 @@ export type LessonPageKind =
   | 'unknown'
 
 /**
- * Special `jumpto` targets, from the `define("LESSON_…")` constants in
- * mod/lesson/locallib.php (REPO-005). Any other value is a page id.
+ * Special `jumpto` targets an answer can carry.
+ *
+ * This is exactly the set Moodle's own `lesson_page::get_jump_name()` tests
+ * (mod/lesson/locallib.php, REPO-005); everything else is looked up as a page
+ * id. That distinction matters: `LESSON_UNSEENPAGE` (1) and
+ * `LESSON_UNANSWEREDPAGE` (2) are also defined in that file, but they belong
+ * to the lesson-level `nextpagedefault` setting and never to an answer — and
+ * because page ids are small positive integers, treating them as jump
+ * constants silently renames a jump to page 1 or 2. A real Moodle 5.2 backup
+ * caught exactly that.
  */
 const JUMPS: Record<number, LessonJumpKind> = {
   0: 'thisPage',
-  1: 'unseenPage',
-  2: 'unansweredPage',
   [-1]: 'nextPage',
   [-9]: 'endOfLesson',
   [-40]: 'previousPage',
@@ -64,8 +70,6 @@ const JUMPS: Record<number, LessonJumpKind> = {
 
 export type LessonJumpKind =
   | 'thisPage'
-  | 'unseenPage'
-  | 'unansweredPage'
   | 'nextPage'
   | 'endOfLesson'
   | 'previousPage'

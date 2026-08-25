@@ -72,8 +72,6 @@ const STRINGS = {
     'lesson.jump.nextPage': 'next page',
     'lesson.jump.previousPage': 'previous page',
     'lesson.jump.endOfLesson': 'end of lesson',
-    'lesson.jump.unseenPage': 'an unseen page',
-    'lesson.jump.unansweredPage': 'an unanswered page',
     'lesson.jump.unseenBranchPage': 'an unseen page in this branch',
     'lesson.jump.randomPage': 'a random page in this branch',
     'lesson.jump.randomBranch': 'a random branch',
@@ -139,6 +137,7 @@ const STRINGS = {
     'link.unresolved': 'Course link — this backup does not record where it pointed.',
     'link.unresolvedCode':
       'Course link MBZoo cannot resolve ({code}) — the backup does not record where it pointed.',
+    'section.emptySubsection': 'Empty subsection',
     'section.general': 'General',
     'section.numbered': 'Section',
     'section.unnamed': 'Section',
@@ -271,8 +270,6 @@ const STRINGS = {
     'lesson.jump.nextPage': 'página siguiente',
     'lesson.jump.previousPage': 'página anterior',
     'lesson.jump.endOfLesson': 'fin de la lección',
-    'lesson.jump.unseenPage': 'una página no vista',
-    'lesson.jump.unansweredPage': 'una página sin responder',
     'lesson.jump.unseenBranchPage': 'una página no vista de esta rama',
     'lesson.jump.randomPage': 'una página al azar de esta rama',
     'lesson.jump.randomBranch': 'una rama al azar',
@@ -337,6 +334,7 @@ const STRINGS = {
     'link.unresolved': 'Enlace del curso: esta copia no registra a dónde apuntaba.',
     'link.unresolvedCode':
       'Enlace del curso que MBZoo no sabe resolver ({code}): la copia no registra a dónde apuntaba.',
+    'section.emptySubsection': 'Subsección vacía',
     'section.general': 'General',
     'section.numbered': 'Sección',
     'section.unnamed': 'Sección',

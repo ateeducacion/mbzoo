@@ -96,6 +96,11 @@ function moodleBackupXml(): string {
           <directory>sections/section_2001</directory>
         </section>
         <section>
+          <sectionid>2003</sectionid>
+          <title>Demo subsection</title>
+          <directory>sections/section_2003</directory>
+        </section>
+        <section>
           <sectionid>2002</sectionid>
           <title>Resources</title>
           <directory>sections/section_2002</directory>
@@ -270,6 +275,20 @@ function moodleBackupXml(): string {
           <title>Demo 2.2 assignment (retired)</title>
           <directory>activities/assignment_3024</directory>
         </activity>
+        <activity>
+          <moduleid>3025</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>subsection</modulename>
+          <title>Demo subsection</title>
+          <directory>activities/subsection_3025</directory>
+        </activity>
+        <activity>
+          <moduleid>3026</moduleid>
+          <sectionid>2003</sectionid>
+          <modulename>page</modulename>
+          <title>Page inside the subsection</title>
+          <directory>activities/page_3026</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -294,13 +313,20 @@ function courseXml(): string {
 `
 }
 
-function sectionXml(id: number, number_: number, name: string, sequence: string): string {
+function sectionXml(
+  id: number,
+  number_: number,
+  name: string,
+  sequence: string,
+  delegate?: { component: string; itemId: number },
+): string {
   return `${XML_HEADER}<section id="${id}">
   <number>${number_}</number>
   <idnumber></idnumber>
   <name>${name}</name>
   <summary>&lt;p&gt;Section ${number_} of the synthetic demo course.&lt;/p&gt;</summary>
   <sequence>${sequence}</sequence>
+${delegate ? `  <component>${delegate.component}</component>\n  <itemid>${delegate.itemId}</itemid>\n` : ''}
   <visible>1</visible>
 </section>
 `
@@ -588,10 +614,25 @@ ${specFiles.map(fileRecord).join('\n')}
       2001,
       1,
       'Introduction',
-      '3001,3002,3004,3006,3007,3012,3013,3014,3015,3019,3021,3022',
+      '3001,3002,3004,3006,3007,3012,3013,3014,3015,3019,3021,3022,3025',
     ),
   )
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
+  add(
+    'sections/section_2003/section.xml',
+    // Moodle 4.5+ delegated section: owned by the subsection activity, whose
+    // *instance* id (25) is what <itemid> names — not its course-module id.
+    sectionXml(2003, 3, 'Demo subsection', '3026', {
+      component: 'mod_subsection',
+      itemId: 25,
+    }),
+  )
+  add(
+    'sections/section_2003/inforef.xml',
+    `${XML_HEADER}<inforef>
+</inforef>
+`,
+  )
   add(
     'sections/section_2002/section.xml',
     sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020,3023,3024'),
@@ -898,6 +939,28 @@ ${specFiles.map(fileRecord).join('\n')}
   // Two modules Moodle has removed from core. Moodle itself can no longer
   // restore them, which is exactly why an inspector should still read them —
   // and why the fixture carries one of each retirement (5.0 and 4.2).
+  // The activity that owns the delegated section. Its root id is the instance
+  // id the section points at.
+  add(
+    'activities/subsection_3025/subsection.xml',
+    `${XML_HEADER}<activity id="25" moduleid="3025" modulename="subsection" contextid="125">
+  <subsection id="25">
+    <name>Demo subsection</name>
+  </subsection>
+</activity>
+`,
+  )
+  add(
+    'activities/page_3026/page.xml',
+    `${XML_HEADER}<activity id="26" moduleid="3026" modulename="page" contextid="126">
+  <page id="26">
+    <name>Page inside the subsection</name>
+    <intro>&lt;p&gt;This page lives in a delegated section.&lt;/p&gt;</intro>
+    <content>&lt;p id="in-subsection"&gt;Nested under the subsection module.&lt;/p&gt;</content>
+  </page>
+</activity>
+`,
+  )
   add(
     'activities/survey_3023/survey.xml',
     `${XML_HEADER}<activity id="23" moduleid="23" modulename="survey" contextid="123">

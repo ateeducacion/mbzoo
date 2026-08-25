@@ -28,7 +28,7 @@ describe('openBackup degradation paths', () => {
   test('missing section detail keeps moodle_backup.xml metadata and warns', async () => {
     const b = await openBackup(await rebuildZip((n) => !n.startsWith('sections/section_2001/')))
     expect(b.warnings.some((w) => w.code === 'section-xml-missing')).toBe(true)
-    expect(b.sections.length).toBe(2)
+    expect(b.sections.length).toBe(3)
   })
 
   test('missing course/course.xml falls back to moodle_backup.xml title', async () => {

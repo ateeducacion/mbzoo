@@ -37,6 +37,12 @@ export interface SectionInfo {
   name: string
   summary: string
   readonly activityIds: number[]
+  /**
+   * Moodle 4.5+ lets a module own a section ("delegated section",
+   * `mod_subsection`): the section is not a sibling of the numbered ones, it
+   * belongs under the activity named here. Undefined for an ordinary section.
+   */
+  delegatedTo?: { component: string; activityId: number } | undefined
   readonly source: SourceInfo
 }
 
