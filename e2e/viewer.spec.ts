@@ -90,7 +90,7 @@ function sandboxHtmlFixture(): { name: string; mimeType: string; buffer: Buffer 
 
 test('opens the synthetic .mbz and renders the course structure', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('#landing .wordmark')).toHaveText(/mbzoo/)
+  await expect(page.locator('#landing .brand-logo')).toBeVisible()
 
   await page.setInputFiles('#file-input', FIXTURE)
 

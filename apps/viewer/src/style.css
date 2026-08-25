@@ -1063,3 +1063,8 @@ footer a {
   border-color: #e66a5b;
   background: rgba(230, 106, 91, 0.07);
 }
+
+.brand-logo {
+  height: 56px;
+  width: auto;
+}
