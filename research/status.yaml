@@ -94,6 +94,15 @@ added:
       saying no current Moodle can restore them and MBZoo still reads them.
       Releases verified in the Moodle tree (mod/UPGRADING.md and the removal
       commits), not from memory.
+  - date: 2026-08-25
+    note: >-
+      Playwright's preview server moved off the fixed port 4173 to one derived
+      from the checkout path, with reuseExistingServer off. Two working trees
+      of this repo both served on 4173, so one tree's suite silently tested the
+      other tree's build — a failure that looks exactly like a broken renderer.
+      Footer reworked (single line, ATE credit, Moodle trademark notice, repo
+      link) and t() now treats an empty translation as deliberate rather than
+      missing, which had printed the key itself on the Spanish landing page.
 
 risks:
   RISK-001:

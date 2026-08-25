@@ -52,10 +52,6 @@ const detail = document.getElementById('detail') as HTMLElement
 const homeBtn = document.getElementById('home-btn') as HTMLButtonElement
 const dropOverlay = document.getElementById('drop-overlay') as HTMLElement
 
-// Written at runtime so the footer year never goes stale in a static build.
-const footerYear = document.getElementById('footer-year')
-if (footerYear) footerYear.textContent = String(new Date().getFullYear())
-
 let worker: Worker | undefined
 let requestId = 0
 let currentBackup: ParsedBackup | undefined
