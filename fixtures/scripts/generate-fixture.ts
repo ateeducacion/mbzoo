@@ -31,6 +31,8 @@ interface SpecFile {
   component: string
   contextId: string
   filearea: string
+  /** Row the area is keyed by; '0' for the activity-wide areas. */
+  itemId?: string
   mimetype: string
 }
 
@@ -41,7 +43,7 @@ function fileRecord(f: SpecFile): string {
     <contextid>${f.contextId}</contextid>
     <component>${f.component}</component>
     <filearea>${f.filearea}</filearea>
-    <itemid>0</itemid>
+    <itemid>${f.itemId ?? '0'}</itemid>
     <filepath>/${f.filepath}</filepath>
     <filename>${f.filename}</filename>
     <userid>2</userid>
@@ -749,6 +751,31 @@ async function main(): Promise<void> {
       filearea: 'overviewfiles',
       mimetype: 'image/svg+xml',
     },
+    // Embedded images, in the file areas Moodle keys per row: a lesson page's
+    // by page id, a question's by question id (REPO-005). Both reference the
+    // file as @@PLUGINFILE@@, which is how Moodle stores every embed.
+    {
+      filepath: '',
+      filename: 'dot.svg',
+      content:
+        '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><circle cx="4" cy="4" r="3" fill="#f58220"/></svg>',
+      component: 'mod_lesson',
+      contextId: '113',
+      filearea: 'page_contents',
+      itemId: '501',
+      mimetype: 'image/svg+xml',
+    },
+    {
+      filepath: '',
+      filename: 'dot.svg',
+      content:
+        '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#2a78d6"/></svg>',
+      component: 'question',
+      contextId: '101',
+      filearea: 'questiontext',
+      itemId: '4001',
+      mimetype: 'image/svg+xml',
+    },
     {
       filepath: '',
       filename: 'notes.txt',
@@ -1144,7 +1171,7 @@ ${specFiles.map(fileRecord).join('\n')}
         <nextpageid>502</nextpageid>
         <qtype>20</qtype>
         <title>Start here</title>
-        <contents>&lt;p id="lesson-start"&gt;Choose where to go.&lt;/p&gt;</contents>
+        <contents>&lt;img id="lesson-pic" src="@@PLUGINFILE@@/dot.svg" alt="dot"&gt;&lt;p id="lesson-start"&gt;Choose where to go.&lt;/p&gt;</contents>
         <answers>
           <answer id="6001">
             <jumpto>502</jumpto>
@@ -1478,7 +1505,7 @@ ${specFiles.map(fileRecord).join('\n')}
       <question id="4001">
         <qtype>multichoice</qtype>
         <name>Pool layout</name>
-        <questiontext>&lt;p&gt;Where does MBZoo look for a file with contenthash &lt;code&gt;ab12…&lt;/code&gt;?&lt;/p&gt;</questiontext>
+        <questiontext>&lt;img id="question-pic" src="@@PLUGINFILE@@/dot.svg" alt="dot"&gt;&lt;p&gt;Where does MBZoo look for a file with contenthash &lt;code&gt;ab12…&lt;/code&gt;?&lt;/p&gt;</questiontext>
         <answers>
           <answer id="1"><answertext>files/ab/ab12…</answertext><fraction>1.0000000</fraction></answer>
           <answer id="2"><answertext>files/ab/cd/ab12…</answertext><fraction>0.0000000</fraction></answer>

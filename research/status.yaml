@@ -136,6 +136,16 @@ added:
       which kinds of data are actually populated) and keeps the names behind a
       closed details element. The demo fixture stays content-only on purpose:
       the public demo should not ship a personal-data warning.
+  - date: 2026-08-25
+    note: >-
+      Embedded files resolve everywhere (ADR-0026). Several renderers called
+      safeHtml(), which sanitizes but does not resolve @@PLUGINFILE@@, so the
+      raw token reached the DOM and the browser requested it against our own
+      origin — an ADR-0009 problem, not a broken image. Fixing it needed
+      matchFileRecord() to accept an itemid, because Moodle keys those areas
+      per row; a lookup that misses now returns nothing rather than another
+      row's file. Question files are pinned without a contextid: they hang off
+      the question bank category, not the activity.
 
 risks:
   RISK-001:

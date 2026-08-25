@@ -364,11 +364,19 @@ export class Renderer {
   /** Keeps the raw HTML of the last resolveHtml call for ref scanning. */
   private lastRawHtml = ''
 
+  /**
+   * @param itemId Row the file area is keyed by, for the areas Moodle scopes
+   *   per record rather than per activity — a lesson page's images are under
+   *   `mod_lesson/page_contents` keyed by page id, a question's under
+   *   `question/questiontext` keyed by question id. Omitted for the
+   *   activity-wide areas like `intro`.
+   */
   async resolveHtml(
     html: string | undefined,
     componentName: string,
     fileArea: string,
     contextId: string,
+    itemId?: string,
   ): Promise<string> {
     this.lastRawHtml = html ?? ''
     if (!html) return ''
@@ -388,6 +396,7 @@ export class Renderer {
         contextId: contextId === '' ? undefined : contextId,
         componentName,
         fileArea,
+        ...(itemId === undefined ? {} : { itemId }),
       })
       if (!rec) {
         resolvedParts.push(raw) // keep original token if unresolved
@@ -1608,6 +1617,30 @@ export class Renderer {
       container.appendChild(drawn)
     }
 
+    // questionCard() is synchronous, so question HTML is resolved up front.
+    // Question files hang off the *question bank category's* context, not the
+    // quiz's, so no contextId is pinned here — component, filearea and the
+    // question or answer id are enough to identify the row (REPO-005).
+    const resolvedQuestions = new Map<string, string>()
+    for (const question of questions) {
+      resolvedQuestions.set(
+        `q${question.id}`,
+        await this.resolveHtml(
+          question.questionText,
+          'question',
+          'questiontext',
+          '',
+          String(question.id),
+        ),
+      )
+      for (const answer of question.answers) {
+        resolvedQuestions.set(
+          `a${answer.id}`,
+          await this.resolveHtml(answer.text, 'question', 'answer', '', String(answer.id)),
+        )
+      }
+    }
+
     let index = 0
     const nav = document.createElement('div')
     nav.className = 'quiz-nav'
@@ -1644,7 +1677,9 @@ export class Renderer {
       prev.toggleAttribute('disabled', index === 0)
       next.toggleAttribute('disabled', index === questions.length - 1)
       const current = questions[index] as QuizQuestion
-      card.replaceChildren(this.questionCard(current, plan.drawnIds.has(current.id)))
+      card.replaceChildren(
+        this.questionCard(current, plan.drawnIds.has(current.id), resolvedQuestions),
+      )
     }
     prev.addEventListener('click', () => showQuestion(index - 1))
     next.addEventListener('click', () => showQuestion(index + 1))
@@ -1808,6 +1843,20 @@ export class Renderer {
       return
     }
 
+    // show() is synchronous, so every page's HTML is resolved up front.
+    // mod_lesson keys these areas by row: page_contents by page id,
+    // page_answers and page_responses by answer id (REPO-005).
+    const resolved = new Map<string, string>()
+    for (const page of lesson.pages) {
+      const area = async (html: string, filearea: string, id: number): Promise<string> =>
+        await this.resolveHtml(html, 'mod_lesson', filearea, contextId, String(id))
+      resolved.set(`c${page.id}`, await area(page.contents, 'page_contents', page.id))
+      for (const answer of page.answers) {
+        resolved.set(`a${answer.id}`, await area(answer.text, 'page_answers', answer.id))
+        resolved.set(`r${answer.id}`, await area(answer.response, 'page_responses', answer.id))
+      }
+    }
+
     const titleOf = (id: number): string => lesson.pages.find((p) => p.id === id)?.title ?? `#${id}`
 
     const toc = document.createElement('div')
@@ -1856,7 +1905,7 @@ export class Renderer {
 
       const content = document.createElement('div')
       content.className = 'activity-content'
-      content.innerHTML = this.safeHtml(page.contents)
+      content.innerHTML = resolved.get(`c${page.id}`) ?? ''
 
       body.replaceChildren(head, content)
 
@@ -1873,7 +1922,7 @@ export class Renderer {
           li.className = answer.grade > 0 && page.kind !== 'content' ? 'q-correct' : 'q-neutral'
           const text = document.createElement('span')
           text.className = 'lesson-answer-text'
-          text.innerHTML = this.safeHtml(answer.text)
+          text.innerHTML = resolved.get(`a${answer.id}`) ?? ''
           const jump = document.createElement('em')
           jump.className = 'lesson-jump'
           jump.textContent =
@@ -1884,7 +1933,7 @@ export class Renderer {
           if (answer.response !== '') {
             const response = document.createElement('div')
             response.className = 'lesson-response'
-            response.innerHTML = this.safeHtml(answer.response)
+            response.innerHTML = resolved.get(`r${answer.id}`) ?? ''
             li.appendChild(response)
           }
           list.appendChild(li)
@@ -2091,7 +2140,13 @@ export class Renderer {
       head.textContent = example.get('title') ?? ''
       const content = document.createElement('div')
       content.className = 'activity-content'
-      content.innerHTML = this.safeHtml(example.get('content') ?? '')
+      content.innerHTML = await this.resolveHtml(
+        example.get('content') ?? '',
+        'mod_workshop',
+        'submission_content',
+        contextId,
+        example.get('id'),
+      )
       card.append(head, content)
       container.appendChild(card)
     }
@@ -2245,7 +2300,13 @@ export class Renderer {
         // A label carries authored HTML instead of a question.
         const body = document.createElement('div')
         body.className = 'activity-content'
-        body.innerHTML = this.safeHtml(item.html)
+        body.innerHTML = await this.resolveHtml(
+          item.html,
+          'mod_feedback',
+          'item',
+          contextId,
+          String(item.id),
+        )
         li.appendChild(body)
         li.classList.add('feedback-label')
         list.appendChild(li)
@@ -2312,7 +2373,13 @@ export class Renderer {
       summary.textContent = t('feedback.afterSubmit')
       const body = document.createElement('div')
       body.className = 'activity-content'
-      body.innerHTML = this.safeHtml(feedback.pageAfterSubmit)
+      // page_after_submit is activity-wide: no itemid (REPO-005).
+      body.innerHTML = await this.resolveHtml(
+        feedback.pageAfterSubmit,
+        'mod_feedback',
+        'page_after_submit',
+        contextId,
+      )
       after.append(summary, body)
       container.appendChild(after)
     }
@@ -2349,7 +2416,15 @@ export class Renderer {
       const dt = document.createElement('dt')
       dt.textContent = e.concept
       const dd = document.createElement('dd')
-      dd.innerHTML = this.safeHtml(e.definition)
+      // mod_glossary/entry is keyed by entry id (REPO-005). Entries are user
+      // data, so this only ever resolves in a backup taken with users.
+      dd.innerHTML = await this.resolveHtml(
+        e.definition,
+        'mod_glossary',
+        'entry',
+        contextId,
+        String(e.id),
+      )
       list.append(dt, dd)
     }
     container.appendChild(list)
@@ -2662,7 +2737,11 @@ export class Renderer {
     return this.questionBankCache
   }
 
-  private questionCard(q: QuizQuestion, drawn = false): HTMLElement {
+  private questionCard(
+    q: QuizQuestion,
+    drawn = false,
+    resolved?: ReadonlyMap<string, string>,
+  ): HTMLElement {
     const type = q.qtype.toLowerCase()
     const el = document.createElement('div')
     const head = document.createElement('div')
@@ -2700,7 +2779,7 @@ export class Renderer {
       el.appendChild(body)
       return el
     }
-    body.innerHTML = this.safeHtml(q.questionText)
+    body.innerHTML = resolved?.get(`q${q.id}`) ?? this.safeHtml(q.questionText)
     el.appendChild(body)
 
     if (type === 'essay') {
@@ -2758,7 +2837,7 @@ export class Renderer {
       input.name = `q-${q.id}`
       input.value = String(i)
       const text = document.createElement('span')
-      text.innerHTML = this.safeHtml(a.text)
+      text.innerHTML = resolved?.get(`a${a.id}`) ?? this.safeHtml(a.text)
       label.append(input, text)
       const mark = document.createElement('em')
       mark.className = 'q-fraction'

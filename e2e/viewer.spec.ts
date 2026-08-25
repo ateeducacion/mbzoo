@@ -1188,6 +1188,43 @@ test('the course gradebook shows its structure, never anyone marks', async ({ pa
   await expect(book.locator('.gradebook-letters')).toContainText('A ≥ 90')
 })
 
+/**
+ * Images a teacher embedded reach the DOM as `@@PLUGINFILE@@/…` unless the
+ * renderer resolves them. That is not just a broken image: the browser goes
+ * and requests that path against MBZoo's own origin, which ADR-0009 forbids.
+ * Measured on both paths before the fix — Page content lost its src to
+ * DOMPurify, lesson and quiz content shipped the raw token.
+ */
+test('embedded images resolve, and no @@PLUGINFILE@@ token reaches the DOM', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  // One activity renders at a time, so each image is checked while its own
+  // view is on screen — including that it decoded, so the blob really is the
+  // file and not an empty one.
+  const check = async (selector: string): Promise<void> => {
+    const pic = page.locator(selector)
+    await expect(pic).toBeVisible()
+    expect(await pic.getAttribute('src')).toMatch(/^blob:/)
+    const decoded = await pic.evaluate(
+      (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+    )
+    expect(decoded).toBe(true)
+  }
+
+  await page.getByRole('button', { name: /Demo lesson/ }).click()
+  await check('#lesson-pic')
+
+  await page.getByRole('button', { name: /Self-assessment quiz/ }).click()
+  await check('#question-pic')
+
+  // Nothing was fetched from our own origin under the token's name.
+  expect(requests.filter((u) => u.includes('PLUGINFILE'))).toEqual([])
+})
+
 // Moodle 4.5+ delegated sections: the section belongs under the module that
 // owns it, so the tree must nest rather than list it as a sibling. Verified
 // additionally against Moodle's own mod_subsection fixture and a Moodle 5.2.2

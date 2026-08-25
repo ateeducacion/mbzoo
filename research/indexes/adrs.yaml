@@ -100,3 +100,7 @@ adrs:
     title: eXeLearning packages are classified by what is inside them, not by their extension
     status: Accepted
     date: 2026-08-25
+  ADR-0026:
+    title: Resolve embedded files by row, and return nothing rather than another row's file
+    status: Accepted
+    date: 2026-08-25

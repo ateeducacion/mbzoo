@@ -28,6 +28,8 @@ export interface QuizQuestion {
 }
 
 export interface QuizAnswer {
+  /** Answer id — the itemid of its `question/answer` files (REPO-005). */
+  readonly id: number
   readonly text: string
   /** Moodle fraction: 1 = fully correct, 0 = neutral, negative = penalty. */
   readonly fraction: number
@@ -50,7 +52,7 @@ interface MutableQuestion {
   qtype: string
   name: string
   questionText: string
-  answers: Array<{ text: string; fraction: number }>
+  answers: Array<{ id: number; text: string; fraction: number }>
   matches: Array<{ stem: string; response: string }>
   categoryId: number
   categoryName: string
@@ -190,7 +192,7 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
         if (current && idAttr !== undefined) current.id = Number(idAttr)
       }
       if (current && ev.name === 'answer' && leafOf() === 'answers') {
-        current.answers.push({ text: '', fraction: 0 })
+        current.answers.push({ id: Number(ev.attributes.id ?? Number.NaN), text: '', fraction: 0 })
       }
       if (current && ev.name === 'match' && leafOf() === 'matches') {
         current.matches.push({ stem: '', response: '' })

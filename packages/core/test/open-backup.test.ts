@@ -44,7 +44,7 @@ describe('openBackup (synthetic ZIP fixture)', () => {
 
   test('indexes files.xml records', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
-    expect(b.files.size).toBe(12)
+    expect(b.files.size).toBe(14)
     const names = [...b.files.values()].map((f) => f.fileName)
     expect(names).toContain('readme.txt')
     expect(names).toContain('dot.svg')
