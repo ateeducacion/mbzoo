@@ -77,3 +77,17 @@ describe('parseQuizQuestionIds', () => {
     expect(await parseQuizQuestionIds(quiz)).toEqual([50, 51])
   })
 })
+
+describe('random questions (regression: SMR_SEGI exam)', () => {
+  test('flags are reset between questions so all names/texts are captured', async () => {
+    const two = `<?xml version="1.0"?>
+    <question_categories><question_category id="1"><questions>
+      <question id="1"><qtype>random</qtype><name>Random A</name><questiontext>1</questiontext></question>
+      <question id="2"><qtype>multichoice</qtype><name>Real Q</name><questiontext>&lt;p&gt;Body&lt;/p&gt;</questiontext></question>
+    </questions></question_category></question_categories>`
+    const q = await parseQuestionsXml(two)
+    expect(q.get(1)?.name).toBe('Random A')
+    expect(q.get(2)?.name).toBe('Real Q')
+    expect(q.get(2)?.questionText).toContain('Body')
+  })
+})

@@ -955,6 +955,7 @@ export class Renderer {
   }
 
   private questionCard(q: QuizQuestion): HTMLElement {
+    const type = q.qtype.toLowerCase()
     const el = document.createElement('div')
     const head = document.createElement('div')
     head.className = 'quiz-q-head'
@@ -968,10 +969,19 @@ export class Renderer {
 
     const body = document.createElement('div')
     body.className = 'activity-content'
+    if (type === 'random') {
+      // "Random from category" placeholder: the real question is drawn at
+      // attempt time and is not stored in the backup.
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = q.name !== '' ? `${t('quiz.random')} — ${q.name}` : t('quiz.random')
+      body.appendChild(note)
+      el.appendChild(body)
+      return el
+    }
     body.innerHTML = sanitizeHtml(q.questionText)
     el.appendChild(body)
 
-    const type = q.qtype.toLowerCase()
     if (type === 'essay') {
       const ta = document.createElement('textarea')
       ta.className = 'q-input'

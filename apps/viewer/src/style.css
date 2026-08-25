@@ -958,3 +958,108 @@ footer a {
 .quiz-card.reveal .q-fraction {
   visibility: visible;
 }
+
+/* ---------- Moodle Boost-like content presentation ---------- */
+#detail {
+  --boost-blue: #0f47ad;
+  --boost-lightblue: #eef2f8;
+  --boost-border: #d4d4d4;
+  --boost-text: #1d2125;
+}
+#detail .detail-title-row {
+  border-bottom: 1px solid var(--boost-border);
+  padding-bottom: 0.6rem;
+}
+#detail .detail-title {
+  color: var(--boost-blue);
+}
+#detail .detail-breadcrumb {
+  background: var(--boost-lightblue);
+  border-radius: 6px;
+  padding: 4px 10px;
+  display: inline-block;
+  color: var(--boost-blue);
+}
+#detail .activity-intro,
+#detail .activity-content {
+  font-size: 14px;
+  color: var(--boost-text);
+  line-height: 1.6;
+}
+#detail .activity-content h1,
+#detail .activity-content h2,
+#detail .activity-content h3 {
+  color: var(--boost-blue);
+  font-family: var(--font-head);
+}
+#detail .activity-content a {
+  color: #0f6cbf;
+}
+#detail .activity-content img {
+  max-width: 100%;
+  height: auto;
+}
+#detail .activity-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+#detail .activity-content table td,
+#detail .activity-content table th {
+  border: 1px solid var(--boost-border);
+  padding: 6px 10px;
+}
+#detail .activity-content blockquote {
+  border-left: 4px solid var(--boost-blue);
+  margin: 0.75rem 0;
+  padding: 0.35rem 0.9rem;
+  background: var(--boost-lightblue);
+  color: var(--boost-text);
+}
+#detail .activity-content pre {
+  background: #f8f9fa;
+  border: 1px solid var(--boost-border);
+  border-radius: 6px;
+  padding: 0.6rem 0.9rem;
+  overflow: auto;
+  font-size: 0.78rem;
+}
+/* Moodle-like quiz question box */
+.quiz-card {
+  background: #fff;
+  border: 1px solid var(--boost-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+.quiz-card .q-answers.moodle-inputs {
+  list-style: none;
+  padding-left: 0;
+}
+.quiz-card .q-answers.moodle-inputs li {
+  border: 1px solid var(--boost-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0.4rem 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.quiz-card .q-answers.moodle-inputs label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1;
+}
+.quiz-card .q-answers.moodle-inputs input {
+  accent-color: var(--boost-blue);
+}
+.quiz-card.reveal .q-correct {
+  border-color: #6cc50a;
+  background: rgba(108, 197, 10, 0.08);
+}
+.quiz-card.reveal .q-penalty {
+  border-color: #e66a5b;
+  background: rgba(230, 106, 91, 0.07);
+}

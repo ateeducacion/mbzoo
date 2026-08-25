@@ -50,6 +50,8 @@ const STRINGS = {
     'quiz.partial': 'partial',
     'quiz.wrong': 'incorrect',
     'quiz.answers': 'Answers',
+    'quiz.random':
+      'Random question — drawn from a category at attempt time; not included in the backup',
     prev: 'Previous',
     next: 'Next',
     availableFrom: 'Available from',
@@ -111,6 +113,8 @@ const STRINGS = {
     'quiz.partial': 'parcial',
     'quiz.wrong': 'incorrecta',
     'quiz.answers': 'Respuestas',
+    'quiz.random':
+      'Pregunta al azar: se sortea de una categoría en el intento; no está en la copia',
     prev: 'Anterior',
     next: 'Siguiente',
     availableFrom: 'Disponible desde',
