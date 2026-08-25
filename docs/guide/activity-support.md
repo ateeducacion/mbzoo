@@ -10,7 +10,7 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | URL | ✅ | ✅ external link | never fetched automatically |
 | Resource / File | ✅ | ✅ inline preview | PDF via pdf.js canvas, images, text, sandboxed HTML (ADR-0014) |
 | Folder | ✅ | ✅ file cards | |
-| HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014). A multi-page site (e.g. an eXeLearning export) is paged from MBZoo's own list, not by following links inside the frame (ADR-0020) |
+| HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014). Links inside a multi-page site (e.g. an eXeLearning export) navigate through a validated request to MBZoo; the page row is a table of contents (ADR-0022) |
 | Book | ✅ | ✅ chapters with TOC | |
 | Forum | ✅ | ✅ typed summary | forum type and settings; discussions only exist if the backup included user data |
 | Glossary | ✅ | ✅ entries rendered | entries are user-generated, so a backup taken without user data has none — the viewer says so |
@@ -26,9 +26,10 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Feedback (questionnaire) | ✅ | ✅ items rendered | labels, questions and their options in author order; responses only exist with user data |
 | Quiz | ✅ metadata + question bank | ✅ read-only question navigation | multichoice/true-false/short answer/essay/match; random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
 | Question bank · External tool · BigBlueButton | ✅ | ✅ typed summary | configuration records; MBZoo never launches an external tool |
-| SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
+| SCORM | ✅ metadata + course structure | 🧪 experimental playback | SCOs run in the opaque-origin sandbox with a scorm-again runtime in the same document; nothing is tracked or saved (ADR-0023) |
 | H5P (mod_h5pactivity / .h5p files) | ✅ metadata + package | ⚠️ experimental playback | sandboxed player, self-contained packages; see ADR-0018 — unsupported content types fall back to download |
-| eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |
+| EPUB | ✅ | ✅ chapter by chapter | spine read from the OPF; assets inlined from the package, rendered in the sandbox. No pagination or bookmarks (ADR-0024) |
+| eXeLearning .elp/.elpx | ✅ classified by contents | ✅ exported site | a .elpx carries the project and its render; the render is shown. A legacy .elp with only content.data says why it cannot be decoded (ADR-0025) |
 | Unknown third-party plugins | ✅ | ✅ metadata fallback | never break the course view |
 
 Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).

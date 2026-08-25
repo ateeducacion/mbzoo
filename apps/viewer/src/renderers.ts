@@ -87,6 +87,12 @@ export class Renderer {
   private readonly urls: string[] = []
   /** Listeners registered by a render, torn down on the next one. */
   private readonly cleanups: Array<() => void> = []
+  /**
+   * Handles minted for files a course embedded in its HTML, and the object
+   * URL each stands for. The handle travels through the sanitizer inside a
+   * `data-` attribute; the URL never does (ADR-0012).
+   */
+  private readonly embeds = new Map<string, string>()
   /** Bytes behind each managed blob: URL, so exports can re-inline them. */
   private readonly blobSources = new Map<string, { data: Uint8Array; mime: string }>()
 
@@ -112,6 +118,7 @@ export class Renderer {
   dispose(): void {
     for (const fn of this.cleanups) fn()
     this.cleanups.length = 0
+    this.embeds.clear()
     for (const u of this.urls) URL.revokeObjectURL(u)
     this.urls.length = 0
     this.blobSources.clear()
@@ -179,9 +186,11 @@ export class Renderer {
    */
   private async hydrateEmbeds(container: HTMLElement): Promise<void> {
     for (const holder of [...container.querySelectorAll('[data-mbz-embed]')]) {
-      const url = holder.getAttribute('data-mbz-embed') ?? ''
-      const source = this.blobSources.get(url)
-      if (!source) {
+      // The attribute is backup-reachable, so it is only ever a lookup key.
+      // The URL comes from our own map, never from the document.
+      const url = this.embeds.get(holder.getAttribute('data-mbz-embed') ?? '')
+      const source = url === undefined ? undefined : this.blobSources.get(url)
+      if (url === undefined || !source) {
         holder.remove()
         continue
       }
@@ -392,7 +401,13 @@ export class Renderer {
       resolvedParts.push(this.blobUrl(data, rec.mimeType || guessMime(rec.fileName)))
     }
     resolvedParts.push(html.slice(cursor))
-    return this.safeHtml(placeholderizeEmbeds(resolvedParts.join('')))
+    return this.safeHtml(
+      placeholderizeEmbeds(resolvedParts.join(''), (url) => {
+        const handle = crypto.randomUUID()
+        this.embeds.set(handle, url)
+        return handle
+      }),
+    )
   }
 
   /** Sanitization plus link decoding — the single path for backup HTML. */

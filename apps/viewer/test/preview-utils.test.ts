@@ -217,41 +217,59 @@ describe('ALLOWED_URI_REGEXP', () => {
 
 describe('placeholderizeEmbeds', () => {
   const BLOB = 'blob:http://localhost/9f2c-1'
+  const register = (): ((url: string) => string) => {
+    let n = 0
+    return () => `handle-${++n}`
+  }
 
   test('promotes an embedded PDF the sanitizer would otherwise delete', () => {
-    expect(placeholderizeEmbeds(`<object data="${BLOB}" type="application/pdf">alt</object>`)).toBe(
-      `<div data-mbz-embed="${BLOB}"></div>`,
+    expect(
+      placeholderizeEmbeds(
+        `<object data="${BLOB}" type="application/pdf">alt</object>`,
+        register(),
+      ),
+    ).toBe('<div data-mbz-embed="handle-1"></div>')
+    expect(placeholderizeEmbeds(`<embed src="${BLOB}" type="application/pdf">`, register())).toBe(
+      '<div data-mbz-embed="handle-1"></div>',
     )
-    expect(placeholderizeEmbeds(`<embed src="${BLOB}" type="application/pdf">`)).toBe(
-      `<div data-mbz-embed="${BLOB}"></div>`,
+    expect(placeholderizeEmbeds(`<iframe src="${BLOB}"></iframe>`, register())).toBe(
+      '<div data-mbz-embed="handle-1"></div>',
     )
-    expect(placeholderizeEmbeds(`<iframe src="${BLOB}"></iframe>`)).toBe(
-      `<div data-mbz-embed="${BLOB}"></div>`,
-    )
+  })
+
+  test('never writes the URL into the document', () => {
+    // DOMPurify keeps data-* attributes, so a backup can author its own
+    // data-mbz-embed. If the attribute held a URL, hydration would be
+    // reading an attacker-chosen one out of the DOM.
+    const out = placeholderizeEmbeds(`<object data="${BLOB}"></object>`, register())
+    expect(out).not.toContain(BLOB)
+    expect(out).not.toContain('blob:')
   })
 
   test('leaves anything that is not a resolved backup file alone', () => {
     // Untouched here means still dropped by the sanitizer, which is the
     // point: this must not become a way to load remote content (ADR-0009).
     const remote = '<iframe src="https://evil.example/x"></iframe>'
-    expect(placeholderizeEmbeds(remote)).toBe(remote)
+    expect(placeholderizeEmbeds(remote, register())).toBe(remote)
     const relative = '<object data="notes.pdf"></object>'
-    expect(placeholderizeEmbeds(relative)).toBe(relative)
+    expect(placeholderizeEmbeds(relative, register())).toBe(relative)
     const none = '<object type="application/pdf"></object>'
-    expect(placeholderizeEmbeds(none)).toBe(none)
+    expect(placeholderizeEmbeds(none, register())).toBe(none)
+    const script = '<object data="javascript:alert(1)"></object>'
+    expect(placeholderizeEmbeds(script, register())).toBe(script)
   })
 
   test('a hostile target cannot break out of the attribute it is written into', () => {
     const evil = '<object data="blob:x&quot; onload=&quot;alert(1)"></object>'
-    expect(placeholderizeEmbeds(evil)).toBe(evil)
+    expect(placeholderizeEmbeds(evil, register())).toBe(evil)
     const spaced = '<object data="blob:http://x/a b"></object>'
-    expect(placeholderizeEmbeds(spaced)).toBe(spaced)
+    expect(placeholderizeEmbeds(spaced, register())).toBe(spaced)
   })
 
   test('keeps surrounding content and handles several embeds', () => {
     const html = `<p>before</p><object data="${BLOB}"></object><p>after</p>`
-    expect(placeholderizeEmbeds(html)).toBe(
-      `<p>before</p><div data-mbz-embed="${BLOB}"></div><p>after</p>`,
+    expect(placeholderizeEmbeds(html, register())).toBe(
+      '<p>before</p><div data-mbz-embed="handle-1"></div><p>after</p>',
     )
   })
 })

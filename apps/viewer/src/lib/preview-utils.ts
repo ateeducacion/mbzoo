@@ -218,17 +218,22 @@ export function resolveRelative(dir: string, ref: string): string {
  * from `@@PLUGINFILE@@`. An embed pointing anywhere else keeps being dropped,
  * so this cannot become a way to load remote content (ADR-0009).
  */
-export function placeholderizeEmbeds(html: string): string {
+export function placeholderizeEmbeds(html: string, register: (url: string) => string): string {
   return html.replace(
     /<(object|embed|iframe)\b([^>]*)>(?:[\s\S]*?<\/\1\s*>)?/gi,
     (whole, tag: string, attrs: string) => {
       const attr = tag.toLowerCase() === 'object' ? 'data' : 'src'
       const found = new RegExp(`\\b${attr}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(attrs)
       const url = (found?.[2] ?? found?.[3] ?? '').trim()
-      // Nothing but our own minted blob URLs, and nothing that could close
-      // the attribute we are about to write it into.
+      // Nothing but our own minted blob URLs.
       if (!/^blob:[^"'\s<>]+$/.test(url)) return whole
-      return `<div data-mbz-embed="${url}"></div>`
+      // The placeholder carries an opaque handle, never the URL itself.
+      // DOMPurify keeps `data-*` attributes, so a hostile backup can author
+      // its own `data-mbz-embed` and have it survive sanitization; if that
+      // attribute held a URL, hydration would be reading an attacker-chosen
+      // one straight out of the DOM. A handle it cannot guess resolves to
+      // nothing, so the worst it can do is have its placeholder removed.
+      return `<div data-mbz-embed="${register(url)}"></div>`
     },
   )
 }

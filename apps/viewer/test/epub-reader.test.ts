@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { strToU8, zipSync } from 'fflate'
-import { composeChapter, joinEpubPath, readEpub, unzipEpub } from '../src/lib/epub-reader.ts'
+import {
+  composeChapter,
+  joinEpubPath,
+  readEpub,
+  unzipEpub,
+  xmlText,
+} from '../src/lib/epub-reader.ts'
 
 function buildEpub(overrides: Record<string, string> = {}): Uint8Array {
   const files: Record<string, Uint8Array> = {
@@ -112,5 +118,18 @@ describe('composeChapter', () => {
   test('refuses a chapter that is not in the package', () => {
     const book = readEpub(unzipEpub(buildEpub()))
     expect(() => composeChapter(book, 'OEBPS/nope.xhtml')).toThrow()
+  })
+})
+
+describe('xmlText', () => {
+  test('decodes the predefined entities and leaves markup as text', () => {
+    expect(xmlText('  Tom &amp; Jerry  ')).toBe('Tom & Jerry')
+    expect(xmlText('&lt;b&gt;bold&lt;/b&gt;')).toBe('<b>bold</b>')
+  })
+
+  test('does not try to strip tags, because a regex cannot do it safely', () => {
+    // One pass of /<[^>]*>/g over this leaves "<script" behind. Nothing here
+    // pretends to sanitize: every caller renders through textContent.
+    expect(xmlText('<scr<script>ipt>')).toBe('<scr<script>ipt>')
   })
 })

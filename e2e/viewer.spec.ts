@@ -49,6 +49,24 @@ function mutatedFixture(
  * from the HTML source view. Moodle stores page content with noclean, so the
  * markup survives into the backup verbatim.
  */
+/**
+ * A Page that authors its own `data-mbz-embed` attribute. DOMPurify keeps
+ * `data-*` attributes, so this survives sanitization — the placeholder MBZoo
+ * mints must therefore never be something a backup can forge.
+ */
+function forgedEmbedFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="forge-text"&gt;Body.&lt;/p&gt;' +
+          '&lt;div id="forged" data-mbz-embed="javascript:window.__mbzooXss=true"&gt;&lt;/div&gt;' +
+          '&lt;div id="forged2" data-mbz-embed="blob:http://127.0.0.1/anything"&gt;&lt;/div&gt;</content>',
+      ),
+    )
+  }, 'forged-embed.mbz')
+}
+
 function pagePdfFixture(): { name: string; mimeType: string; buffer: Buffer } {
   const pdf = Buffer.from(
     'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0MSA+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDIwIDQwIFRkIChNQlpPTyBFTUJFRCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQxIDAwMDAwIG4gCjAwMDAwMDAzMzIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MDIKJSVFT0YK',
@@ -879,6 +897,22 @@ test('an eXeLearning package shows its exported site (ADR-0025)', async ({ page 
   await expect(frame.locator('#exe-title')).toHaveCSS('color', 'rgb(128, 0, 128)')
 
   expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+})
+
+test('a backup cannot forge an embed placeholder into a link', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', forgedEmbedFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await expect(page.locator('#forge-text')).toBeVisible()
+  // Both forged placeholders name something MBZoo never minted, so they
+  // resolve to nothing and are removed rather than becoming a download link.
+  await expect(page.locator('#forged')).toHaveCount(0)
+  await expect(page.locator('#forged2')).toHaveCount(0)
+  await expect(page.locator('.activity-content a[href^="javascript:"]')).toHaveCount(0)
+  expect(await page.evaluate(() => (window as unknown as Record<string, unknown>).__mbzooXss)).toBe(
+    undefined,
+  )
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

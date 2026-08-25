@@ -97,11 +97,8 @@ export function readEpub(entries: EpubEntries): EpubBook {
   const opfXml = new TextDecoder().decode(opf)
   const opfDir = opfPath.includes('/') ? opfPath.replace(/\/[^/]*$/, '') : ''
 
-  const title =
-    /<dc:title\b[^>]*>([\s\S]*?)<\/dc:title>/i
-      .exec(opfXml)?.[1]
-      ?.replace(/<[^>]*>/g, '')
-      .trim() ?? ''
+  const titleRaw = /<dc:title\b[^>]*>([\s\S]*?)<\/dc:title>/i.exec(opfXml)?.[1] ?? ''
+  const title = xmlText(titleRaw)
 
   // id -> {path, mediaType}
   const manifest = new Map<string, { path: string; mediaType: string }>()
@@ -149,6 +146,24 @@ function withTitles(chapters: EpubChapter[], entries: EpubEntries): EpubChapter[
     const name = chapter.path.split('/').pop() ?? chapter.path
     return { path: chapter.path, title: found !== '' ? found : `${index + 1}. ${name}` }
   })
+}
+
+/**
+ * Text of an XML element, with the five predefined entities decoded.
+ *
+ * Deliberately does NOT strip tags: a regex cannot do that safely — one pass
+ * over `<scr<script>ipt` leaves `<script` behind — and it does not need to.
+ * Every value read here is rendered through `textContent`, which escapes
+ * whatever it is given, so markup inside a title shows as the text it is.
+ */
+export function xmlText(raw: string): string {
+  return raw
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim()
 }
 
 /** Cap on a single inlined asset; base64 inflates a payload by about a third. */

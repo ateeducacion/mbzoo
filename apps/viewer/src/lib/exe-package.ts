@@ -10,7 +10,7 @@
  * code: eXeLearning and the Moodle plugins are GPL/AGPL and MBZoo is MIT, so
  * nothing is ported from them (REPO-005).
  */
-import type { EpubBook, EpubChapter, EpubEntries } from './epub-reader.ts'
+import { type EpubBook, type EpubChapter, type EpubEntries, xmlText } from './epub-reader.ts'
 
 export type ExeKind =
   /** eXeLearning 3.x/4.x package: `content.xml`, usually with a rendered site. */
@@ -88,7 +88,9 @@ function readTitle(entries: EpubEntries): string {
     const xml = new TextDecoder().decode(bytes.slice(0, 65536))
     const title =
       /<title>([\s\S]*?)<\/title>/i.exec(xml)?.[1] ?? /\bname\s*=\s*"([^"]+)"/i.exec(xml)?.[1] ?? ''
-    const clean = title.replace(/<[^>]*>/g, '').trim()
+    // Decoded, never tag-stripped: the value is only ever rendered through
+    // textContent, and a regex cannot strip tags safely.
+    const clean = xmlText(title)
     if (clean !== '') return clean
   }
   return ''
