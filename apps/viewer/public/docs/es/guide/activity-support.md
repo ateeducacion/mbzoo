@@ -14,7 +14,7 @@ vista del curso.
 | Recurso / Archivo      | ✅                     | ✅ vista integrada          | PDF con canvas pdf.js, imágenes, texto, HTML en sandbox (ADR-0014)                                                      |
 | Carpeta (Folder)       | ✅                     | ✅ tarjetas de archivo      |                                                                                                                         |
 | Página web con CSS+JS  | ✅                     | ✅ iframe en sandbox        | origen opaco + CSP; el JS queda aislado de la app (ADR-0014)                                                            |
-| Libro (Book)           | ✅ metadatos           | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0015)                                                                                     |
+| Libro (Book)           | ✅ metadatos           | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0013)                                                                                     |
 | Foro                   | ✅ metadatos           | 🔜 planeado (solo lectura) | los debates solo existen si la copia incluyó usuarios                                                                   |
 | Glosario               | ✅                     | ✅ entradas renderizadas    | concepto + definición                                                                                                   |
 | Tarea (Assignment)     | ✅                     | ✅ resumen                  | fechas de entrega/cierre y tipos de entrega                                                                             |

@@ -33,6 +33,8 @@ added:
     note: Content viewing milestone — ADR-0012 (DOMPurify sanitization), ADR-0013 (activity renderers), TECH-009
   - date: 2026-08-25
     note: Static previews — ADR-0014 (pdf.js canvas + opaque-origin HTML sandbox), TECH-010
+  - date: 2026-08-25
+    note: Docs site — ADR-0015 (Rspress 2 in apps/docs, unified static deploy; VitePress fallback). TECH-012/TECH-013 registered. ADR template splits decision body from investigation addendum.
 
 risks:
   RISK-001:

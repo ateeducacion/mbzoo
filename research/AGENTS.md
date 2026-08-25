@@ -9,8 +9,12 @@ Scope: everything under `research/`. For repo-wide rules see the root `AGENTS.md
    TECH-NNN) or carry `[PENDING: verification required]`.
 4. Experiments go through `experiments/results/EXP-NNN-<slug>.md`. No command +
    environment + measurement ⇒ it is not an experiment.
-5. ADRs follow `templates/adr-template.md`. An ADR is for durable decisions;
-   trivial implementation details do not get ADRs.
+5. ADRs follow `templates/adr-template.md`. The decision body (Context,
+   Problem, Options, Decision, Consequences) stays readable on its own;
+   matrices, adversarial review and the evidence trail live in the
+   Addendum. An ADR is for durable decisions; trivial implementation
+   details do not get ADRs. Complete `templates/adr-checklist.md` before
+   marking Accepted.
 6. Never edit `indexes/*.yaml` by hand. Run `bun run research:indexes` after
    adding or changing records, then `bun run research:validate`.
 7. IDs are allocated by scanning existing files (highest number + 1) and are

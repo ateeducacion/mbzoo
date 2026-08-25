@@ -7,7 +7,8 @@ Every durable claim in MBZoo traces to a registered record:
 - `REPO-NNN` / `STD-NNN` / `TECH-NNN` — inspected sources
 - `AN-NNN` — analyses (facts vs interpretation)
 - `EXP-NNN` — reproducible experiments (commands, environment, measurements)
-- `ADR-NNNN` — architecture decisions (supersede, never rewrite)
+- `ADR-NNNN` — architecture decisions (readable decision body; investigation
+  in the Addendum; supersede, never rewrite)
 - `TASK-NNN` / `Q-NNN` — tracked work and open questions
 
 The system is machine-validated: `bun run research:validate` checks IDs,

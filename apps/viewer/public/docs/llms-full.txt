@@ -137,7 +137,7 @@ vista del curso.
 | Recurso / Archivo      | ✅                     | ✅ vista integrada          | PDF con canvas pdf.js, imágenes, texto, HTML en sandbox (ADR-0014)                                                      |
 | Carpeta (Folder)       | ✅                     | ✅ tarjetas de archivo      |                                                                                                                         |
 | Página web con CSS+JS  | ✅                     | ✅ iframe en sandbox        | origen opaco + CSP; el JS queda aislado de la app (ADR-0014)                                                            |
-| Libro (Book)           | ✅ metadatos           | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0015)                                                                                     |
+| Libro (Book)           | ✅ metadatos           | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0013)                                                                                     |
 | Foro                   | ✅ metadatos           | 🔜 planeado (solo lectura) | los debates solo existen si la copia incluyó usuarios                                                                   |
 | Glosario               | ✅                     | ✅ entradas renderizadas    | concepto + definición                                                                                                   |
 | Tarea (Assignment)     | ✅                     | ✅ resumen                  | fechas de entrega/cierre y tipos de entrega                                                                             |
@@ -271,7 +271,8 @@ Cada afirmación durable en MBZoo traza a un registro registrado:
 - `REPO-NNN` / `STD-NNN` / `TECH-NNN` — fuentes inspeccionadas
 - `AN-NNN` — análisis (hechos vs interpretación)
 - `EXP-NNN` — experimentos reproducibles (comandos, entorno, medidas)
-- `ADR-NNNN` — decisiones de arquitectura (se sustituyen, nunca se reescriben)
+- `ADR-NNNN` — decisiones de arquitectura (cuerpo de decisión legible;
+  investigación en la Adenda; se sustituyen, nunca se reescriben)
 - `TASK-NNN` / `Q-NNN` — trabajo seguido y preguntas abiertas
 
 El sistema se valida automáticamente: `bun run research:validate` comprueba
@@ -388,7 +389,8 @@ Every durable claim in MBZoo traces to a registered record:
 - `REPO-NNN` / `STD-NNN` / `TECH-NNN` — inspected sources
 - `AN-NNN` — analyses (facts vs interpretation)
 - `EXP-NNN` — reproducible experiments (commands, environment, measurements)
-- `ADR-NNNN` — architecture decisions (supersede, never rewrite)
+- `ADR-NNNN` — architecture decisions (readable decision body; investigation
+  in the Addendum; supersede, never rewrite)
 - `TASK-NNN` / `Q-NNN` — tracked work and open questions
 
 The system is machine-validated: `bun run research:validate` checks IDs,

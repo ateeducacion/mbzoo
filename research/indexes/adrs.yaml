@@ -56,3 +56,7 @@ adrs:
     title: Static content previews — pdf.js canvas and opaque-origin HTML sandbox
     status: Accepted
     date: 2026-08-25
+  ADR-0015:
+    title: Documentation site — Rspress 2 in an isolated workspace, unified static deploy
+    status: Accepted
+    date: 2026-08-25

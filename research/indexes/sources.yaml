@@ -120,3 +120,15 @@ sources:
     url: https://rspress.rs
     accessed: 2026-08-25
     license: MIT
+  TECH-012:
+    title: VitePress
+    kind: technology
+    url: https://vitepress.dev
+    accessed: 2026-08-25
+    license: MIT
+  TECH-013:
+    title: Starlight (Astro documentation framework)
+    kind: technology
+    url: https://starlight.astro.build
+    accessed: 2026-08-25
+    license: MIT
