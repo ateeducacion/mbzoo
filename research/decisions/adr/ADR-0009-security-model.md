@@ -4,6 +4,8 @@ title: Untrusted-content security model (bootstrap scope)
 status: Accepted
 date: 2026-08-24
 sources: [STD-001, REPO-005]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Threats in scope from day one
 Path traversal / Zip Slip (tar name sanitization tested), XML entity expansion

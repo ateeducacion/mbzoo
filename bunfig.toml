@@ -1,0 +1,8 @@
+# Bun runtime/test configuration.
+# Coverage thresholds gate `bun run test:coverage` (ADR-0008): the parser
+# core must stay ≥90% covered; UI code is covered by Playwright instead.
+[test]
+coverageThreshold = { line = 0.9, function = 0.85, statement = 0.9 }
+
+[install]
+fallback = false

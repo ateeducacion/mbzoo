@@ -4,6 +4,8 @@ title: Viewer UI starts vanilla TypeScript + DOM
 status: Accepted
 date: 2026-08-24
 sources: []
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 Prompt §17: no framework without evidence. Current UI = dropzone, status line,

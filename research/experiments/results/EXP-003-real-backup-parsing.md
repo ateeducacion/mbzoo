@@ -4,6 +4,8 @@ title: Core parser against real-world and synthetic backups
 date: 2026-08-24
 status: completed
 sources: [REPO-004]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Objective
 Prove openBackup() handles both container formats and real Moodle XML shapes.

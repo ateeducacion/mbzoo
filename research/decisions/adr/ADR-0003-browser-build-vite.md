@@ -6,6 +6,8 @@ date: 2026-08-24
 sources: [TECH-003, TECH-002]
 experiments: [EXP-001]
 supersedes: []
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 Option A (all-Bun) vs Option B (Bun tooling + Vite browser) from prompt §16.

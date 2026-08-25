@@ -4,6 +4,8 @@ title: "Bun bundler vs Vite for the viewer build"
 date: 2026-08-24
 status: completed
 sources: [TECH-002, TECH-003]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Objective
 Decide the browser build tool (prompt §16, Q-009).

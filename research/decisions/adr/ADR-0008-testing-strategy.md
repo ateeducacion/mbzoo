@@ -4,6 +4,8 @@ title: Testing strategy — bun:test unit, Playwright E2E, golden fixtures
 status: Accepted
 date: 2026-08-24
 sources: [TECH-008, TECH-002, REPO-003]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Decision
 Layers:

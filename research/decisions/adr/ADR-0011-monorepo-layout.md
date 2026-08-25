@@ -4,6 +4,8 @@ title: Monorepo layout — three packages, boundaries proven before splitting
 status: Accepted
 date: 2026-08-24
 sources: [REPO-003]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Decision
 ```

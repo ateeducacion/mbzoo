@@ -36,7 +36,7 @@ interface SpecFile {
 function fileRecord(f: SpecFile): string {
   return `  <file>
     <contenthash>${sha1(f.content)}</contenthash>
-    <contextid>101</contextid>
+    <contextid>${f.contextId}</contextid>
     <component>${f.component}</component>
     <filearea>${f.filearea}</filearea>
     <itemid>0</itemid>
@@ -121,6 +121,20 @@ function moodleBackupXml(): string {
           <title>Unknown third-party module</title>
           <directory>activities/supermodule_3003</directory>
         </activity>
+        <activity>
+          <moduleid>3004</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>page</modulename>
+          <title>About this demo</title>
+          <directory>activities/page_3004</directory>
+        </activity>
+        <activity>
+          <moduleid>3005</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>resource</modulename>
+          <title>Synthetic guide (resource)</title>
+          <directory>activities/resource_3005</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -176,6 +190,16 @@ async function main(): Promise<void> {
       filename: 'readme.txt',
       content: 'Demo text resource inside the MBZoo synthetic fixture.\n',
       component: 'mod_page',
+      contextId: '102',
+      filearea: 'content',
+      mimetype: 'text/plain',
+    },
+    {
+      filepath: '',
+      filename: 'guide.txt',
+      content: 'MBZoo synthetic guide. If you can read this, text preview works.',
+      component: 'mod_resource',
+      contextId: '105',
       filearea: 'content',
       mimetype: 'text/plain',
     },
@@ -185,6 +209,7 @@ async function main(): Promise<void> {
       content:
         '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#367"/></svg>',
       component: 'course',
+      contextId: '101',
       filearea: 'overviewfiles',
       mimetype: 'image/svg+xml',
     },
@@ -203,9 +228,9 @@ ${specFiles.map(fileRecord).join('\n')}
   add('moodle_backup.xml', moodleBackupXml())
   add('files.xml', filesXml)
   add('course/course.xml', courseXml())
-  add('sections/section_2001/section.xml', sectionXml(2001, 1, 'Introduction', '3001,3002'))
+  add('sections/section_2001/section.xml', sectionXml(2001, 1, 'Introduction', '3001,3002,3004'))
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
-  add('sections/section_2002/section.xml', sectionXml(2002, 2, 'Resources', '3003'))
+  add('sections/section_2002/section.xml', sectionXml(2002, 2, 'Resources', '3003,3005'))
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
   add('activities/page_3001/module.xml', activityXml('page', 'Welcome page'))
@@ -214,6 +239,30 @@ ${specFiles.map(fileRecord).join('\n')}
   add(
     'activities/supermodule_3003/supermodule.xml',
     activityXml('supermodule', 'Unknown third-party module'),
+  )
+  const pageContent =
+    '&lt;p&gt;Hello from the MBZoo synthetic page. &lt;strong&gt;Sanitized HTML&lt;/strong&gt; works.&lt;/p&gt;'
+  add(
+    'activities/page_3004/page.xml',
+    `${XML_HEADER}<activity id="4" moduleid="4" modulename="page" contextid="104">
+  <page id="4">
+    <name>About this demo</name>
+    <intro></intro>
+    <content>${pageContent}</content>
+    <contentformat>1</contentformat>
+  </page>
+</activity>
+`,
+  )
+  add(
+    'activities/resource_3005/resource.xml',
+    `${XML_HEADER}<activity id="5" moduleid="5" modulename="resource" contextid="105">
+  <resource id="5">
+    <name>Synthetic guide (resource)</name>
+    <intro></intro>
+  </resource>
+</activity>
+`,
   )
   for (const f of specFiles) {
     // Moodle's in-archive content-addressed pool: files/<2 chars>/<sha1>.

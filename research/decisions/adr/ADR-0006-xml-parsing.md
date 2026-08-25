@@ -4,6 +4,8 @@ title: Event-based XML parsing behind an adapter (saxes initially)
 status: Accepted
 date: 2026-08-24
 sources: [TECH-006, REPO-005]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 moodle_backup.xml and files.xml scale with course size; DOMParser is

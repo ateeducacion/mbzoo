@@ -1,0 +1,22 @@
+# Codecov configuration. Public repository: uploads work without a token.
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: 90%
+    patch:
+      default:
+        target: 90%
+
+comment:
+  layout: reach, diff, flags, files
+  behavior: default
+
+ignore:
+  - "apps/viewer/src"     # covered by Playwright E2E, not bun coverage
+  - "e2e"
+  - "fixtures"
+  - "research"

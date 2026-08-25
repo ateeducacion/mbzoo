@@ -3,6 +3,8 @@ id: AN-002
 title: What an .mbz actually contains (facts + interpretation)
 date: 2026-08-24
 sources: [REPO-005, REPO-004]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## FACTS
 1. Container: ZIP or TAR.GZ. tgz default since Moodle 2.9; ZIP lacks ZIP64 in

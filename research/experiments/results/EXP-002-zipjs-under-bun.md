@@ -4,6 +4,8 @@ title: "@zip.js/zip.js compatibility with Bun 1.4.0"
 date: 2026-08-24
 status: completed
 sources: [TECH-004, TECH-002]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Hypothesis
 zip.js works under Bun so unit tests can exercise the same archive reader that

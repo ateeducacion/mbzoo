@@ -5,6 +5,8 @@ status: Accepted
 date: 2026-08-24
 sources: [REPO-001, REPO-002]
 related: [AN-001]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Decision
 Adopt the reference-repo methodology adapted to English/TS:

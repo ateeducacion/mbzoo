@@ -12,7 +12,7 @@ export default defineConfig({
   webServer: {
     // Invoke Vite directly: `bun run --filter` does not forward CLI flags
     // reliably in CI, which timed out the server startup probe.
-    command: 'cd apps/viewer && bunx vite preview --port 4173 --strictPort --host 127.0.0.1',
+    command: 'bun run --cwd apps/viewer preview:ci',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 20_000,

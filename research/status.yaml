@@ -2,6 +2,7 @@ metadata:
   project: mbzoo
   phase: bootstrap
   started: 2026-08-24
+  ai_assistance: "bootstrap implemented with opencode (model: ox-alpha); initial prompt authored with GPT-5.6"
   rule: append-only
 
 decisions:
@@ -23,6 +24,10 @@ tasks:
   TASK-003: { title: Large-file strategy spike (streaming TAR.GZ + lazy ZIP), status: open, priority: medium }
   TASK-004: { title: Activity renderers (Page, Label, URL) behind capability model, status: open, priority: medium }
   TASK-005: { title: Accessibility audit pass (axe + keyboard), status: open, priority: medium }
+
+added:
+  - date: 2026-08-25
+    note: Content viewing milestone — ADR-0012 (DOMPurify sanitization), ADR-0013 (activity renderers), TECH-009
 
 risks:
   RISK-001:

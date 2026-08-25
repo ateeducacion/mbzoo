@@ -43,7 +43,16 @@ export async function parseMoodleBackupXml(
     if (ev.type === 'open') {
       path.push(ev.name)
       const p = path.join('/')
-      if (p.endsWith('/contents/sections/section')) {
+      if (p.endsWith('/contents/course')) {
+        // Created on open so child fields (<title>, …) can fill it on close.
+        course ??= {
+          fullname: '',
+          shortname: '',
+          idNumber: '',
+          summary: '',
+          source: { xmlPath: p },
+        }
+      } else if (p.endsWith('/contents/sections/section')) {
         sections.push({
           id: Number.NaN,
           number: -1,
@@ -80,15 +89,6 @@ export async function parseMoodleBackupXml(
     }
 
     switch (true) {
-      case p === 'moodle_backup/information/contents/course':
-        course ??= {
-          fullname: '',
-          shortname: '',
-          idNumber: '',
-          summary: '',
-          source: { xmlPath: p },
-        }
-        break
       case /^moodle_backup\/information\/contents\/course\//.test(p):
         if (course) fillCourseField(course, leaf(p), value)
         break

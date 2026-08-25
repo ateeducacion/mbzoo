@@ -5,6 +5,8 @@ status: Accepted
 date: 2026-08-24
 sources: [TECH-004, TECH-005, STD-001, REPO-005]
 experiments: [EXP-002, EXP-003]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 .mbz is ZIP **or** TAR.GZ (REPO-005); assuming ZIP is wrong (verified: real

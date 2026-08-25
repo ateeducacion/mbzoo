@@ -5,6 +5,8 @@ status: Accepted
 date: 2026-08-24
 sources: [TECH-001]
 experiments: []
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 MBZoo must parse untrusted archives in the browser and share code with a CLI.

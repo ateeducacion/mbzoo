@@ -5,6 +5,8 @@ status: Accepted
 date: 2026-08-24
 sources: [TECH-002, REPO-003]
 experiments: [EXP-002]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 Prompt §15 asks to evaluate Bun's roles separately.

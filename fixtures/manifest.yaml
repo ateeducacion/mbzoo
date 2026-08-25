@@ -4,8 +4,8 @@
 # If a checksum changes unexpectedly, treat it as a parser/generator regression.
 fixtures:
   demo-course-zip.mbz:
-    sha256: ba998f3eefe89341646e88ee4ee95dd1ec9ff3d360770ddb5405011f6211385f
-    bytes: 4718
+    sha256: f4d86798cd9da7d869198fb14a73ce11376fcf8b8b07a431ce688577c236834c
+    bytes: 5744
     format: zip
     synthetic: true
     contains_user_data: false
@@ -13,8 +13,8 @@ fixtures:
     moodle_version_target: "3.8 schema shapes"
     includes:
       sections: 2
-      activities: [page, label, supermodule(unknown-plugin)]
-      files_indexed: 2
+      activities: [page, label, page(content), resource, supermodule(unknown-plugin)]
+      files_indexed: 3
     expected_parser_result:
       course_fullname: Demo Course for MBZoo
       course_shortname: DEMO-101

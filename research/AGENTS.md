@@ -15,5 +15,8 @@ Scope: everything under `research/`. For repo-wide rules see the root `AGENTS.md
    adding or changing records, then `bun run research:validate`.
 7. IDs are allocated by scanning existing files (highest number + 1) and are
    never reused, even if a file is deleted.
-8. When a decision changes, write a new ADR with `supersedes: [ADR-XXXX]` and
+8. Every ADR / analysis / experiment record must declare `ai_tool` and
+   `ai_model` in its frontmatter (use `none` / `human-only` when no AI was
+   involved). Attribution is part of the record's evidence.
+9. When a decision changes, write a new ADR with `supersedes: [ADR-XXXX]` and
    set the old one's `status: Superseded`.

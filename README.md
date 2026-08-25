@@ -1,5 +1,10 @@
 # MBZoo
 
+[![CI](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml/badge.svg)](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ateeducacion/mbzoo/graph/badge.svg)](https://codecov.io/gh/ateeducacion/mbzoo)
+[![Deploy viewer to GitHub Pages](https://github.com/ateeducacion/mbzoo/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ateeducacion/mbzoo/actions/workflows/deploy-pages.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 *See what's inside your MBZ.*
 
 MBZoo opens **Moodle course backups** (`.mbz` files) directly in your browser —

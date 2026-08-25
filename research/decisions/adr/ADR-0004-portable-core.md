@@ -4,6 +4,8 @@ title: Portable core with runtime adapters
 status: Accepted
 date: 2026-08-24
 sources: [TECH-001]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 ## Context
 Prompt §13 requires the MBZ parsing layer to avoid Node/DOM/Bun/Vite APIs.

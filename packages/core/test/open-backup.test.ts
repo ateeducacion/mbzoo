@@ -18,8 +18,8 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     const b = await openBackup(Bun.file(FIXTURE))
     expect(b.sections.map((s) => s.number)).toEqual([1, 2])
     expect(b.sections[0]?.name).toBe('Introduction')
-    expect(b.sections[0]?.activityIds).toEqual([3001, 3002])
-    expect(b.sections[1]?.activityIds).toEqual([3003])
+    expect(b.sections[0]?.activityIds).toEqual([3001, 3002, 3004])
+    expect(b.sections[1]?.activityIds).toEqual([3003, 3005])
   })
 
   test('exposes unknown third-party modules instead of dropping them', async () => {
@@ -30,10 +30,11 @@ describe('openBackup (synthetic ZIP fixture)', () => {
 
   test('indexes files.xml records', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
-    expect(b.files.size).toBe(2)
+    expect(b.files.size).toBe(3)
     const names = [...b.files.values()].map((f) => f.fileName)
     expect(names).toContain('readme.txt')
     expect(names).toContain('dot.svg')
+    expect(names).toContain('guide.txt')
   })
 })
 

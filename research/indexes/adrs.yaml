@@ -44,3 +44,11 @@ adrs:
     title: Monorepo layout — three packages, boundaries proven before splitting
     status: Accepted
     date: 2026-08-24
+  ADR-0012:
+    title: Backup-derived HTML is sanitized with DOMPurify before insertion
+    status: Accepted
+    date: 2026-08-25
+  ADR-0013:
+    title: Activity content model — generic XML capture plus per-module renderers
+    status: Accepted
+    date: 2026-08-25

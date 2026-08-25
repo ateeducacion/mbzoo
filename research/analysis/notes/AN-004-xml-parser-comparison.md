@@ -3,6 +3,8 @@ id: AN-004
 title: XML parser comparison
 date: 2026-08-24
 sources: [TECH-006]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 | Criterion | DOMParser | fast-xml-parser | saxes |
 |---|---|---|---|

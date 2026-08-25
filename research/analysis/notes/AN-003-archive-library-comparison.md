@@ -3,6 +3,8 @@ id: AN-003
 title: Archive library comparison
 date: 2026-08-24
 sources: [TECH-004, TECH-005, STD-001, EXP-002]
+ai_tool: opencode
+ai_model: ox-alpha
 ---
 | Criterion | @zip.js/zip.js 2.8.59 | fflate 0.8.3 | hand-rolled |
 |---|---|---|---|

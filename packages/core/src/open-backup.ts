@@ -18,6 +18,23 @@ import { parseFilesXml } from './moodle/files-xml.ts'
 const HEAD_BYTES = 8
 
 export async function openBackup(blob: Blob): Promise<ParsedBackup> {
+  const session = await openBackupSession(blob)
+  return await session.backup
+}
+
+export interface BackupSession {
+  readonly backup: Promise<ParsedBackup>
+  /** Reads a raw archive entry (e.g. files/<2hex>/<sha1>) after parsing. */
+  readEntry(name: string): Promise<Uint8Array>
+  close(): Promise<void>
+}
+
+/**
+ * Opens a backup and keeps the archive reader alive so callers can fetch
+ * entry payloads lazily (activity XML, binary content) — the viewer uses
+ * this for on-demand content rendering.
+ */
+export async function openBackupSession(blob: Blob): Promise<BackupSession> {
   const head = new Uint8Array(await blob.slice(0, HEAD_BYTES).arrayBuffer())
   const format = detectFormat(head)
 
@@ -33,10 +50,10 @@ export async function openBackup(blob: Blob): Promise<ParsedBackup> {
       throw new MbzParseError('Unrecognized backup container: expected ZIP or TAR.GZ (.mbz)')
   }
 
-  try {
-    return await parseBackupFrom(reader)
-  } finally {
-    await reader.close()
+  return {
+    backup: parseBackupFrom(reader),
+    readEntry: (name) => reader.readEntry(name),
+    close: () => reader.close(),
   }
 }
 

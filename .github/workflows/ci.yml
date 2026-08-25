@@ -24,6 +24,12 @@ jobs:
       - run: bun run format:check
       - run: bun run typecheck
       - run: bun test packages apps fixtures
+      # lcov for Codecov (public repo — no token required).
+      - run: bun run test:coverage
+      - uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
       - run: bun run build
       - run: bun run research:validate
 
