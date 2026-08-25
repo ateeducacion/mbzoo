@@ -483,7 +483,9 @@ export class Renderer {
       bar.appendChild(label)
 
       let current = entry
-      let lastNavigation = 0
+      // Negative infinity, not 0: performance.now() counts from page load, so
+      // a 0 baseline would silently refuse a click made in the first 250 ms.
+      let lastNavigation = Number.NEGATIVE_INFINITY
       const show = async (rec: BackupFileRecord, hash = ''): Promise<void> => {
         current = rec
         for (const b of bar.querySelectorAll('button')) {
