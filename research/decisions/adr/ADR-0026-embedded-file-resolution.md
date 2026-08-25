@@ -93,6 +93,13 @@ Standing rules:
 - Question files are pinned by component, filearea and question id but
   **not** by contextid: they hang off the question bank category's context,
   not the activity's, and a quiz can use a bank that lives elsewhere.
+- More generally: **contextid is the wrong instinct.** It is the obvious key
+  and it is not the identifying one. The context can be wider than the
+  activity (a shared question bank), or missing from a record altogether —
+  `renderWebsite` already guards the case where the record set widens because
+  the backup omitted it. What identifies a file is component + filearea + the
+  id of the row that owns it. contextid is a narrowing hint, and passing it
+  where it does not apply loses the file rather than finding it.
 - A field whose file area MBZoo cannot name is left unresolved rather than
   guessed at. `qtype_match` subquestions and rubric criteria are in that
   state today — rubric text carries no files at all (its backup plugin

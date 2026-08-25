@@ -20,7 +20,18 @@ function scormAgainDist(): string {
   // Neither `./dist/*` nor `./package.json` is an exported subpath, so the
   // package root is found by walking up from whatever `.` resolves to until
   // the classic bundle is in sight.
-  let dir = dirname(require.resolve('scorm-again'))
+  // An unguarded resolve throws MODULE_NOT_FOUND out of the Vite config,
+  // which reads as "the config is broken" rather than "run bun install" —
+  // and the error below never gets a chance to say the useful thing.
+  let entry: string
+  try {
+    entry = require.resolve('scorm-again')
+  } catch {
+    throw new Error(
+      'scorm-again is not installed — run `bun install` (it arrived with the SCORM preview).',
+    )
+  }
+  let dir = dirname(entry)
   for (let i = 0; i < 4; i++) {
     if (existsSync(join(dir, 'scorm12.min.js'))) return dir
     if (existsSync(join(dir, 'dist', 'scorm12.min.js'))) return join(dir, 'dist')
