@@ -87,6 +87,11 @@ export interface LessonJump {
 }
 
 export interface LessonAnswer {
+  /**
+   * Answer id — the itemid of its `mod_lesson/page_answers` and
+   * `page_responses` files (REPO-005).
+   */
+  readonly id: number
   /** Answer text on a question page; the button label on a content page. */
   readonly text: string
   /** Feedback shown for this answer. */
@@ -127,7 +132,9 @@ export async function parseLessonXml(xml: string): Promise<MoodleLesson> {
   const path: string[] = []
   let text = ''
   let page: MutablePage | undefined
-  let answer: { text: string; response: string; jumpto: number; grade: number } | undefined
+  let answer:
+    | { id: number; text: string; response: string; jumpto: number; grade: number }
+    | undefined
 
   const leafOf = (): string | undefined => path[path.length - 1]
   const parentOf = (): string | undefined => path[path.length - 2]
@@ -146,7 +153,13 @@ export async function parseLessonXml(xml: string): Promise<MoodleLesson> {
         }
       }
       if (page && ev.name === 'answer' && leafOf() === 'answers') {
-        answer = { text: '', response: '', jumpto: Number.NaN, grade: 0 }
+        answer = {
+          id: Number(ev.attributes.id ?? Number.NaN),
+          text: '',
+          response: '',
+          jumpto: Number.NaN,
+          grade: 0,
+        }
       }
       path.push(ev.name)
       return
@@ -163,6 +176,7 @@ export async function parseLessonXml(xml: string): Promise<MoodleLesson> {
     if (answer && page) {
       if (leaf === 'answer' && parent === 'answers') {
         page.answers.push({
+          id: answer.id,
           text: answer.text,
           response: answer.response,
           jump: jumpOf(answer.jumpto),

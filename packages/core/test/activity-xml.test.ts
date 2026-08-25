@@ -167,3 +167,51 @@ describe('legacyModule', () => {
     expect(legacyModule('supermodule')).toBeUndefined()
   })
 })
+
+// Moodle scopes several file areas per row: mod_lesson/page_contents by page
+// id, mod_glossary/entry by entry id, question/questiontext by question id
+// (REPO-005). Without itemid, two pages that each embed a pic.png are
+// indistinguishable and the first record found wins for both.
+describe('matchFileRecord itemid scoping', () => {
+  const files = new Map(
+    [
+      { itemId: '10', contentHash: 'aaa' },
+      { itemId: '11', contentHash: 'bbb' },
+    ].map((f, i) => [
+      String(i),
+      {
+        contentHash: f.contentHash,
+        filePath: '/',
+        fileName: 'pic.png',
+        mimeType: 'image/png',
+        fileSize: 1,
+        component: 'mod_lesson',
+        fileArea: 'page_contents',
+        itemId: f.itemId,
+        contextId: '120',
+      },
+    ]),
+  )
+
+  test('picks the record belonging to the row that asked', () => {
+    const ref = { fileName: 'pic.png', componentName: 'mod_lesson', fileArea: 'page_contents' }
+    expect(matchFileRecord(files, { ...ref, itemId: '11' })?.contentHash).toBe('bbb')
+    expect(matchFileRecord(files, { ...ref, itemId: '10' })?.contentHash).toBe('aaa')
+  })
+
+  // Guessing here would show one page's image on another page, which is worse
+  // than showing none: it looks correct and is not.
+  test('a pinned itemid that matches nothing returns nothing', () => {
+    const hit = matchFileRecord(files, {
+      fileName: 'pic.png',
+      componentName: 'mod_lesson',
+      fileArea: 'page_contents',
+      itemId: '999',
+    })
+    expect(hit).toBeUndefined()
+  })
+
+  test('without an itemid the old fallback still applies', () => {
+    expect(matchFileRecord(files, { fileName: 'pic.png' })?.contentHash).toBe('aaa')
+  })
+})

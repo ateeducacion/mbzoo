@@ -175,3 +175,17 @@ describe('jump targets that collide with page ids', () => {
     }
   })
 })
+
+// Answers carry the itemid of their page_answers / page_responses files.
+describe('record ids needed for file resolution', () => {
+  test('answers expose their id', async () => {
+    const lesson = await parseLessonXml(LESSON)
+    expect(lesson.pages[0]?.answers[0]?.id).toBe(90)
+    expect(lesson.pages[1]?.answers[1]?.id).toBe(93)
+  })
+
+  test('pages expose theirs', async () => {
+    const lesson = await parseLessonXml(LESSON)
+    expect(lesson.pages.map((p) => p.id)).toEqual([10, 11])
+  })
+})

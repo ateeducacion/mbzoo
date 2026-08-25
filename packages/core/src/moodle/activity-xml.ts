@@ -131,6 +131,14 @@ export function matchFileRecord(
     readonly contextId?: string | undefined
     readonly componentName?: string | undefined
     readonly fileArea?: string | undefined
+    /**
+     * Record the file hangs off, for the file areas Moodle scopes per row
+     * (`mod_lesson/page_contents` is keyed by page id, `mod_glossary/entry`
+     * by entry id, `question/questiontext` by question id — REPO-005).
+     * Without it, two lesson pages that each embed a `pic.png` are
+     * indistinguishable and the first one found wins for both.
+     */
+    readonly itemId?: string | undefined
   },
 ): import('../model/backup.ts').BackupFileRecord | undefined {
   let best: import('../model/backup.ts').BackupFileRecord | undefined
@@ -140,9 +148,12 @@ export function matchFileRecord(
     const scoped =
       (ref.contextId === undefined || rec.contextId === ref.contextId) &&
       (ref.componentName === undefined || rec.component === ref.componentName) &&
-      (ref.fileArea === undefined || rec.fileArea === ref.fileArea)
+      (ref.fileArea === undefined || rec.fileArea === ref.fileArea) &&
+      (ref.itemId === undefined || rec.itemId === ref.itemId)
     if (scoped) return rec
-    best ??= rec
+    // A same-named file elsewhere is a last resort, and only when the caller
+    // did not pin an itemid: with one, the wrong row is worse than nothing.
+    if (ref.itemId === undefined) best ??= rec
   }
   return best
 }

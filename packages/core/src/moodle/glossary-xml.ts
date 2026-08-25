@@ -8,6 +8,8 @@
 import { leafValue, parseXmlEvents } from './xml.ts'
 
 export interface GlossaryEntry {
+  /** Entry id — the itemid of its `mod_glossary/entry` files (REPO-005). */
+  readonly id: number
   readonly concept: string
   readonly definition: string
 }
@@ -16,14 +18,14 @@ export async function parseGlossaryXml(xml: string): Promise<GlossaryEntry[]> {
   const entries: GlossaryEntry[] = []
   const path: string[] = []
   let text = ''
-  let current: { concept: string; definition: string } | undefined
+  let current: { id: number; concept: string; definition: string } | undefined
   let conceptDone = false
   let definitionDone = false
 
   await parseXmlEvents(xml, (ev) => {
     if (ev.type === 'open') {
       if (ev.name === 'entry' && path[path.length - 1] === 'entries') {
-        current = { concept: '', definition: '' }
+        current = { id: Number(ev.attributes.id ?? Number.NaN), concept: '', definition: '' }
         conceptDone = false
         definitionDone = false
       }
