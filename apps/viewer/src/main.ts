@@ -18,6 +18,7 @@ function applyI18nDom(): void {
   }
 }
 
+import { renderDetail } from './detail-panel.ts'
 import { Renderer } from './renderers.ts'
 import './style.css'
 
@@ -212,29 +213,9 @@ async function openActivity(activityId: number, sectionName: string): Promise<vo
     .querySelector(`.activity-button[data-activity-id="${CSS.escape(String(activityId))}"]`)
     ?.classList.add('selected')
 
-  detail.replaceChildren()
   detail.hidden = false
-  const crumb = document.createElement('p')
-  crumb.className = 'detail-breadcrumb'
-  crumb.textContent = sectionName
-  const titleRow = document.createElement('div')
-  titleRow.className = 'detail-title-row'
-  const head = document.createElement('h3')
-  head.className = 'detail-title'
-  head.textContent = activity.title || `(unnamed ${activity.moduleName})`
-  const badge = document.createElement('span')
-  badge.className = `mod-badge ${badgeTone(activity.moduleName)}`.trim()
-  badge.textContent = activity.moduleName
-  titleRow.append(head, badge)
-  detail.append(crumb, titleRow)
-  const body = document.createElement('div')
-  body.className = 'detail-body'
-  detail.appendChild(body)
-  setStatus(`${t('loading.activity')} “${head.textContent}”…`)
   try {
-    await renderer.renderActivity(activity, body)
-    renderer.renderSettingsPanel(activity, body)
-    setStatus('')
+    await renderDetail(activity, sectionName, detail, { renderer, badgeTone, setStatus })
   } catch (e) {
     setStatus(e instanceof Error ? e.message : 'Could not render this item.', 'error')
   }

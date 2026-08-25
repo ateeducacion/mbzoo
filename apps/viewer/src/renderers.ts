@@ -49,31 +49,83 @@ export interface RenderContext {
   readonly readEntry: EntryReader
 }
 
+/** One activity's module XML, read and parsed once for all three tabs. */
+export interface ParsedActivity {
+  readonly fields: Map<string, string>
+  readonly contextId: string
+  /** Raw XML source, or '' when the entry is missing or unreadable. */
+  readonly xmlText: string
+  readonly xmlPath: string
+}
+
 export class Renderer {
   private readonly urls: string[] = []
+  /** Bytes behind each managed blob: URL, so exports can re-inline them. */
+  private readonly blobSources = new Map<string, { data: Uint8Array; mime: string }>()
 
   constructor(private readonly ctx: RenderContext) {}
 
   /** Creates a managed object URL that is revoked on next render/close. */
   blobUrl(data: Uint8Array, mime: string): string {
-    const url = URL.createObjectURL(
-      new Blob([data.buffer as ArrayBuffer], { type: mime || 'application/octet-stream' }),
-    )
+    const type = mime || 'application/octet-stream'
+    const url = URL.createObjectURL(new Blob([data.buffer as ArrayBuffer], { type }))
     this.urls.push(url)
+    this.blobSources.set(url, { data, mime: type })
     return url
   }
 
   dispose(): void {
     for (const u of this.urls) URL.revokeObjectURL(u)
     this.urls.length = 0
+    this.blobSources.clear()
   }
 
-  async renderActivity(activity: ActivityInfo, container: HTMLElement): Promise<void> {
+  /** Archive path of an activity's module XML, as shown by the Raw tab. */
+  activityXmlPath(activity: ActivityInfo): string {
+    return `${moduleNameDir(activity)}.xml`
+  }
+
+  /**
+   * Reads and parses an activity's module XML once. Preview, Info and Raw
+   * all need the same bytes, so the panel parses up front and hands the
+   * result to each tab instead of re-reading per tab.
+   */
+  async parseActivity(activity: ActivityInfo): Promise<ParsedActivity> {
+    const xmlPath = this.activityXmlPath(activity)
+    const xmlBytes = await this.tryRead(xmlPath)
+    const xmlText = xmlBytes ? new TextDecoder().decode(xmlBytes) : ''
+    const parsed = xmlText ? await parseActivityXml(xmlText) : undefined
+    return {
+      fields: parsed?.fields ?? new Map<string, string>(),
+      contextId: parsed?.contextId ?? '',
+      xmlText,
+      xmlPath,
+    }
+  }
+
+  /** File records belonging to this activity's Moodle context. */
+  activityFiles(parsed: ParsedActivity): BackupFileRecord[] {
+    if (parsed.contextId === '') return []
+    return sortRecords(
+      [...this.ctx.backup.files.values()].filter(
+        (f) => f.contextId === parsed.contextId && f.fileName !== '.' && f.fileSize > 0,
+      ),
+    )
+  }
+
+  /** Reads one file record's bytes, or undefined when unreadable. */
+  readFileRecord(rec: BackupFileRecord): Promise<Uint8Array | undefined> {
+    return this.tryRead(contentHashPath(rec.contentHash))
+  }
+
+  async renderActivity(
+    activity: ActivityInfo,
+    parsedActivity: ParsedActivity,
+    container: HTMLElement,
+  ): Promise<void> {
     this.dispose()
-    const xmlBytes = await this.tryRead(`${moduleNameDir(activity)}.xml`)
-    const parsed = xmlBytes ? await parseActivityXml(new TextDecoder().decode(xmlBytes)) : undefined
-    const fields = parsed?.fields ?? new Map<string, string>()
-    const contextId = parsed?.contextId ?? ''
+    const fields = parsedActivity.fields
+    const contextId = parsedActivity.contextId
     const mod = activity.moduleName
 
     if (mod === 'page') {
@@ -873,46 +925,69 @@ export class Renderer {
   }
 
   /** Moodle settings panel: visibility, groups, completion, availability. */
-  renderSettingsPanel(activity: ActivityInfo, container: HTMLElement): void {
-    const s = activity.settings
-    if (!s) return
-    const details = document.createElement('details')
-    details.className = 'advanced settings-panel'
-    const summary = document.createElement('summary')
-    summary.textContent = `Moodle settings${s.visible ? '' : ' · HIDDEN'}`
-    details.appendChild(summary)
-    const grid = document.createElement('div')
-    grid.className = 'summary-grid'
-    const add = (k: string, v: string): void => {
-      const item = document.createElement('div')
-      item.className = 'summary-item'
-      const key = document.createElement('span')
-      key.className = 'summary-key'
-      key.textContent = k
-      const val = document.createElement('b')
-      val.textContent = v
-      item.append(key, val)
-      grid.appendChild(item)
+  /**
+   * Serializes what the Preview tab rendered into a standalone document
+   * (ADR-0016).
+   *
+   * Exporting the rendered DOM rather than re-resolving the source fields
+   * means the file matches the screen for every module — page, book,
+   * glossary, quiz — with one implementation. The markup was already
+   * sanitized on its way in (ADR-0012), so no new trust boundary opens
+   * here; blob: URLs are re-inlined as data: URIs so the file survives on
+   * its own, and live-only surfaces (sandboxed iframes, pdf.js canvases)
+   * are replaced by a note pointing at the file download instead.
+   *
+   * Returns undefined when nothing textual survives — a PDF-only resource
+   * has no HTML worth exporting.
+   */
+  exportContentHtml(preview: HTMLElement, title: string): string | undefined {
+    const clone = preview.cloneNode(true) as HTMLElement
+
+    // Inspector chrome, not authored course content. Dropping it keeps
+    // the export to what the course author actually wrote, and stops an
+    // activity whose body is only a "not available" note or a metadata
+    // disclosure from looking like it has something worth exporting —
+    // the XML export already covers that case.
+    for (const node of clone.querySelectorAll('.fallback-note, .advanced')) node.remove()
+
+    for (const node of clone.querySelectorAll('iframe, canvas, embed, object, script, style')) {
+      const note = document.createElement('p')
+      note.className = 'mbzoo-omitted'
+      note.textContent = t('export.omitted')
+      node.replaceWith(note)
     }
-    add('Visible', s.visible ? 'yes' : 'no')
-    if (s.idNumber) add('ID number', s.idNumber)
-    if (s.groupMode !== 'none') add('Groups', s.groupMode)
-    if (s.completion !== 'none') add('Completion', s.completion)
-    if (s.completionExpected > 0) {
-      add('Completion due', formatDate(s.completionExpected, navigator.language))
-    }
-    details.appendChild(grid)
-    if (s.availability.kind === 'tree') {
-      const list = document.createElement('ul')
-      list.className = 'availability-list'
-      for (const c of s.availability.conditions) {
-        const li = document.createElement('li')
-        li.textContent = `🔒 ${c.text}`
-        list.appendChild(li)
+    for (const node of clone.querySelectorAll('[src], [href]')) {
+      for (const attr of ['src', 'href']) {
+        const value = node.getAttribute(attr)
+        if (value === null || !value.startsWith('blob:')) continue
+        const inlined = this.dataUri(value)
+        if (inlined) node.setAttribute(attr, inlined)
+        else node.removeAttribute(attr)
       }
-      details.appendChild(list)
     }
-    container.appendChild(details)
+    if ((clone.textContent ?? '').trim() === '') return undefined
+
+    // Assembled by hand rather than through innerHTML: `clone` is already
+    // sanitized and the wrapper carries no backup-derived markup.
+    const head = [
+      '<!doctype html>',
+      '<html>',
+      '<head>',
+      '<meta charset="utf-8">',
+      `<title>${escapeHtmlText(title)}</title>`,
+      '</head>',
+      '<body>',
+      `<h1>${escapeHtmlText(title)}</h1>`,
+    ].join('\n')
+    const footer = `<hr>\n<p>${escapeHtmlText(t('export.note'))}</p>`
+    return `${head}\n${clone.innerHTML}\n${footer}\n</body>\n</html>\n`
+  }
+
+  /** Converts a managed blob: URL back into an inline data: URI. */
+  private dataUri(url: string): string | undefined {
+    const source = this.blobSources.get(url)
+    if (!source || source.data.byteLength > MAX_INLINE_BYTES) return undefined
+    return `data:${source.mime};base64,${base64(source.data)}`
   }
 
   /** External references panel: detected and listed, never fetched. */
@@ -1088,6 +1163,30 @@ function notAvailable(container: HTMLElement): void {
 /** DOMPurify wrapper — the single sanitization point (ADR-0012). */
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true, svg: false } })
+}
+
+/** Assets larger than this stay out of an exported HTML file. */
+const MAX_INLINE_BYTES = 2 * 1024 * 1024
+
+function base64(bytes: Uint8Array): string {
+  // Chunked: String.fromCharCode(...bytes) overflows the call stack on
+  // anything more than a few hundred KB.
+  let binary = ''
+  const CHUNK = 0x8000
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+  }
+  return btoa(binary)
+}
+
+/** Escapes text interpolated into the export wrapper's markup. */
+function escapeHtmlText(text: string): string {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 }
 
 function moduleNameDir(a: ActivityInfo): string {

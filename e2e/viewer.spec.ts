@@ -208,13 +208,15 @@ test('book chapters, hidden activity indicator and availability', async ({ page 
   const hidden = page.locator('.hidden-activity .name')
   await expect(hidden).toHaveText(/Restricted page/)
 
-  // Settings panel with human availability.
+  // Info tab carries visibility, human availability and identifiers.
   await page.getByRole('button', { name: /Restricted page/ }).click()
-  await expect(page.locator('.settings-panel summary')).toContainText('HIDDEN')
-  const panel = page.locator('.settings-panel')
-  await expect(panel).toContainText('Available from')
-  await expect(panel).toContainText('Member of group #7')
-  await expect(panel).toContainText('RESTRICTED-1')
+  await expect(page.locator('.hidden-pill')).toHaveText('Hidden')
+  await page.getByRole('tab', { name: 'Info' }).click()
+  const info = page.locator('.detail-panel-info')
+  await expect(info).toContainText('hidden from students')
+  await expect(info).toContainText('Available from')
+  await expect(info).toContainText('Member of group #7')
+  await expect(info).toContainText('RESTRICTED-1')
 })
 
 test('example link opens the demo course with all activity types', async ({ page }) => {
@@ -262,4 +264,166 @@ test('book prev/next navigation works', async ({ page }) => {
   await expect(page.locator('.book-chapter .activity-content')).toContainText('Subchapter body')
   await page.locator('.quiz-nav .btn-outline').nth(0).click()
   await expect(page.locator('.book-chapter .activity-content')).toContainText('Chapter two body')
+})
+
+test('the Content HTML export carries the rendered content, standalone', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await page.getByRole('button', { name: /Export/ }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: /Content \(\.html\)/ }).click()
+  const download = await downloadPromise
+
+  expect(download.suggestedFilename()).toMatch(/^page-\d+-about-this-demo\.html$/)
+  const stream = await download.createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  const html = Buffer.concat(chunks).toString('utf8')
+
+  expect(html).toContain('<!doctype html>')
+  expect(html).toContain('About this demo')
+  expect(html).toContain('Hello from the MBZoo synthetic page')
+  // Standalone: no live object URLs may survive into the exported file.
+  expect(html).not.toContain('blob:')
+})
+
+test('an activity with no authored content offers XML but no HTML export', async ({ page }) => {
+  // Strip the only content the unknown module has: what remains in the
+  // preview is inspector chrome, which must not count as exportable.
+  const emptyIntro = mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/supermodule_3003/supermodule.xml', (xml) =>
+      xml.replace(/<intro>[\s\S]*?<\/intro>/, '<intro></intro>'),
+    )
+  }, 'empty-intro.mbz')
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', emptyIntro)
+  await page.getByRole('button', { name: /Unknown third-party module/ }).click()
+
+  await page.getByRole('button', { name: /Export/ }).click()
+  await expect(page.getByRole('menuitem', { name: /Activity XML/ })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: /Content \(\.html\)/ })).toHaveCount(0)
+})
+
+test('an unknown module still exports the intro its author wrote', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Unknown third-party module/ }).click()
+
+  await page.getByRole('button', { name: /Export/ }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: /Content \(\.html\)/ }).click()
+  const download = await downloadPromise
+
+  const stream = await download.createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  const html = Buffer.concat(chunks).toString('utf8')
+  expect(html).toContain('Content of Unknown third-party module')
+  // Inspector chrome stays out of the exported document.
+  expect(html).not.toContain('Moodle metadata')
+})
+
+test('detail pane exposes Preview, Info and Raw tabs', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  // Preview is the landing tab and holds the rendered content.
+  await expect(page.getByRole('tab', { name: 'Preview' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('.activity-content')).toContainText('Hello from the MBZoo')
+
+  // Info: identifiers come from the parsed module XML.
+  await page.getByRole('tab', { name: 'Info' }).click()
+  await expect(page.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('.detail-panel-preview')).toBeHidden()
+  await expect(page.locator('.detail-panel-info')).toContainText('moduleid')
+  await expect(page.locator('.detail-panel-info')).toContainText('Visibility and access')
+
+  // Raw: source path plus the module XML, coloured by the tokenizer.
+  await page.getByRole('tab', { name: 'Raw' }).click()
+  // Every inactive panel must actually hide, including ones whose CSS
+  // sets its own `display` and would otherwise beat the UA [hidden] rule.
+  await expect(page.locator('.detail-panel-preview')).toBeHidden()
+  await expect(page.locator('.detail-panel-info')).toBeHidden()
+  await expect(page.locator('.raw-path')).toHaveText(/activities\/page_\d+\/page\.xml/)
+  await expect(page.locator('.raw-xml')).toContainText('<page')
+  await expect(page.locator('.raw-xml .x-tag').first()).toBeVisible()
+})
+
+test('tabs are keyboard navigable with arrow keys', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await page.getByRole('tab', { name: 'Preview' }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('ArrowLeft')
+  await expect(page.getByRole('tab', { name: 'Preview' })).toHaveAttribute('aria-selected', 'true')
+})
+
+test('Raw tab shows backup XML as text and never executes it', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', hostilePageFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+  await page.getByRole('tab', { name: 'Raw' }).click()
+
+  // The escaped <script> in the backup is displayed, not parsed into a node.
+  await expect(page.locator('.raw-xml')).toContainText('script')
+  expect(await page.locator('.raw-xml script').count()).toBe(0)
+  expect(await page.evaluate(() => Reflect.get(window, '__mbzooXss') === true)).toBe(false)
+  expect(pageErrors).toEqual([])
+})
+
+test('exports the activity XML through the Export menu', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await page.getByRole('button', { name: /Export/ }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: /Activity XML/ }).click()
+  const download = await downloadPromise
+
+  expect(download.suggestedFilename()).toMatch(/^page-\d+-about-this-demo\.xml$/)
+  const stream = await download.createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  expect(Buffer.concat(chunks).toString('utf8')).toContain('<page')
+})
+
+test('a single-file resource offers a direct download and a files ZIP', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Download/ }).click()
+  expect((await downloadPromise).suggestedFilename()).toBe('guide.txt')
+
+  await page.getByRole('button', { name: /Export/ }).click()
+  await expect(page.getByRole('menuitem', { name: /Files \(\.zip\)/ })).toBeVisible()
+})
+
+test('the Export menu closes on Escape and on an outside click', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  const exportButton = page.getByRole('button', { name: /Export/ })
+  await exportButton.click()
+  await expect(page.locator('.export-list')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.export-list')).toBeHidden()
+
+  await exportButton.click()
+  await expect(page.locator('.export-list')).toBeVisible()
+  await page.locator('#course-title').click()
+  await expect(page.locator('.export-list')).toBeHidden()
 })

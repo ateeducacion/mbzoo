@@ -1,8 +1,9 @@
 # AGENTS.md — MBZoo
 
 **MBZoo** opens, inspects and previews Moodle `.mbz` backups directly in the
-browser. *See what's inside your MBZ.* License: MIT. Export/re-packaging is
-planned, not implemented.
+browser. *See what's inside your MBZ.* License: MIT. Per-activity export
+(module XML, rendered content HTML, files ZIP) ships (ADR-0016); whole-backup
+re-packaging is planned, not implemented.
 
 ## Current maturity
 
@@ -14,7 +15,7 @@ Implemented content support includes sanitized Page/Label HTML, URL activities,
 Resource/File/Folder previews, PDF/image/text previews, sandboxed HTML files,
 and metadata fallback for unknown modules. Dedicated Book/Forum/Glossary/
 Assignment/Quiz experiences, SCORM/H5P launchers, eXeLearning inspection,
-static export/re-packaging and multi-gigabyte streaming/lazy access remain
+whole-backup re-packaging and multi-gigabyte streaming/lazy access remain
 planned or under research. Do not advertise planned capabilities as existing.
 
 ## Repository map

@@ -60,3 +60,7 @@ adrs:
     title: Documentation site — Rspress 2 in an isolated workspace, unified static deploy
     status: Accepted
     date: 2026-08-25
+  ADR-0016:
+    title: Per-activity export — module XML, rendered content HTML and a files ZIP
+    status: Accepted
+    date: 2026-08-25

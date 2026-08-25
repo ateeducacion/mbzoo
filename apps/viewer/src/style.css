@@ -1129,3 +1129,235 @@ footer a {
   text-align: center;
   box-shadow: 0 8px 30px rgba(35, 48, 71, 0.15);
 }
+
+/* ---------- detail chrome: toolbar + tabs (mockup 2a–2d) ---------- */
+#detail {
+  --tab-line: #eee7db;
+  --raw-bg: #233047;
+  --raw-fg: #c6cedb;
+}
+.detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.detail-head-text {
+  min-width: 0;
+}
+/* The toolbar now carries the separator the title row used to draw. */
+#detail .detail-title-row {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.hidden-pill {
+  font: 600 10.5px var(--font-body);
+  background: rgba(200, 60, 54, 0.09);
+  color: #c03c36;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.detail-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-2);
+  background: var(--white);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: 600 12px var(--font-body);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.detail-action:hover {
+  border-color: var(--muted);
+}
+.detail-action-accent {
+  border-color: #f5b070;
+  background: rgba(245, 130, 32, 0.08);
+  color: var(--orange-deep);
+  font-weight: 700;
+}
+.detail-action-accent:hover {
+  background: rgba(245, 130, 32, 0.16);
+}
+
+.export-menu {
+  position: relative;
+}
+.export-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(35, 48, 71, 0.14);
+  overflow: hidden;
+}
+/* An author `display` beats the UA [hidden] rule, so restate it. */
+.export-list[hidden] {
+  display: none;
+}
+.export-item {
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 9px 14px;
+  font: 500 12.5px var(--font-body);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.export-item:hover {
+  background: rgba(245, 130, 32, 0.1);
+  color: var(--orange-deep);
+}
+
+.detail-tabs {
+  display: flex;
+  gap: 2px;
+  margin-top: 14px;
+  border-bottom: 1px solid var(--tab-line);
+}
+.detail-tab {
+  border: 0;
+  background: none;
+  padding: 7px 13px;
+  font: 500 12.5px var(--font-body);
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.detail-tab:hover {
+  color: var(--ink-2);
+}
+.detail-tab.active {
+  font-weight: 700;
+  color: var(--orange-deep);
+  border-bottom-color: var(--orange);
+}
+.detail-panel {
+  padding-top: 16px;
+}
+/* An author `display` beats the UA [hidden] rule, so restate it. */
+.detail-panel[hidden] {
+  display: none;
+}
+.detail-panel:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 4px;
+}
+
+/* Info tab: paired cards, identifiers span the full width (mockup 2b). */
+.detail-panel-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.info-card {
+  border: 1px solid var(--tab-line);
+  border-radius: 10px;
+  padding: 13px 16px;
+}
+.info-card:last-child {
+  grid-column: 1 / -1;
+}
+.info-card-title {
+  margin: 0 0 9px;
+  font: 700 11px var(--font-body);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  font: 400 12.5px var(--font-body);
+  color: #5a6472;
+}
+.info-key {
+  color: #333d4d;
+  font-weight: 600;
+}
+.info-value {
+  overflow-wrap: anywhere;
+}
+.info-value-warn {
+  color: #c03c36;
+}
+
+/* Raw tab: Moodle XML, coloured by classifier not by markup (mockup 2c). */
+.raw-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.raw-path {
+  font:
+    500 11.5px ui-monospace,
+    Menlo,
+    monospace;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.raw-size {
+  font: 600 11.5px var(--font-body);
+  color: var(--faint);
+  flex: none;
+}
+.raw-xml {
+  margin: 0;
+  background: var(--raw-bg);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font:
+    400 12px / 1.7 ui-monospace,
+    Menlo,
+    monospace;
+  color: var(--raw-fg);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 60vh;
+}
+.raw-xml .x-tag {
+  color: #fdb875;
+}
+.raw-xml .x-attr {
+  color: #8fd0a8;
+}
+.raw-xml .x-value {
+  color: #f0d49a;
+}
+
+@media (max-width: 860px) {
+  .detail-panel-info {
+    grid-template-columns: 1fr;
+  }
+  .detail-actions {
+    width: 100%;
+  }
+}
+.info-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font: 400 12.5px var(--font-body);
+  color: var(--muted);
+}
