@@ -1,17 +1,17 @@
 ---
-id: ADR-0017
+id: ADR-0018
 title: Experimental H5P playback — h5p-standalone inside the opaque-origin sandbox
 status: Accepted
 date: 2026-08-25
 sources: [TECH-014]
 experiments: []
-related: [ADR-0009, ADR-0012, ADR-0014]
+related: [ADR-0009, ADR-0012, ADR-0014, ADR-0017]
 supersedes: []
 ai_tool: opencode
 ai_model: ox-alpha
 ---
 
-# ADR-0017: Experimental H5P playback — h5p-standalone inside the opaque-origin sandbox
+# ADR-0018: Experimental H5P playback — h5p-standalone inside the opaque-origin sandbox
 
 ## Context
 

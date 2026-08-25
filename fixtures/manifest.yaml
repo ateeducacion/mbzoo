@@ -5,7 +5,7 @@
 fixtures:
   demo-course-zip.mbz:
     sha256: 8f23fb50e4b8e33cb1c8929a25e329872161bd559374c576307beac40ad66466
-    bytes: 10555
+    bytes: 10561
     format: zip
     synthetic: true
     contains_user_data: false

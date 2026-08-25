@@ -1,5 +1,5 @@
 /**
- * Experimental H5P playback (ADR-0017) built on h5p-standalone (TECH-014).
+ * Experimental H5P playback (ADR-0018) built on h5p-standalone (TECH-014).
  *
  * Security model (ADR-0014, unchanged): the generated player page runs in an
  * opaque-origin iframe with `sandbox="allow-scripts"` and a default-deny CSP.
@@ -10,16 +10,16 @@
 import { unzipSync } from 'fflate'
 import { H5P_CSP, injectCsp } from './preview-utils.ts'
 
-export type H5pEntries = Array<[path: string, bytes: Uint8Array]>
+/** Package files by path. A Map keeps every lookup O(1) (packages reach ~150 entries). */
+export type H5pEntries = Map<string, Uint8Array>
 
 /** Unzips a .h5p package; throws on malformed input (caller degrades). */
 export function unzipH5p(data: Uint8Array): H5pEntries {
-  const unzipped = unzipSync(data)
-  const entries: H5pEntries = []
-  for (const [path, bytes] of Object.entries(unzipped)) {
-    if (!path.endsWith('/')) entries.push([path, bytes])
+  const entries: H5pEntries = new Map()
+  for (const [path, bytes] of Object.entries(unzipSync(data))) {
+    if (!path.endsWith('/')) entries.set(path, bytes)
   }
-  if (!entries.some(([p]) => p === 'h5p.json')) {
+  if (!entries.has('h5p.json')) {
     throw new Error('not an H5P package: missing h5p.json')
   }
   return entries
@@ -27,16 +27,6 @@ export function unzipH5p(data: Uint8Array): H5pEntries {
 
 export function isH5pFileName(name: string): boolean {
   return /\.h5p$/i.test(name)
-}
-
-/** Strips query/hash and leading relative segments for virtual lookup. */
-export function normalizeVfsPath(path: string): string {
-  return (
-    path
-      .split(/[?#]/)[0]
-      ?.replace(/^\.?\//, '')
-      .replace(/\/{2,}/g, '/') ?? ''
-  )
 }
 
 const MIME_BY_EXTENSION: Record<string, string> = {
@@ -60,25 +50,6 @@ const MIME_BY_EXTENSION: Record<string, string> = {
 export function vfsMime(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase() ?? ''
   return MIME_BY_EXTENSION[ext] ?? 'application/octet-stream'
-}
-
-/**
- * Resolves a requested URL against the package map: exact match first, then
- * suffix match, because the player prefixes requests with configurable root
- * paths ("/pkg/libraries/…" vs the stored "H5P.Lib-1.0/library.json").
- */
-export function resolveVfsEntry(
-  entries: H5pEntries,
-  path: string,
-): [path: string, bytes: Uint8Array] | undefined {
-  const wanted = normalizeVfsPath(path)
-  if (wanted === '') return undefined
-  const exact = entries.find(([p]) => p === wanted)
-  if (exact) return exact
-  return (
-    entries.find(([p]) => wanted.endsWith(`/${p}`)) ??
-    entries.find(([p]) => p.endsWith(`/${wanted}`))
-  )
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -126,8 +97,16 @@ const SHIM_SOURCE = `
     for (var i = 0; i < keys.length; i++) {
       if (p.length > keys[i].length && p.slice(-keys[i].length - 1) === '/' + keys[i]) return keys[i];
     }
-    for (var j = 0; j < keys.length; j++) {
-      if (keys[j].length > p.length && keys[j].slice(-p.length - 1) === '/' + p) return keys[j];
+    // H5P.getPath() injects the content id ("content/<cid>/images/x.jpg") and
+    // prefixes an absolute root, neither of which exist in the package. Match
+    // on the longest trailing segment chain instead of the whole path.
+    var seg = p.split('/');
+    for (var s = 1; s < seg.length; s++) {
+      var tail = seg.slice(s).join('/');
+      if (Object.prototype.hasOwnProperty.call(VFS, tail)) return tail;
+      for (var k = 0; k < keys.length; k++) {
+        if (keys[k].length > tail.length && keys[k].slice(-tail.length - 1) === '/' + tail) return keys[k];
+      }
     }
     return null;
   }
@@ -155,40 +134,62 @@ const SHIM_SOURCE = `
     } catch (e) {}
     return Promise.reject(new TypeError('Blocked: outside the H5P virtual filesystem'));
   };
-  var ATTR = { SCRIPT: 'src', LINK: 'href', IMG: 'src', SOURCE: 'src', VIDEO: 'src', AUDIO: 'src', EMBED: 'src', TRACK: 'src' };
-  var origCreate = document.createElement.bind(document);
-  document.createElement = function (tag) {
-    var el = origCreate(tag);
-    var attrKey = ATTR[String(tag).toUpperCase()];
-    if (!attrKey) return el;
-    var real = null;
-    var origSet = el.setAttribute.bind(el);
-    var origGet = el.getAttribute.bind(el);
-    var apply = function (value) {
-      real = value == null ? null : String(value);
-      var key = real != null ? lookup(real) : null;
-      if (key) {
-        origSet(attrKey, URL.createObjectURL(new Blob([bytesFor(key)], { type: mimeFor(key) })));
-      }
-    };
+  // Interception must sit on the prototypes, not on document.createElement:
+  // content types build media with new Image(), innerHTML and cloneNode,
+  // none of which route through createElement.
+  var IDL = [
+    ['HTMLImageElement', 'src'], ['HTMLScriptElement', 'src'],
+    ['HTMLMediaElement', 'src'], ['HTMLSourceElement', 'src'],
+    ['HTMLEmbedElement', 'src'], ['HTMLTrackElement', 'src'],
+    ['HTMLIFrameElement', 'src'], ['HTMLLinkElement', 'href']
+  ];
+  var REAL = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function mapped(value) {
+    if (value == null) return null;
+    var key = lookup(value);
+    return key ? URL.createObjectURL(new Blob([bytesFor(key)], { type: mimeFor(key) })) : null;
+  }
+  IDL.forEach(function (pair) {
+    var ctor = window[pair[0]];
+    if (!ctor || !ctor.prototype) return;
+    var desc = Object.getOwnPropertyDescriptor(ctor.prototype, pair[1]);
+    if (!desc || !desc.set) return;
     try {
-      Object.defineProperty(el, attrKey, { configurable: true, get: function () { return real; }, set: apply });
-    } catch (e) { return el; }
-    el.setAttribute = function (name, value) {
-      if (String(name).toLowerCase() === attrKey) { apply(value); return; }
-      return origSet(name, value);
-    };
-    el.getAttribute = function (name) {
-      if (name && String(name).toLowerCase() === attrKey && real != null) return real;
-      return origGet(name);
-    };
-    return el;
+      Object.defineProperty(ctor.prototype, pair[1], {
+        configurable: true,
+        enumerable: desc.enumerable,
+        get: function () {
+          var kept = REAL && REAL.get(this);
+          return kept != null ? kept : desc.get.call(this);
+        },
+        set: function (value) {
+          if (REAL) REAL.set(this, value == null ? null : String(value));
+          desc.set.call(this, mapped(value) || value);
+        }
+      });
+    } catch (e) {}
+  });
+  var ATTRS = { src: 1, href: 1, poster: 1, 'xlink:href': 1 };
+  var origSetAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, value) {
+    if (name && ATTRS[String(name).toLowerCase()]) {
+      if (REAL) REAL.set(this, value == null ? null : String(value));
+      return origSetAttr.call(this, name, mapped(value) || value);
+    }
+    return origSetAttr.call(this, name, value);
+  };
+  var origSetAttrNS = Element.prototype.setAttributeNS;
+  Element.prototype.setAttributeNS = function (ns, name, value) {
+    if (name && ATTRS[String(name).toLowerCase()]) {
+      return origSetAttrNS.call(this, ns, name, mapped(value) || value);
+    }
+    return origSetAttrNS.call(this, ns, name, value);
   };
 })();
 `
 
 export interface PlayerAssets {
-  /** Raw asset texts, inlined into the player page (ADR-0017 rule 3). */
+  /** Raw asset texts, inlined into the player page (ADR-0018 rule 3). */
   coreJs: string
   css: string
 }
@@ -196,6 +197,24 @@ export interface PlayerAssets {
 /** Neutralizes </script> sequences so bundled JS can be inlined safely. */
 function inlineScript(source: string): string {
   return source.replace(/<\/script/gi, '<\\/script')
+}
+
+/**
+ * Neutralizes </style> so package CSS cannot close the element and inject
+ * markup. CSS ignores the backslash-escaped form, browsers do not close on it.
+ */
+function inlineStyle(source: string): string {
+  return source.replace(/<\/style/gi, '\\3c /style')
+}
+
+/**
+ * Escapes a JSON payload for embedding inside a <script> element. `<` must
+ * become the six-character \u003c sequence — a bare '\u003c' string literal is
+ * the character itself and would leave `</script>` in a zip entry name or in
+ * content.json free to close the block.
+ */
+function inlineJson(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c')
 }
 
 interface LibraryDependency {
@@ -213,14 +232,68 @@ interface LibraryDefinition extends LibraryDependency {
 export interface PreloadLibrary {
   folder: string
   definition: LibraryDefinition
-  js: string[]
-  css: string[]
+  /** [package path, decoded text] — the path lets the caller de-duplicate the VFS. */
+  js: Array<[path: string, text: string]>
+  css: Array<[path: string, text: string]>
 }
 
 const readJson = (entries: H5pEntries, path: string): Record<string, unknown> => {
-  const bytes = entries.find(([p]) => p === path)?.[1]
+  const bytes = entries.get(path)
   if (!bytes) throw new Error(`missing package file: ${path}`)
-  return JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    throw new Error(`malformed JSON in package file: ${path}`)
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`expected a JSON object in package file: ${path}`)
+  }
+  return parsed as Record<string, unknown>
+}
+
+/**
+ * H5P writes library versions as numbers in some packages and as decimal
+ * strings in others (H5P.DragText 1.8 ships `"majorVersion": "1"`), so accept
+ * both and normalize. Anything else is rejected.
+ */
+function asVersion(value: unknown): number | undefined {
+  if (typeof value === 'number') return Number.isInteger(value) && value >= 0 ? value : undefined
+  if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value)
+  return undefined
+}
+
+/** Narrows one dependency entry; everything in a package is hostile input. */
+function asDependency(value: unknown): LibraryDependency | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const d = value as Record<string, unknown>
+  const majorVersion = asVersion(d.majorVersion)
+  const minorVersion = asVersion(d.minorVersion)
+  if (typeof d.machineName !== 'string' || d.machineName === '') return undefined
+  if (majorVersion === undefined || minorVersion === undefined) return undefined
+  return { machineName: d.machineName, majorVersion, minorVersion }
+}
+
+function asDependencies(value: unknown): LibraryDependency[] {
+  if (!Array.isArray(value)) return []
+  const out: LibraryDependency[] = []
+  for (const item of value) {
+    const dep = asDependency(item)
+    if (dep) out.push(dep)
+  }
+  return out
+}
+
+/** Narrows a preloadedJs/preloadedCss list to the in-package paths it declares. */
+function asFilePaths(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const out: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) continue
+    const path = (item as Record<string, unknown>).path
+    if (typeof path === 'string' && path !== '') out.push(path)
+  }
+  return out
 }
 
 /**
@@ -232,32 +305,35 @@ const readJson = (entries: H5pEntries, path: string): Record<string, unknown> =>
 export function orderedLibraries(entries: H5pEntries): PreloadLibrary[] {
   const out: PreloadLibrary[] = []
   const visited = new Set<string>()
-  const visit = (deps: LibraryDependency[] | undefined): void => {
-    for (const dep of deps ?? []) {
+  const visit = (deps: LibraryDependency[]): void => {
+    for (const dep of deps) {
       const folder = `${dep.machineName}-${dep.majorVersion}.${dep.minorVersion}`
       if (visited.has(folder)) continue
       visited.add(folder)
-      const definition = readJson(entries, `${folder}/library.json`) as unknown as LibraryDefinition
-      visit(definition.preloadedDependencies)
-      const collect = (files?: Array<{ path: string }>): string[] => {
-        const texts: string[] = []
-        for (const file of files ?? []) {
-          const bytes = entries.find(([p]) => p === `${folder}/${file.path}`)?.[1]
-          if (!bytes) throw new Error(`missing library file: ${folder}/${file.path}`)
-          texts.push(new TextDecoder().decode(bytes))
-        }
-        return texts
+      const raw = readJson(entries, `${folder}/library.json`)
+      const definition: LibraryDefinition = {
+        ...dep,
+        preloadedDependencies: asDependencies(raw.preloadedDependencies),
+        preloadedJs: asFilePaths(raw.preloadedJs).map((path) => ({ path })),
+        preloadedCss: asFilePaths(raw.preloadedCss).map((path) => ({ path })),
       }
+      visit(definition.preloadedDependencies ?? [])
+      const collect = (files: Array<{ path: string }>): Array<[path: string, text: string]> =>
+        files.map((file) => {
+          const key = `${folder}/${file.path}`
+          const bytes = entries.get(key)
+          if (!bytes) throw new Error(`missing library file: ${key}`)
+          return [key, new TextDecoder().decode(bytes)]
+        })
       out.push({
         folder,
         definition,
-        js: collect(definition.preloadedJs),
-        css: collect(definition.preloadedCss),
+        js: collect(definition.preloadedJs ?? []),
+        css: collect(definition.preloadedCss ?? []),
       })
     }
   }
-  const h5p = readJson(entries, 'h5p.json') as { preloadedDependencies?: LibraryDependency[] }
-  visit(h5p.preloadedDependencies)
+  visit(asDependencies(readJson(entries, 'h5p.json').preloadedDependencies))
   return out
 }
 
@@ -305,17 +381,26 @@ const L10N_EN: Record<string, string> = {
 
 /** Builds the complete player document loaded into the sandboxed iframe. */
 export function buildPlayerHtml(entries: H5pEntries, assets: PlayerAssets): string {
-  const h5p = readJson(entries, 'h5p.json') as {
-    title?: string
-    mainLibrary: string
-    license?: string
-    preloadedDependencies?: LibraryDependency[]
-  }
-  const mainDep = h5p.preloadedDependencies?.find((d) => d.machineName === h5p.mainLibrary)
-  if (!mainDep) throw new Error(`main library ${h5p.mainLibrary} not declared`)
-  const contentBytes = entries.find(([p]) => p === 'content/content.json')?.[1]
+  const h5p = readJson(entries, 'h5p.json')
+  const mainLibrary = typeof h5p.mainLibrary === 'string' ? h5p.mainLibrary : ''
+  if (mainLibrary === '') throw new Error('h5p.json declares no mainLibrary')
+  const mainDep = asDependencies(h5p.preloadedDependencies).find(
+    (d) => d.machineName === mainLibrary,
+  )
+  if (!mainDep) throw new Error(`main library ${mainLibrary} not declared`)
+  const contentBytes = entries.get('content/content.json')
   if (!contentBytes) throw new Error('missing package file: content/content.json')
   const jsonContent = new TextDecoder().decode(contentBytes)
+  // H5P core parses this string itself and throws inside the frame if it is
+  // malformed, which the app cannot observe: reject it here so the caller can
+  // degrade to the download card instead of showing an empty player.
+  try {
+    JSON.parse(jsonContent)
+  } catch {
+    throw new Error('malformed JSON in package file: content/content.json')
+  }
+  const title = typeof h5p.title === 'string' ? h5p.title : ''
+  const license = typeof h5p.license === 'string' ? h5p.license : 'U'
 
   const libs = orderedLibraries(entries)
   const cid = 'mbzoo-h5p'
@@ -328,9 +413,9 @@ export function buildPlayerHtml(entries: H5pEntries, assets: PlayerAssets): stri
     l10n: { H5P: L10N_EN },
     contents: {
       [`cid-${cid}`]: {
-        title: h5p.title ?? '',
+        title,
         url: '',
-        library: `${h5p.mainLibrary} ${mainDep.majorVersion}.${mainDep.minorVersion}`,
+        library: `${mainLibrary} ${mainDep.majorVersion}.${mainDep.minorVersion}`,
         jsonContent,
         scripts: [] as string[],
         styles: [] as string[],
@@ -344,15 +429,24 @@ export function buildPlayerHtml(entries: H5pEntries, assets: PlayerAssets): stri
           icon: false,
           copy: false,
         },
-        metadata: { title: h5p.title ?? '', license: h5p.license ?? 'U' },
+        metadata: { title, license },
       },
     },
   }
 
-  const libCss = libs.map((l) => l.css.join('\n')).join('\n')
-  const libJs = libs.map((l) => l.js.join('\n;\n')).join('\n;\n')
+  const libCss = libs.flatMap((l) => l.css.map(([, text]) => text)).join('\n')
+  const libJs = libs.flatMap((l) => l.js.map(([, text]) => text)).join('\n;\n')
+
+  // Library JS/CSS and content.json are already inlined above; carrying their
+  // bytes in the base64 VFS as well tripled the page against real packages.
+  const inlined = new Set<string>([
+    'content/content.json',
+    ...libs.flatMap((l) => [...l.js, ...l.css].map(([path]) => path)),
+  ])
   const vfs: Record<string, string> = {}
-  for (const [path, bytes] of entries) vfs[path] = toBase64(bytes)
+  for (const [path, bytes] of entries) {
+    if (!inlined.has(path)) vfs[path] = toBase64(bytes)
+  }
 
   const page = `<!doctype html>
 <html lang="en">
@@ -361,12 +455,12 @@ export function buildPlayerHtml(entries: H5pEntries, assets: PlayerAssets): stri
 <title>H5P preview</title>
 <style>
 html, body { margin: 0; padding: 0; background: #fff; }
-${assets.css}
-${libCss}
+${inlineStyle(assets.css)}
+${inlineStyle(libCss)}
 </style>
-<script id="mbzoo-vfs" type="application/json">${JSON.stringify(vfs).replace(/</g, '\u003c')}</script>
+<script id="mbzoo-vfs" type="application/json">${inlineJson(vfs)}</script>
 <script>window.__MBZOO_VFS__ = JSON.parse(document.getElementById('mbzoo-vfs').textContent);
-window.H5PIntegration = ${JSON.stringify(integration).replace(/</g, '\u003c')};</script>
+window.H5PIntegration = ${inlineJson(integration)};</script>
 </head>
 <body>
 <div class="h5p-content" data-content-id="${cid}"></div>

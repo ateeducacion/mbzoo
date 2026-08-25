@@ -226,7 +226,7 @@ function activityXml(modname: string, title: string): string {
 }
 
 /**
- * Minimal synthetic .h5p package (ADR-0017): a self-contained "text"
+ * Minimal synthetic .h5p package (ADR-0018): a self-contained "text"
  * content type so playback is verifiable without vendoring real
  * third-party content-type libraries. Deterministic by construction.
  */

@@ -195,7 +195,6 @@ function buildInfoPanel(activity: ActivityInfo, parsed: ParsedActivity, panel: H
   const config = infoCard(panel, t('info.config'))
   let shown = 0
   for (const [key, raw] of parsed.fields) {
-    if (shown >= 14) break
     if (CONTENT_FIELDS.has(key)) continue
     const value = raw.trim()
     if (value === '' || value === NULL_SENTINEL) continue

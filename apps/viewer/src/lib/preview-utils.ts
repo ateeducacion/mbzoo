@@ -8,17 +8,27 @@ export const MAX_PDF_PAGES = 8
 
 /**
  * CSP injected into sandboxed HTML previews (ADR-0014): opaque-origin iframe
- * plus no network access; sub-resources must come from rewritten blob URLs.
+ * plus no network access; sub-resources must come from rewritten references.
+ *
+ * data: sits alongside blob: because the frame runs on an opaque origin,
+ * where a blob: URL minted by the app origin is not loadable — the browser
+ * rejects it as a cross-origin local resource. Archive assets therefore
+ * travel inline (ADR-0017). This widens what the frame may *inline*, never
+ * what it may fetch: connect-src stays 'none'.
  */
 export const SANDBOX_CSP =
-  "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +
-  "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
+  "default-src 'none'; img-src blob: data:; style-src blob: data: 'unsafe-inline'; " +
+  "script-src blob: data: 'unsafe-inline'; media-src blob: data:; font-src blob: data:; " +
   "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
 /**
- * CSP injected into the experimental H5P player page (ADR-0017): same
- * default-deny model; all package files and player assets must come from
- * blobs created inside the sandboxed frame itself.
+ * CSP injected into the experimental H5P player page (ADR-0018). Same
+ * default-deny model as SANDBOX_CSP but deliberately narrower: the player's
+ * own shim mints every package asset as a blob inside the frame, so data: is
+ * only needed for CSS-embedded images and fonts. Kept as a separate constant
+ * on purpose — SANDBOX_CSP widening for archive HTML must not silently widen
+ * what backup-provided H5P code may load. `preview-utils.test.ts` locks the
+ * invariants both must keep.
  */
 export const H5P_CSP =
   "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +

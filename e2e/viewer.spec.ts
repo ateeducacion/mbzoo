@@ -162,7 +162,13 @@ test('isolates executable HTML resources and blocks network access', async ({ pa
   await expect(frame.locator('body')).toHaveAttribute('data-network-blocked', 'true')
 
   await expect(page.locator('body')).not.toHaveAttribute('data-mbzoo-sandbox-escape', '1')
-  await expect(page.locator('.html-frame')).toHaveAttribute('sandbox', 'allow-scripts')
+  // Pin the exact grant list: this is the trust boundary, so any widening
+  // must fail here and be argued for in an ADR rather than slip through.
+  expect((await page.locator('.html-frame').getAttribute('sandbox'))?.split(/\s+/).sort()).toEqual([
+    'allow-popups',
+    'allow-popups-to-escape-sandbox',
+    'allow-scripts',
+  ])
   expect(probeRequests).toEqual([])
 })
 
@@ -451,4 +457,132 @@ test('the Export menu closes on Escape and on an outside click', async ({ page }
   await expect(page.locator('.export-list')).toBeVisible()
   await page.locator('#course-title').click()
   await expect(page.locator('.export-list')).toBeHidden()
+})
+
+/** A multi-file HTML site: an entry page plus a relative image and stylesheet. */
+function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  const html = `<!doctype html>
+<html><head><link rel="stylesheet" href="site.css"></head>
+<body><p id="site-marker">site</p><img id="rel-img" src="pic.png" alt="">
+<a id="ext-link" href="https://example.com/docs">external</a></body></html>`
+  // 1x1 red PNG.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  const css = strToU8('#site-marker{color:rgb(0,128,0)}')
+  const htmlBytes = strToU8(html)
+
+  return mutatedFixture((entries) => {
+    const filesData = entries['files.xml']
+    if (!filesData) throw new Error('Missing fixture entry: files.xml')
+    const filesXml = strFromU8(filesData)
+    const records = filesXml.match(/<file>[\s\S]*?<\/file>/g) ?? []
+    const base = records.find((r) => r.includes('<filename>guide.txt</filename>'))
+    if (!base) throw new Error('Missing guide.txt record in fixture')
+    const oldHash = base.match(/<contenthash>([^<]+)<\/contenthash>/)?.[1]
+    if (!oldHash) throw new Error('Missing guide.txt content hash')
+
+    const make = (bytes: Uint8Array, filename: string, mime: string): string => {
+      const hash = createHash('sha1').update(bytes).digest('hex')
+      entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
+      return base
+        .replace(`<contenthash>${oldHash}</contenthash>`, `<contenthash>${hash}</contenthash>`)
+        .replace('<filename>guide.txt</filename>', `<filename>${filename}</filename>`)
+        .replace(/<filesize>\d+<\/filesize>/, `<filesize>${bytes.byteLength}</filesize>`)
+        .replace('<mimetype>text/plain</mimetype>', `<mimetype>${mime}</mimetype>`)
+    }
+
+    const replacement = [
+      make(htmlBytes, 'index.html', 'text/html'),
+      make(new Uint8Array(png), 'pic.png', 'image/png'),
+      make(css, 'site.css', 'text/css'),
+    ].join('\n')
+
+    entries['files.xml'] = strToU8(filesXml.replace(base, replacement))
+    delete entries[`files/${oldHash.slice(0, 2)}/${oldHash}`]
+  }, 'website.mbz')
+}
+
+test('a sandboxed site loads its relative image and stylesheet', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', websiteFixture())
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#site-marker')).toBeVisible()
+
+  // The iframe is an opaque origin, so parent-created blob: URLs are not
+  // loadable inside it — assets must travel as data: URIs.
+  const imgOk = await frame
+    .locator('#rel-img')
+    .evaluate(
+      (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+    )
+  expect(imgOk).toBe(true)
+
+  await expect(frame.locator('#site-marker')).toHaveCSS('color', 'rgb(0, 128, 0)')
+})
+
+test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', websiteFixture())
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  // The frame may open a tab, but must not gain same-origin access.
+  const sandbox = await page.locator('.html-frame').getAttribute('sandbox')
+  expect(sandbox).toContain('allow-scripts')
+  expect(sandbox).toContain('allow-popups')
+  expect(sandbox).toContain('allow-popups-to-escape-sandbox')
+  expect(sandbox).not.toContain('allow-same-origin')
+  expect(sandbox).not.toContain('allow-top-navigation')
+
+  const link = page.frameLocator('.html-frame').locator('#ext-link')
+  await expect(link).toHaveAttribute('target', '_blank')
+  const rel = (await link.getAttribute('rel')) ?? ''
+  expect(rel).toContain('noopener')
+  expect(rel).toContain('noreferrer')
+  expect(rel).toContain('nofollow')
+  // The href is left alone: it is the author's link, not ours to rewrite.
+  await expect(link).toHaveAttribute('href', 'https://example.com/docs')
+})
+
+/** Turns the quiz's first slot into a random draw from the bank category. */
+function randomQuizFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'questions.xml', (xml) =>
+      xml.replace(
+        '<questions>',
+        `<questions>
+      <question id="4099">
+        <qtype>random</qtype>
+        <name>Organizado al azar (Default)</name>
+        <questiontext>1</questiontext>
+      </question>`,
+      ),
+    )
+    replaceTextEntry(entries, 'activities/quiz_3006/quiz.xml', (xml) =>
+      xml.replace(/<questionid>\d+<\/questionid>/, '<questionid>4099</questionid>'),
+    )
+  }, 'random-quiz.mbz')
+}
+
+test('a random quiz slot shows the pool it draws from, not "not in the backup"', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', randomQuizFixture())
+  await page.getByRole('button', { name: /Self-assessment quiz/ }).click()
+
+  const card = page.locator('.quiz-card')
+  await expect(card).toContainText('Default')
+  // The pool ships in the backup, so we must not claim the opposite.
+  await expect(card).not.toContainText('not included in the backup')
+  await expect(card).not.toContainText('not present in this backup')
+
+  await expect(card.locator('.random-pool')).toBeVisible()
+  const items = card.locator('.random-pool-list li')
+  expect(await items.count()).toBeGreaterThan(0)
+  // The random placeholder never appears inside its own pool.
+  await expect(card.locator('.random-pool-list')).not.toContainText('Organizado al azar')
 })

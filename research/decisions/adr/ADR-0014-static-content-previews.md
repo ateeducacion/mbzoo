@@ -1,13 +1,19 @@
 ---
 id: ADR-0014
 title: Static content previews — pdf.js canvas and opaque-origin HTML sandbox
-status: Accepted
+status: Superseded
 date: 2026-08-25
 sources: [TECH-010]
 related: [ADR-0009, ADR-0013]
 ai_tool: opencode
 ai_model: ox-alpha
 ---
+> **Superseded by ADR-0017.** Decision 2's blob: URL rewriting does not work:
+> the sandbox's opaque origin cannot load app-origin blob: URLs, so every
+> sub-resource silently failed. ADR-0017 restates this record in full with
+> inline `data:` assets and a widened popup grant. The reasoning below is
+> kept as written.
+
 ## Context
 Chrome blocks PDFs rendered via blob URLs inside sandboxed iframes
 ("Chrome blocked this page"), and course HTML files carry CSS/JS that must not

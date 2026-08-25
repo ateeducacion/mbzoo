@@ -24,4 +24,4 @@ GPL-3.0 ("GPL licensed due to GPL code being used for purifying HTML",
 per its README); h5p.org/licensing states MIT is used "wherever possible"
 and that making the GPL code optional was intended but no relicensing of
 this repository has been verified [PENDING: verification required]. Recorded
-as a risk in ADR-0017; blocks promoting H5P playback beyond experimental.
+as a risk in ADR-0018; blocks promoting H5P playback beyond experimental.

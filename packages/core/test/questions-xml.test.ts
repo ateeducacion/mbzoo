@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { parseQuestionsXml, parseQuizQuestionIds } from '../src/moodle/questions-xml.ts'
+import {
+  parseQuestionsXml,
+  parseQuizQuestionIds,
+  randomQuestionPool,
+} from '../src/moodle/questions-xml.ts'
 
 // Moodle 3.x shape (verified on SMR_SEGI/SMR_SOR, REPO-004).
 const V3 = `<?xml version="1.0"?>
@@ -89,5 +93,85 @@ describe('random questions (regression: SMR_SEGI exam)', () => {
     expect(q.get(1)?.name).toBe('Random A')
     expect(q.get(2)?.name).toBe('Real Q')
     expect(q.get(2)?.questionText).toContain('Body')
+  })
+})
+
+// A random slot is not a missing question: it draws from the category it
+// lives in, whose pool travels in the same backup (observed in real
+// SMR_SR / SMR_MME exports).
+const RANDOM = `<?xml version="1.0"?>
+<question_categories>
+  <question_category id="6980">
+    <name>Examen para MME01</name>
+    <questions>
+      <question id="900">
+        <qtype>random</qtype>
+        <name>Organizado al azar (Examen para MME01)</name>
+        <questiontext>1</questiontext>
+      </question>
+      <question id="901">
+        <qtype>multichoice</qtype>
+        <name>Pool question A</name>
+        <questiontext>Body A</questiontext>
+        <answers>
+          <answer id="1"><answertext>Si</answertext><fraction>1.0000000</fraction></answer>
+        </answers>
+      </question>
+      <question id="902">
+        <qtype>truefalse</qtype>
+        <name>Pool question B</name>
+        <questiontext>Body B</questiontext>
+      </question>
+    </questions>
+  </question_category>
+  <question_category id="7000">
+    <name>Otra categoria</name>
+    <questions>
+      <question id="910">
+        <qtype>multichoice</qtype>
+        <name>Unrelated</name>
+        <questiontext>Body C</questiontext>
+      </question>
+    </questions>
+  </question_category>
+</question_categories>`
+
+describe('question categories', () => {
+  test('records the category each question belongs to', async () => {
+    const q = await parseQuestionsXml(RANDOM)
+    expect(q.get(901)?.categoryId).toBe(6980)
+    expect(q.get(901)?.categoryName).toBe('Examen para MME01')
+    expect(q.get(910)?.categoryId).toBe(7000)
+    expect(q.get(910)?.categoryName).toBe('Otra categoria')
+  })
+
+  test('resolves a random slot to the pool it draws from', async () => {
+    const q = await parseQuestionsXml(RANDOM)
+    const pool = randomQuestionPool(q, 900)
+
+    expect(pool.map((p) => p.id).sort()).toEqual([901, 902])
+    // The random placeholder itself is never part of its own pool.
+    expect(pool.some((p) => p.qtype === 'random')).toBe(false)
+    // Questions from other categories stay out.
+    expect(pool.some((p) => p.id === 910)).toBe(false)
+  })
+
+  test('returns an empty pool for a question that is not random', async () => {
+    const q = await parseQuestionsXml(RANDOM)
+    expect(randomQuestionPool(q, 901)).toEqual([])
+  })
+
+  test('returns an empty pool when the category holds nothing else', async () => {
+    const only = `<?xml version="1.0"?>
+<question_categories>
+  <question_category id="1">
+    <name>Empty</name>
+    <questions>
+      <question id="5"><qtype>random</qtype><name>r</name><questiontext>1</questiontext></question>
+    </questions>
+  </question_category>
+</question_categories>`
+    const q = await parseQuestionsXml(only)
+    expect(randomQuestionPool(q, 5)).toEqual([])
   })
 })

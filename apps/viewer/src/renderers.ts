@@ -20,22 +20,13 @@ import {
   parseBookXml,
   parseQuestionsXml,
   parseQuizQuestionIds,
+  randomQuestionPool,
 } from '@mbzoo/core'
 import DOMPurify from 'dompurify'
-// Raw texts, not processed assets: they are inlined into the sandboxed player
-// page; opaque origins cannot load blob URLs created by the application origin.
-import h5pCoreJsRaw from 'h5p-standalone/dist/frame.bundle.js?raw'
-import h5pCssRaw from 'h5p-standalone/dist/styles/h5p.css?raw'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { scanExternalRefs } from './lib/external-refs.ts'
-import {
-  buildPlayerHtml,
-  type H5pEntries,
-  isH5pFileName,
-  type PlayerAssets,
-  unzipH5p,
-} from './lib/h5p-player.ts'
+import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
 import {
   contentKind,
@@ -190,7 +181,7 @@ export class Renderer {
       return
     }
     // Known module families without a dedicated body renderer: show the
-    // intro (if any) plus an advanced/metadata disclosure (ADR-0013).
+    // intro (if any). Module metadata lives in the Info tab (ADR-0013).
     await this.renderIntroPlusMetadata(mod, fields, contextId, container)
   }
 
@@ -405,8 +396,11 @@ export class Renderer {
 
     const mime = rec.mimeType || guessMime(rec.fileName)
     if (isH5pFileName(rec.fileName)) {
-      await this.renderH5p(data, card)
-      addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      try {
+        await this.renderH5p(data, card)
+      } finally {
+        addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      }
       return card
     }
     if (mime.startsWith('image/')) {
@@ -485,7 +479,8 @@ export class Renderer {
    * (ADR-0014): scripts may run but cannot touch the app, and the injected
    * CSP blocks all network access. Relative references are rewritten to
    * blob URLs of sibling archive files when found.
-   */ private async renderSandboxedHtml(
+   */
+  private async renderSandboxedHtml(
     data: Uint8Array,
     rec: BackupFileRecord,
     card: HTMLElement,
@@ -493,19 +488,27 @@ export class Renderer {
     let html = new TextDecoder().decode(data)
     const dir = rec.filePath.replace(/[^/]+$/, '')
     html = await this.rewriteRelativeRefs(html, dir, rec)
+    html = retargetExternalLinks(html)
     html = injectCsp(html, SANDBOX_CSP)
     const frame = document.createElement('iframe')
     frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
     frame.title = rec.fileName
     frame.className = 'html-frame'
-    // allow-scripts only: opaque origin — no same-origin access to the app.
+    // Opaque origin: never allow-same-origin, so the frame cannot reach the
+    // app. allow-popups (+ escape) lets the author's external links open in
+    // a real tab instead of doing nothing; the popup must escape the sandbox
+    // or the destination site would load on an opaque origin and break
+    // (ADR-0017). Top-level navigation stays denied: the frame cannot
+    // replace the MBZoo page itself.
     frame.sandbox.add('allow-scripts')
+    frame.sandbox.add('allow-popups')
+    frame.sandbox.add('allow-popups-to-escape-sandbox')
     card.appendChild(frame)
   }
 
   /**
    * H5P activity: intro plus experimental playback of the stored .h5p
-   * package (ADR-0017); falls back to the download card when the package
+   * package (ADR-0018); falls back to the download card when the package
    * cannot be played.
    */
   private async renderH5pActivity(
@@ -544,43 +547,48 @@ export class Renderer {
     const card = document.createElement('div')
     card.className = 'file-card'
     container.appendChild(card)
-    await this.renderH5p(data, card)
-    addDownload(
-      card,
-      this.blobUrl(data, record.mimeType || guessMime(record.fileName)),
-      record.fileName,
-    )
+    try {
+      await this.renderH5p(data, card)
+    } finally {
+      // Download stays available even when playback fails (ADR-0018).
+      addDownload(
+        card,
+        this.blobUrl(data, record.mimeType || guessMime(record.fileName)),
+        record.fileName,
+      )
+    }
   }
 
   /**
-   * Experimental H5P playback (ADR-0017): unzips the package in memory and
+   * Experimental H5P playback (ADR-0018): unzips the package in memory and
    * boots h5p-standalone inside an opaque-origin sandboxed iframe with the
    * ADR-0014 CSP; every package path is served by an in-frame shim.
    */
   private async renderH5p(data: Uint8Array, card: HTMLElement): Promise<void> {
-    let entries: H5pEntries
-    try {
-      entries = unzipH5p(data)
-    } catch {
+    const fallback = (key: 'h5p.invalid' | 'h5p.playerUnavailable'): void => {
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      note.textContent = t('h5p.invalid')
+      note.textContent = t(key)
       card.appendChild(note)
-      return
     }
     const assets = await loadPlayerAssets()
     if (!assets) {
-      const note = document.createElement('p')
-      note.className = 'fallback-note'
-      note.textContent = t('h5p.playerUnavailable')
-      card.appendChild(note)
+      fallback('h5p.playerUnavailable')
+      return
+    }
+    // A package is hostile input: unzipping and building the player page both
+    // reject malformed input, and neither may reach the caller as a raw error.
+    let html: string
+    try {
+      html = buildPlayerHtml(unzipH5p(data), assets)
+    } catch {
+      fallback('h5p.invalid')
       return
     }
     const chip = document.createElement('p')
     chip.className = 'h5p-note'
     chip.textContent = t('h5p.experimental')
     card.appendChild(chip)
-    const html = buildPlayerHtml(entries, assets)
     const frame = document.createElement('iframe')
     frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
     frame.title = t('h5p.frameTitle')
@@ -627,7 +635,8 @@ export class Renderer {
           await this.resolveCssUrls(new TextDecoder().decode(bytes), rec.filePath),
         )
       }
-      const url = this.blobUrl(payload, mime)
+      if (payload.byteLength > MAX_SANDBOX_ASSET_BYTES) continue
+      const url = dataUrl(payload, mime)
       const quote = raw.includes('"') ? '"' : "'"
       const attr = /src=/i.test(raw) ? 'src' : 'href'
       html = html.replace(raw, ` ${attr}=${quote}${url}${quote}`)
@@ -650,9 +659,10 @@ export class Renderer {
       if (!rec) continue
       const bytes = await this.tryRead(contentHashPath(rec.contentHash))
       if (!bytes) continue
+      if (bytes.byteLength > MAX_SANDBOX_ASSET_BYTES) continue
       out = out
         .split(m[0])
-        .join(`url('${this.blobUrl(bytes, rec.mimeType || guessMime(rec.fileName))}')`)
+        .join(`url('${dataUrl(bytes, rec.mimeType || guessMime(rec.fileName))}')`)
     }
     return out
   }
@@ -685,28 +695,9 @@ export class Renderer {
       container.appendChild(note)
     }
     this.renderExternalPanel(this.lastRawHtml, container)
-    container.appendChild(this.buildAdvanced(fields))
   }
 
   /** <details> with the raw Moodle fields (ADR-0013 inspect capability). */
-  private buildAdvanced(fields: Map<string, string>): HTMLElement {
-    const details = document.createElement('details')
-    details.className = 'advanced'
-    const summary = document.createElement('summary')
-    summary.textContent = `${t('advanced')} (${fields.size})`
-    details.appendChild(summary)
-    const dl = document.createElement('dl')
-    dl.className = 'meta-list'
-    for (const [k, v] of fields) {
-      const dt = document.createElement('dt')
-      dt.textContent = k
-      const dd = document.createElement('dd')
-      dd.textContent = v.length > 400 ? `${v.slice(0, 400)}…` : v
-      dl.append(dt, dd)
-    }
-    details.appendChild(dl)
-    return details
-  }
 
   /** Read-only quiz inspection with question navigation (prompt §6). */
   private async renderQuiz(
@@ -790,7 +781,7 @@ export class Renderer {
       counter.textContent = `${t('quiz.question')} ${index + 1} ${t('quiz.of')} ${questions.length}`
       prev.toggleAttribute('disabled', index === 0)
       next.toggleAttribute('disabled', index === questions.length - 1)
-      card.replaceChildren(this.questionCard(questions[index] as QuizQuestion))
+      card.replaceChildren(this.questionCard(questions[index] as QuizQuestion, bank))
     }
     prev.addEventListener('click', () => showQuestion(index - 1))
     next.addEventListener('click', () => showQuestion(index + 1))
@@ -1138,7 +1129,7 @@ export class Renderer {
     return this.questionBankCache
   }
 
-  private questionCard(q: QuizQuestion): HTMLElement {
+  private questionCard(q: QuizQuestion, bank?: ReadonlyMap<number, QuizQuestion>): HTMLElement {
     const type = q.qtype.toLowerCase()
     const el = document.createElement('div')
     const head = document.createElement('div')
@@ -1154,12 +1145,42 @@ export class Renderer {
     const body = document.createElement('div')
     body.className = 'activity-content'
     if (type === 'random') {
-      // "Random from category" placeholder: the real question is drawn at
-      // attempt time and is not stored in the backup.
+      // A random slot is a pointer to a bank category, not a missing
+      // question: the pool it draws from normally ships in the same
+      // backup, so show it instead of claiming the questions are absent.
+      const pool = bank ? randomQuestionPool(bank, q.id) : []
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      note.textContent = q.name !== '' ? `${t('quiz.random')} — ${q.name}` : t('quiz.random')
+      if (q.categoryName === '') {
+        note.textContent = t('quiz.randomUnknown')
+      } else if (pool.length === 0) {
+        note.textContent = t('quiz.randomEmpty', { cat: q.categoryName })
+      } else {
+        note.textContent = t('quiz.randomFrom', { cat: q.categoryName, n: pool.length })
+      }
       body.appendChild(note)
+
+      if (pool.length > 0) {
+        const details = document.createElement('details')
+        details.className = 'advanced random-pool'
+        const summary = document.createElement('summary')
+        summary.textContent = `${t('quiz.randomPool')} (${pool.length})`
+        details.appendChild(summary)
+        const list = document.createElement('ul')
+        list.className = 'random-pool-list'
+        for (const candidate of pool) {
+          const li = document.createElement('li')
+          const kind = document.createElement('span')
+          kind.className = 'mod-badge t-blue'
+          kind.textContent = candidate.qtype
+          const label = document.createElement('span')
+          label.textContent = candidate.name || `#${candidate.id}`
+          li.append(kind, ' ', label)
+          list.appendChild(li)
+        }
+        details.appendChild(list)
+        body.appendChild(details)
+      }
       el.appendChild(body)
       return el
     }
@@ -1251,16 +1272,22 @@ function sortRecords(records: BackupFileRecord[]): BackupFileRecord[] {
 }
 
 /**
- * Player assets are read once as raw texts and inlined into the generated
- * player page; nothing is fetched at preview time (ADR-0017 rule 3).
+ * Player assets are raw texts inlined into the generated player page; opaque
+ * origins cannot load blob URLs minted by the application origin (ADR-0017),
+ * so they cannot be emitted as separate files. Imported dynamically so the
+ * ~190 KB H5P core stays out of the main bundle for the majority of visitors
+ * who never open an H5P (ADR-0018); it is still bundled, never fetched from a
+ * network origin, and resolved once per session.
  */
 let playerAssetsPromise: Promise<PlayerAssets | undefined> | undefined
 
 function loadPlayerAssets(): Promise<PlayerAssets | undefined> {
-  playerAssetsPromise ??= Promise.resolve({
-    coreJs: h5pCoreJsRaw,
-    css: h5pCssRaw,
-  })
+  playerAssetsPromise ??= Promise.all([
+    import('h5p-standalone/dist/frame.bundle.js?raw'),
+    import('h5p-standalone/dist/styles/h5p.css?raw'),
+  ])
+    .then(([core, css]) => ({ coreJs: core.default, css: css.default }))
+    .catch(() => undefined)
   return playerAssetsPromise
 }
 
@@ -1288,6 +1315,13 @@ export function sanitizeHtml(html: string): string {
 /** Assets larger than this stay out of an exported HTML file. */
 const MAX_INLINE_BYTES = 2 * 1024 * 1024
 
+/**
+ * Cap for assets inlined into a sandboxed site. Higher than the export cap
+ * because a course page legitimately carries a lot of imagery, but still
+ * bounded: base64 inflates a payload by roughly a third.
+ */
+const MAX_SANDBOX_ASSET_BYTES = 8 * 1024 * 1024
+
 function base64(bytes: Uint8Array): string {
   // Chunked: String.fromCharCode(...bytes) overflows the call stack on
   // anything more than a few hundred KB.
@@ -1297,6 +1331,41 @@ function base64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
   }
   return btoa(binary)
+}
+
+/**
+ * Points a sandboxed site's external links at a new tab (ADR-0017).
+ *
+ * Without a target the click would navigate the frame itself, loading a
+ * remote page inside MBZoo's layout; with one it opens a normal tab. rel
+ * is rewritten wholesale rather than appended so an author-supplied rel
+ * cannot weaken it. Only http(s) is retargeted — in-page anchors, and the
+ * data: URIs just produced for archive assets, are left alone.
+ */
+function retargetExternalLinks(html: string): string {
+  return html.replace(
+    /<a\s([^>]*\bhref=("https?:\/\/[^"]*"|'https?:\/\/[^']*')[^>]*)>/gi,
+    (_tag, attrs: string) => {
+      const cleaned = attrs
+        .replace(/\s*\btarget=("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s*\brel=("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .trim()
+      return `<a ${cleaned} target="_blank" rel="noopener noreferrer nofollow">`
+    },
+  )
+}
+
+/**
+ * Inline data: URI for an archive asset.
+ *
+ * Sandboxed previews run on an opaque origin (ADR-0014), where a blob: URL
+ * minted by the app origin is not loadable — the browser rejects it as a
+ * cross-origin local resource, which silently broke every image,
+ * stylesheet and script in multi-file HTML resources. A data: URI travels
+ * with the document, so it is the form that works inside the sandbox.
+ */
+function dataUrl(bytes: Uint8Array, mime: string): string {
+  return `data:${mime || 'application/octet-stream'};base64,${base64(bytes)}`
 }
 
 /** Escapes text interpolated into the export wrapper's markup. */

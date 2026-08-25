@@ -36,7 +36,6 @@ const STRINGS = {
     parsedIn: 'parsed in',
     warnings: 'warning(s)',
     'loading.activity': 'Loading',
-    advanced: 'Advanced · Moodle metadata',
     noContent: 'This item stores no additional content in the backup.',
     download: 'Download',
     showingPages: 'Showing {n} of {total} pages — use Download for the rest.',
@@ -50,8 +49,12 @@ const STRINGS = {
     'quiz.partial': 'partial',
     'quiz.wrong': 'incorrect',
     'quiz.answers': 'Answers',
-    'quiz.random':
-      'Random question — drawn from a category at attempt time; not included in the backup',
+    'quiz.randomFrom': 'Drawn at random from “{cat}” — {n} question(s) available in this backup',
+    'quiz.randomPool': 'Questions it can draw',
+    'quiz.randomEmpty':
+      'Drawn at random from “{cat}”, whose questions are not present in this backup',
+    'quiz.randomUnknown':
+      'Random question — drawn from a category at attempt time; the category is not identified in this backup',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -137,7 +140,6 @@ const STRINGS = {
     parsedIn: 'analizado en',
     warnings: 'aviso(s)',
     'loading.activity': 'Cargando',
-    advanced: 'Avanzado · metadatos Moodle',
     noContent: 'Este elemento no guarda contenido adicional en la copia.',
     download: 'Descargar',
     showingPages: 'Mostrando {n} de {total} páginas: usa Descargar para el resto.',
@@ -151,8 +153,11 @@ const STRINGS = {
     'quiz.partial': 'parcial',
     'quiz.wrong': 'incorrecta',
     'quiz.answers': 'Respuestas',
-    'quiz.random':
-      'Pregunta al azar: se sortea de una categoría en el intento; no está en la copia',
+    'quiz.randomFrom': 'Se sortea al azar de «{cat}»: {n} pregunta(s) disponibles en esta copia',
+    'quiz.randomPool': 'Preguntas que puede sortear',
+    'quiz.randomEmpty': 'Se sortea al azar de «{cat}», cuyas preguntas no están en esta copia',
+    'quiz.randomUnknown':
+      'Pregunta al azar: se sortea de una categoría en el intento; la categoría no se identifica en esta copia',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',
