@@ -25,3 +25,11 @@ per its README); h5p.org/licensing states MIT is used "wherever possible"
 and that making the GPL code optional was intended but no relicensing of
 this repository has been verified [PENDING: verification required]. Recorded
 as a risk in ADR-0018; blocks promoting H5P playback beyond experimental.
+
+Clarification requested upstream on 2026-08-25 (open, no maintainer reply yet):
+tunapanda/h5p-standalone#188 — asks whether `frame.bundle.js` is intended to
+ship under GPL-3.0 while the project's own code stays MIT, whether the npm
+package as a whole is therefore GPL-3.0, whether the bundled components'
+licenses should be documented, and which upstream `h5p/h5p-php-library`
+commit `vendor/h5p/` corresponds to. RISK-004 stays open until answered.
+https://github.com/tunapanda/h5p-standalone/issues/188

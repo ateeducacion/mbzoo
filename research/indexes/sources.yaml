@@ -102,6 +102,12 @@ sources:
     url: https://playwright.dev
     accessed: 2026-08-24
     license: Apache-2.0
+  REPO-009:
+    title: "Real .h5p specimens for playback testing (lumieducation/H5P-Nodejs-library test data)"
+    kind: external-repository
+    url: https://github.com/lumieducation/H5P-Nodejs-library
+    accessed: 2026-08-25
+    license: "repository GPL-3.0; bundled content-type libraries mostly MIT, several declare no license; sample content declares license 'U' (undisclosed)"
   TECH-009:
     title: DOMPurify
     kind: technology

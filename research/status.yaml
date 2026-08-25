@@ -41,6 +41,8 @@ added:
     note: Sandboxed previews fixed against real backups — ADR-0017 supersedes ADR-0014 (inline data: assets instead of unusable app-origin blob: URLs; allow-popups + escape so author links open a tab). Random quiz slots now resolve to their bank category pool instead of claiming the questions are absent.
   - date: 2026-08-25
     note: Experimental H5P playback — ADR-0018 adopts h5p-standalone (TECH-014) inside the ADR-0017 opaque-origin sandbox via an in-memory virtual filesystem shim. Synthetic .h5p package added to the demo fixture. Vendored-core GPL question recorded as open risk.
+  - date: 2026-08-25
+    note: H5P playback verified against real packages (REPO-009) — fixed media loading (new Image() bypassed the shim; H5P.getPath() injects a content-id segment) and string library versions. Upstream licensing clarification requested (tunapanda/h5p-standalone#188). Real specimens stay un-vendored; synthetic fixture should grow to cover the same shapes.
 
 risks:
   RISK-001:
@@ -66,4 +68,5 @@ risks:
     severity: medium
     probability: confirmed
     mitigation: recorded in TECH-014/ADR-0018; playback stays experimental and is re-reviewed before any non-experimental release
+    upstream: https://github.com/tunapanda/h5p-standalone/issues/188 (opened 2026-08-25, awaiting maintainer reply)
     status: monitored
