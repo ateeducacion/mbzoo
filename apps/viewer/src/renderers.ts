@@ -836,14 +836,15 @@ export class Renderer {
     chapterBox.className = 'book-chapter'
     container.appendChild(chapterBox)
 
+    let index = 0
     const showChapter = (i: number): void => {
-      const idx = Math.max(0, Math.min(book.chapters.length - 1, i))
-      const ch = book.chapters[idx] as BookChapter
-      counter.textContent = `${idx + 1} ${t('quiz.of')} ${book.chapters.length}`
-      prev.toggleAttribute('disabled', idx === 0)
-      next.toggleAttribute('disabled', idx === book.chapters.length - 1)
+      index = Math.max(0, Math.min(book.chapters.length - 1, i))
+      const ch = book.chapters[index] as BookChapter
+      counter.textContent = `${index + 1} ${t('quiz.of')} ${book.chapters.length}`
+      prev.toggleAttribute('disabled', index === 0)
+      next.toggleAttribute('disabled', index === book.chapters.length - 1)
       for (const b of toc.querySelectorAll('.book-toc-item')) b.classList.remove('selected')
-      toc.querySelectorAll('.book-toc-item')[idx]?.classList.add('selected')
+      toc.querySelectorAll('.book-toc-item')[index]?.classList.add('selected')
       chapterBox.replaceChildren()
       const title = document.createElement('h4')
       title.textContent = ch.title
@@ -856,6 +857,8 @@ export class Renderer {
       for (const panel of chapterBox.querySelectorAll('.external-panel'))
         chapterBox.appendChild(panel)
     }
+    prev.addEventListener('click', () => showChapter(index - 1))
+    next.addEventListener('click', () => showChapter(index + 1))
     showChapter(0)
   }
 

@@ -1,0 +1,424 @@
+---
+url: /mbzoo/docs/guide/what-is-mbz.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/what-is-mbz.md.
+
+# What is an .mbz?
+
+An `.mbz` file is a **Moodle course backup**: a package containing the course's
+sections, activities, files, settings and (optionally) user data.
+
+## Container formats
+
+| Format | Since                          | Notes                                                      |
+| ------ | ------------------------------ | ---------------------------------------------------------- |
+| ZIP    | Moodle 2.0                     | No ZIP64 support inside Moodle itself (4 GB practical cap) |
+| TAR.GZ | default since 2.9 (opt-in 2.6) | POSIX ustar; no size cap in practice                       |
+
+MBZoo detects the format from magic bytes and supports **both**.
+
+## Inside the archive
+
+```
+moodle_backup.xml          course/section/activity skeleton
+files.xml                  file index (contenthash, component, filearea…)
+course/course.xml          full course metadata (fullname lives here)
+sections/section_N/        per-section name, summary, activity order
+activities/<mod>_N/        per-activity XML (module.xml, <mod>.xml)
+files/<2 hex>/<sha1>       content-addressed file pool
+```
+
+Facts verified against Moodle source (`moodle/moodle`, REPO-005) and real
+backups — see `research/` in the repository.
+
+## What MBZoo does with it
+
+MBZoo parses the minimum XML subset needed to rebuild the course navigation
+tree, then extracts content (pages, PDFs, websites, questions…) **on demand,
+in your browser**. Nothing is uploaded — see [Privacy](/mbzoo/docs/PRIVACY.md).
+
+
+
+---
+url: /mbzoo/docs/es/guide/what-is-mbz.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/what-is-mbz.md.
+
+# ¿Qué es un .mbz?
+
+Un archivo `.mbz` es una **copia de seguridad de un curso Moodle**: un paquete
+con las secciones, actividades, archivos, ajustes y (opcionalmente) datos de
+usuario del curso.
+
+## Formatos de contenedor
+
+| Formato | Desde                                   | Notas                                                              |
+| ------- | --------------------------------------- | ------------------------------------------------------------------ |
+| ZIP     | Moodle 2.0                              | Sin soporte ZIP64 dentro del propio Moodle (tope práctico de 4 GB) |
+| TAR.GZ  | por defecto desde 2.9 (opcional en 2.6) | ustar POSIX; sin límite de tamaño en la práctica                   |
+
+MBZoo detecta el formato por los magic bytes y soporta **ambos**.
+
+## Dentro del archivo
+
+```
+moodle_backup.xml          esqueleto curso/secciones/actividades
+files.xml                  índice de archivos (contenthash, component, filearea…)
+course/course.xml          metadatos completos del curso (el fullname vive aquí)
+sections/section_N/        nombre, resumen y orden de actividades por sección
+activities/<mod>_N/        XML por actividad (module.xml, <mod>.xml)
+files/<2 hex>/<sha1>       almacén de archivos direccionado por contenido
+```
+
+Hechos verificados contra el código de Moodle (`moodle/moodle`, REPO-005) y
+copias reales — ver `research/` en el repositorio.
+
+## Qué hace MBZoo con ello
+
+MBZoo analiza el subconjunto mínimo de XML necesario para reconstruir el árbol
+de navegación del curso, y extrae el contenido (páginas, PDFs, webs,
+preguntas…) **bajo demanda, en tu navegador**. Nada se sube — ver
+[Privacidad](/mbzoo/docs/es/PRIVACY.md).
+
+
+
+---
+url: /mbzoo/docs/guide/activity-support.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/activity-support.md.
+
+# Activity & content support
+
+MBZoo renders what the backup actually contains, and is transparent about
+what it cannot do. Unknown third-party plugins never break the course view.
+
+| Moodle module               | Inspect                    | Render / preview       | Notes                                                                                                           |
+| --------------------------- | -------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Page                        | ✅                          | ✅ sanitized HTML       | ADR-0012/0013                                                                                                   |
+| Label                       | ✅                          | ✅ sanitized HTML       |                                                                                                                 |
+| URL                         | ✅                          | ✅ external link        | never fetched automatically                                                                                     |
+| Resource / File             | ✅                          | ✅ inline preview       | PDF via pdf.js canvas, images, text, sandboxed HTML (ADR-0014)                                                  |
+| Folder                      | ✅                          | ✅ file cards           |                                                                                                                 |
+| HTML page w/ CSS+JS         | ✅                          | ✅ sandboxed iframe     | opaque origin + CSP; scripts isolated from the app (ADR-0014)                                                   |
+| Book                        | ✅ metadata                 | 🔜 planned             | chapters renderable from activity XML                                                                           |
+| Forum                       | ✅ metadata                 | 🔜 planned (read-only) | discussions only exist if backup included user data                                                             |
+| Glossary                    | ✅ metadata                 | 🔜 planned (read-only) |                                                                                                                 |
+| Assignment                  | ✅ metadata                 | 🔜 planned             | submissions only present with user data                                                                         |
+| Quiz                        | ✅ metadata + question bank | 🔜 inspection-first    | faithful execution requires Moodle's Question Engine — not a goal; practice mode is a separate idea (prompt §6) |
+| SCORM                       | ✅ metadata + package file  | ⏳ research             | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox                                            |
+| H5P                         | ✅ metadata + package file  | ⏳ research             | h5p-standalone candidate (Q-013)                                                                                |
+| eXeLearning .elp/.elpx      | ✅ as files                 | ⏳ research             | format study tracked in Q-016                                                                                   |
+| Unknown third-party plugins | ✅                          | ✅ metadata fallback    | never break the course view                                                                                     |
+
+Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
+
+
+
+---
+url: /mbzoo/docs/es/guide/activity-support.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/activity-support.md.
+
+# Actividades y contenidos soportados
+
+MBZoo renderiza lo que la copia contiene realmente y es transparente con lo
+que no puede hacer. Los plugins de terceros desconocidos nunca rompen la
+vista del curso.
+
+| Módulo Moodle          | Inspeccionar          | Vista previa               | Notas                                                                                                                   |
+| ---------------------- | --------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Página (Page)          | ✅                     | ✅ HTML saneado             | ADR-0012/0013                                                                                                           |
+| Etiqueta (Label)       | ✅                     | ✅ HTML saneado             |                                                                                                                         |
+| URL                    | ✅                     | ✅ enlace externo           | nunca se descarga automáticamente                                                                                       |
+| Recurso / Archivo      | ✅                     | ✅ vista integrada          | PDF con canvas pdf.js, imágenes, texto, HTML en sandbox (ADR-0014)                                                      |
+| Carpeta (Folder)       | ✅                     | ✅ tarjetas de archivo      |                                                                                                                         |
+| Página web con CSS+JS  | ✅                     | ✅ iframe en sandbox        | origen opaco + CSP; el JS queda aislado de la app (ADR-0014)                                                            |
+| Libro (Book)           | ✅ metadatos           | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0015)                                                                                     |
+| Foro                   | ✅ metadatos           | 🔜 planeado (solo lectura) | los debates solo existen si la copia incluyó usuarios                                                                   |
+| Glosario               | ✅                     | ✅ entradas renderizadas    | concepto + definición                                                                                                   |
+| Tarea (Assignment)     | ✅                     | ✅ resumen                  | fechas de entrega/cierre y tipos de entrega                                                                             |
+| Cuestionario (Quiz)    | ✅ banco de preguntas  | ✅ inspección navegable     | preguntas con radios/checkboxes estilo Moodle; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
+| SCORM                  | ✅ metadatos + paquete | ⏳ investigación            | lanzar requiere un runtime (candidato: scorm-again, Q-012)                                                              |
+| H5P                    | ✅ metadatos + paquete | ⏳ investigación            | candidato: h5p-standalone (Q-013)                                                                                       |
+| eXeLearning .elp/.elpx | ✅ como archivos       | ⏳ investigación            | estudio de formato en Q-016                                                                                             |
+| Plugins desconocidos   | ✅                     | ✅ fallback de metadatos    | nunca rompen la vista del curso                                                                                         |
+
+Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).
+
+[English version](/mbzoo/docs/es/guide/activity-support.md)
+
+
+
+---
+url: /mbzoo/docs/ARCHITECTURE.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/ARCHITECTURE.md.
+
+# Architecture
+
+Status: bootstrap (2026-08-24). Durable decisions live in
+`research/decisions/adr/`; this page summarizes the shape.
+
+```
+                 ┌──────────────────────────────┐
+  .mbz file ───▶ │  apps/viewer (Vite, vanilla) │
+   (File/Blob)   │   main.ts        worker.ts   │
+                 └───────┬──────────────┬───────┘
+                         │              │ postMessage(ArrayBuffer)
+                         ▼              ▼
+                 ┌──────────────────────────────────┐
+                 │        @mbzoo/core (portable)    │
+                 │  openBackup(blob)                │
+                 │   ├─ detectFormat (magic bytes)  │
+                 │   ├─ ArchiveReader               │
+                 │   │    ├─ FflateZipReader (zip)  │
+                 │   │    └─ TarGzReader (tar.gz)   │
+                 │   └─ moodle/ event XML parsers   │
+                 │        → normalized model        │
+                 └──────────────────────────────────┘
+                                  ▲
+                  apps/cli (Bun) ─┘ same core, local disk
+```
+
+Key boundaries (see ADRs for rationale):
+
+- **Portable core** (ADR-0004): Web-platform primitives only; the normalized
+  model in `packages/core/src/model/backup.ts` is the only cross-package
+  contract.
+- **Archive abstraction** (ADR-0005): both real `.mbz` containers supported;
+  lazy/streaming access deferred behind `ArchiveReader`.
+- **XML adapter** (ADR-0006): event-based parsing with input/text budgets;
+  saxes is an implementation detail.
+- **Security** (ADR-0009): hostile input posture; textContent-only rendering;
+  no content execution in the app origin.
+
+Performance model today: parse runs in a Worker; only metadata XML is read
+eagerly; binary assets are never extracted unless requested. Large-file
+strategy is tracked as TASK-003 / Q-004..Q-007.
+
+
+
+---
+url: /mbzoo/docs/PRIVACY.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/PRIVACY.md.
+
+# Privacy
+
+**Nothing you open in MBZoo leaves your device.**
+
+- The viewer is a static web application. Backups are read with the browser
+  File API and parsed inside a Web Worker on your machine. There is no upload
+  path — no backend, no telemetry, no analytics.
+- The CLI reads local files only.
+- Course content may contain personal data (names, emails, submissions,
+  grades). MBZoo treats that data as yours alone: it stays in memory, and any
+  future export feature will require an explicit user action.
+- External resources referenced by course content are not fetched
+  automatically. If a future feature needs network access, it will be opt-in
+  and documented here first.
+
+This is a product property enforced by architecture (static deployment, no
+server code), not just a policy statement.
+
+
+
+---
+url: /mbzoo/docs/es/PRIVACY.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/PRIVACY.md.
+
+# Privacidad
+
+**Nada de lo que abras en MBZoo sale de tu dispositivo.**
+
+- El visor es una aplicación web estática. Las copias se leen con la File API
+  del navegador y se analizan dentro de un Web Worker en tu máquina. No existe
+  ruta de subida: sin backend, sin telemetría, sin analíticas.
+- El CLI solo lee ficheros locales.
+- El contenido del curso puede contener datos personales (nombres, correos,
+  entregas, calificaciones). MBZoo trata esos datos como tuyos: permanecen en
+  memoria y cualquier futura función de exportación requerirá una acción
+  explícita del usuario.
+- Los recursos externos referenciados por el contenido del curso no se
+  descargan automáticamente. Si una función futura necesitara red, será
+  opcional y se documentará aquí primero.
+
+Esto es una propiedad del producto, garantizada por la arquitectura
+(despliegue estático, sin código de servidor), no solo una declaración.
+
+[English](/mbzoo/docs/PRIVACY.md)
+
+
+
+---
+url: /mbzoo/docs/es/guide/research.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/research.md.
+
+# Sistema de investigación y evidencia
+
+Cada afirmación durable en MBZoo traza a un registro registrado:
+
+- `REPO-NNN` / `STD-NNN` / `TECH-NNN` — fuentes inspeccionadas
+- `AN-NNN` — análisis (hechos vs interpretación)
+- `EXP-NNN` — experimentos reproducibles (comandos, entorno, medidas)
+- `ADR-NNNN` — decisiones de arquitectura (se sustituyen, nunca se reescriben)
+- `TASK-NNN` / `Q-NNN` — trabajo seguido y preguntas abiertas
+
+El sistema se valida automáticamente: `bun run research:validate` comprueba
+IDs, metadatos requeridos y referencias cruzadas; `bun run research:indexes`
+genera los índices (CI detecta desviaciones).
+
+Ver [research/](https://github.com/ateeducacion/mbzoo/tree/main/research) en
+el repositorio y `research/AGENTS.md` para las reglas operativas.
+
+[Versión en inglés](/mbzoo/docs/es/guide/research.md)
+
+
+
+---
+url: /mbzoo/docs/es/index.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/index.md.
+
+# 
+
+***
+
+pageType: home
+hero:
+name: MBZoo
+tagline: Mira qué hay dentro de tu MBZ.
+text: Abre, inspecciona y previsualiza copias de seguridad de Moodle directamente en tu navegador. Local-first, sin subidas.
+actions:
+\- theme: brand
+text: Abrir el visor
+link: [https://ateeducacion.github.io/mbzoo/](https://ateeducacion.github.io/mbzoo/)
+\- theme: alt
+text: ¿Qué es un .mbz?
+link: /es/guide/what-is-mbz.html
+\- theme: alt
+text: GitHub
+link: [https://github.com/ateeducacion/mbzoo](https://github.com/ateeducacion/mbzoo)
+features:
+
+- title: 100 % local
+  details: Las copias se analizan en tu navegador con un Web Worker. No hay servidor ni telemetría: la privacidad es una propiedad del producto.
+- title: Los dos formatos reales
+  details: Contenedores ZIP y TAR.GZ (tgz es el formato por defecto de Moodle desde 2.9), con lectura perezosa de metadatos y extracción de contenido bajo demanda.
+- title: Seguro por diseño
+  details: Postura de entrada hostil: HTML saneado, vistas previas en iframes de origen opaco, sin ejecución de contenido en el origen de la aplicación.
+- title: Basado en evidencia
+  details: Cada afirmación durable traza a una fuente, experimento o ADR registrado. Índices de investigación validados automáticamente.
+
+***
+
+[English](/mbzoo/docs/index.md)
+
+
+
+---
+url: /mbzoo/docs/guide/development.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/development.md.
+
+# Development
+
+## Requirements
+
+- [Bun](https://bun.sh) ≥ 1.4 (package manager, test runner, CLI runtime)
+- Node 20+ (Playwright runner)
+- `npx playwright install` for E2E browsers
+
+## Commands
+
+| Command                           | Purpose                                            |
+| --------------------------------- | -------------------------------------------------- |
+| `bun install`                     | install workspace dependencies                     |
+| `bun run dev:viewer`              | Vite dev server for the viewer                     |
+| `bun run build`                   | build all packages (viewer outputs static `dist/`) |
+| `bun run preview:viewer`          | serve the production build locally                 |
+| `bun test packages apps fixtures` | unit tests (bun:test)                              |
+| `bun run test:e2e`                | Playwright specs against the built viewer          |
+| `bun run cli -- <file.mbz>`       | inspect a backup from the terminal                 |
+| `bun run lint` / `format`         | Biome check/fix                                    |
+| `bun run typecheck`               | strict TypeScript across workspaces                |
+| `bun run research:indexes`        | regenerate research indexes                        |
+| `bun run research:validate`       | validate research records + index freshness        |
+| `bun run check`                   | the full local CI equivalent                       |
+
+## Layout
+
+See `docs/ARCHITECTURE.md`. Parser work has extra invariants — load
+`.agents/skills/mbz-parser/SKILL.md` first.
+
+## Fixtures
+
+Regenerate with `bun run fixtures/scripts/generate-fixture.ts`; checksums live
+in `fixtures/manifest.yaml`. Never commit real backups.
+
+## Deployment
+
+The viewer is a static site. Pushes to `main` build and deploy it to GitHub
+Pages via `.github/workflows/deploy-pages.yml`.
+
+
+
+---
+url: /mbzoo/docs/guide/research.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/research.md.
+
+# Research & evidence system
+
+Every durable claim in MBZoo traces to a registered record:
+
+- `REPO-NNN` / `STD-NNN` / `TECH-NNN` — inspected sources
+- `AN-NNN` — analyses (facts vs interpretation)
+- `EXP-NNN` — reproducible experiments (commands, environment, measurements)
+- `ADR-NNNN` — architecture decisions (supersede, never rewrite)
+- `TASK-NNN` / `Q-NNN` — tracked work and open questions
+
+The system is machine-validated: `bun run research:validate` checks IDs,
+required metadata and cross-references; `bun run research:indexes` generates
+the indexes (drift-checked in CI).
+
+See [research/](https://github.com/ateeducacion/mbzoo/tree/main/research) in
+the repository, and `research/AGENTS.md` for the operational rules.
+
+
+
+---
+url: /mbzoo/docs/index.md
+---
+
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/index.md.
+
+# MBZoo
+
+Open, inspect and preview Moodle course backups right in your browser. Local-first, no upload.
+
+> See what's inside your MBZ.
+
+[Open the viewer](https://ateeducacion.github.io/mbzoo/) | [What is an .mbz?](/guide/what-is-mbz) | [GitHub](https://github.com/ateeducacion/mbzoo)
+
+## Features
+
+- **100% local**: Backups are parsed in your browser via a Web Worker. There is no server and no telemetry — privacy is a product property.
+- **Both real formats**: ZIP and TAR.GZ containers (tgz is Moodle's default since 2.9), with lazy metadata parsing and on-demand content extraction.
+- **Safe by design**: Hostile-input posture — sanitized HTML, sandboxed opaque-origin previews, no content execution in the app origin.
+- **Evidence-driven**: Every durable claim traces to a registered source, experiment or ADR. Machine-validated research indexes.
+
+

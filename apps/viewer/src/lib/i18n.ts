@@ -52,6 +52,9 @@ const STRINGS = {
     'quiz.answers': 'Answers',
     'quiz.random':
       'Random question — drawn from a category at attempt time; not included in the backup',
+    'examples.label': 'Try an example:',
+    'home.title': 'MBZoo home',
+    'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
     prev: 'Previous',
     next: 'Next',
     availableFrom: 'Available from',
@@ -115,6 +118,9 @@ const STRINGS = {
     'quiz.answers': 'Respuestas',
     'quiz.random':
       'Pregunta al azar: se sortea de una categoría en el intento; no está en la copia',
+    'examples.label': 'Prueba con un ejemplo:',
+    'home.title': 'Inicio de MBZoo',
+    'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',
     prev: 'Anterior',
     next: 'Siguiente',
     availableFrom: 'Disponible desde',
@@ -142,7 +148,12 @@ const lang = detectLang()
 
 /** Translate a key; {placeholders} substituted from vars. */
 export function t(key: StringKey, vars?: Record<string, string | number>): string {
-  let s: string = STRINGS[lang][key] ?? STRINGS.en[key] ?? key
+  let s: string = STRINGS[lang][key] ?? STRINGS.en[key] ?? ''
+  if (s === '') {
+    // A missing key is a bug: make it visible in dev instead of rendering ??.
+    console.warn(`[i18n] missing key: ${key}`)
+    return key
+  }
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       s = s.replaceAll(`{${k}}`, String(v))

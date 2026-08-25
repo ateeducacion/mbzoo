@@ -241,3 +241,16 @@ test('logo returns home and global drop hint is available', async ({ page }) => 
   await page.locator('#home-btn').click()
   await expect(page.locator('#landing')).toBeVisible()
 })
+
+test('book prev/next navigation works', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo book/ }).click()
+  await expect(page.locator('.book-chapter .activity-content')).toContainText('demo book')
+  await page.locator('.quiz-nav .btn-outline').nth(1).click()
+  await expect(page.locator('.book-chapter .activity-content')).toContainText('Chapter two body')
+  await page.locator('.quiz-nav .btn-outline').nth(1).click()
+  await expect(page.locator('.book-chapter .activity-content')).toContainText('Subchapter body')
+  await page.locator('.quiz-nav .btn-outline').nth(0).click()
+  await expect(page.locator('.book-chapter .activity-content')).toContainText('Chapter two body')
+})

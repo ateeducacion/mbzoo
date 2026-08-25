@@ -1,0 +1,19 @@
+:root {
+  --rp-c-brand: #f58220;
+  --rp-c-brand-dark: #b34700;
+  --rp-c-brand-light: rgba(245, 130, 32, 0.12);
+  --rp-c-bg: #efece6;
+  --rp-c-bg-soft: #fdfcfa;
+  --rp-c-text: #233047;
+  --rp-c-text-2: #4a5568;
+  --rp-c-divider: #e8e2d8;
+}
+.rp-hero__title,
+h1,
+h2,
+h3 {
+  font-family: "Nunito", system-ui, sans-serif;
+}
+body {
+  font-family: "Public Sans", system-ui, sans-serif;
+}
