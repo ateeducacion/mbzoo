@@ -61,6 +61,7 @@ const FIELD_MAP = new Map<string, keyof BackupFileRecord>([
   ['filename', 'fileName'],
   ['filesize', 'fileSize'],
   ['mimetype', 'mimeType'],
+  ['sortorder', 'sortOrder'],
 ])
 
 /**
@@ -89,5 +90,6 @@ function toRecord(r: Partial<Record<keyof BackupFileRecord, string>>): BackupFil
     fileArea: leafValue(r.fileArea ?? ''),
     itemId: leafValue(r.itemId ?? '0'),
     contextId: leafValue(r.contextId ?? ''),
+    sortOrder: Number(leafValue(r.sortOrder ?? '0')) || 0,
   }
 }

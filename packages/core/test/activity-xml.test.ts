@@ -189,6 +189,7 @@ describe('matchFileRecord itemid scoping', () => {
         fileArea: 'page_contents',
         itemId: f.itemId,
         contextId: '120',
+        sortOrder: 0,
       },
     ]),
   )

@@ -599,11 +599,31 @@ export class Renderer {
       return
     }
 
-    // Website detection: a resource whose content is an HTML entry point
-    // plus assets (e.g. exported eXeLearning sites) renders as one page.
-    const entry = pickWebsiteEntry(records)
+    // Which of these files IS the resource? Moodle marks it with
+    // sortorder = 1, and it is not a detail: a teacher who uploads a folder
+    // gets every file in it stored under the activity, so a resource can
+    // carry hundreds of files that are not the one it points at. Guessing by
+    // filename picks the same entry for every resource sharing a folder —
+    // six activities in SMR_SEGI (REPO-004) each carry the same 647-file unit
+    // tree, and all six showed the same page.
+    const main = records.find((f) => f.sortOrder === 1)
+
+    if (main && !isHtmlRecord(main)) {
+      // The resource is a single file that happens to travel with a folder:
+      // show it, and leave the rest to the collapsed list.
+      container.appendChild(await this.filePreview(main))
+      appendSiblingList(container, records, main)
+      return
+    }
+
+    // Website: an HTML entry point plus its assets, e.g. an eXeLearning
+    // export. Scope the site to the entry's own directory so a resource does
+    // not present another resource's pages as its own.
+    const entry = main ?? pickWebsiteEntry(records)
     if (entry) {
-      await this.renderWebsite(records, entry, container)
+      const dir = entry.filePath
+      const scoped = records.filter((f) => f.filePath.startsWith(dir))
+      await this.renderWebsite(scoped.length > 0 ? scoped : records, entry, container)
       return
     }
 
@@ -3040,6 +3060,33 @@ function externalEmbedCard(url: string): HTMLElement {
   shown.textContent = url
   card.appendChild(shown)
   return card
+}
+
+/**
+ * Lists the files that travelled with a resource but are not the resource.
+ * Collapsed, because they are context rather than content.
+ */
+function appendSiblingList(
+  container: HTMLElement,
+  records: BackupFileRecord[],
+  main: BackupFileRecord,
+): void {
+  const others = records.filter((f) => f !== main)
+  if (others.length === 0) return
+  const details = document.createElement('details')
+  details.className = 'advanced'
+  const summary = document.createElement('summary')
+  summary.textContent = `${t('resource.alsoStored')} (${others.length})`
+  details.appendChild(summary)
+  const list = document.createElement('ul')
+  list.className = 'resource-files'
+  for (const rec of sortRecords(others).slice(0, 500)) {
+    const li = document.createElement('li')
+    li.textContent = `${rec.filePath}${rec.fileName}`
+    list.appendChild(li)
+  }
+  details.appendChild(list)
+  container.appendChild(details)
 }
 
 /** Download name for a file the course embedded rather than listed. */

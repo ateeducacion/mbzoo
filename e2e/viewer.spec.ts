@@ -609,6 +609,61 @@ test('the Export menu closes on Escape and on an outside click', async ({ page }
 })
 
 /** A multi-file HTML site: an entry page plus a relative image and stylesheet. */
+/**
+ * The shape real institutional backups have: a teacher uploads a whole unit
+ * folder, so every resource in the unit stores the same tree, and only
+ * Moodle's sortorder=1 marker says which file each resource actually points
+ * at. Modelled on SMR_SEGI (REPO-004), where six resources shared one
+ * 647-file folder.
+ */
+function sharedFolderFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  const page = (id: string) =>
+    `<!doctype html><html><head><title>${id}</title></head><body><p id="which">${id}</p></body></html>`
+  return mutatedFixture((entries) => {
+    const filesData = entries['files.xml']
+    if (!filesData) throw new Error('Missing fixture entry: files.xml')
+    const filesXml = strFromU8(filesData)
+    const records = filesXml.match(/<file>[\s\S]*?<\/file>/g) ?? []
+    const base = records.find((r) => r.includes('<filename>guide.txt</filename>'))
+    if (!base) throw new Error('Missing guide.txt record in fixture')
+    const oldHash = base.match(/<contenthash>([^<]+)<\/contenthash>/)?.[1]
+    if (!oldHash) throw new Error('Missing guide.txt content hash')
+
+    const make = (id: string, dir: string, sortorder: number): string => {
+      const bytes = strToU8(page(id))
+      const hash = createHash('sha1').update(bytes).digest('hex')
+      entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
+      return base
+        .replace(`<contenthash>${oldHash}</contenthash>`, `<contenthash>${hash}</contenthash>`)
+        .replace('<filename>guide.txt</filename>', '<filename>index.html</filename>')
+        .replace('<filepath>/</filepath>', `<filepath>${dir}</filepath>`)
+        .replace(/<filesize>\d+<\/filesize>/, `<filesize>${bytes.byteLength}</filesize>`)
+        .replace('<mimetype>text/plain</mimetype>', '<mimetype>text/html</mimetype>')
+        .replace('<sortorder>0</sortorder>', `<sortorder>${sortorder}</sortorder>`)
+    }
+
+    // "Contenidos" sorts first alphabetically and sits at the same depth, so
+    // the filename heuristic picks it. Moodle says the resource is the other.
+    const replacement = [
+      make('contenidos-page', '/unit/Contenidos/', 0),
+      make('orientaciones-page', '/unit/Orientaciones/', 1),
+    ].join('\n')
+
+    entries['files.xml'] = strToU8(filesXml.replace(base, replacement))
+    delete entries[`files/${oldHash.slice(0, 2)}/${oldHash}`]
+  }, 'shared-folder.mbz')
+}
+
+test("a resource sharing a folder shows its own file, not a neighbour's", async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', sharedFolderFixture())
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  // Both pages live in the same resource. Picking by filename would show
+  // Contenidos for every resource in the unit; Moodle's marker says which.
+  await expect(page.frameLocator('.html-frame').locator('#which')).toHaveText('orientaciones-page')
+})
+
 function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
   const html = `<!doctype html>
 <html><head><link rel="stylesheet" href="site.css"></head>

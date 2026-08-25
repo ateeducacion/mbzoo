@@ -78,6 +78,13 @@ export interface BackupFileRecord {
   readonly fileArea: string
   readonly itemId: string
   readonly contextId: string
+  /**
+   * Moodle's main-file marker. Exactly one record per file area carries 1;
+   * every other record is 0. For `mod_resource` it is how Moodle knows which
+   * of the files a teacher uploaded is *the* resource — the rest are the
+   * folder that came with it.
+   */
+  readonly sortOrder: number
 }
 
 export interface BackupParseWarning {

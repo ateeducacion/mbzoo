@@ -201,6 +201,7 @@ const STRINGS = {
     'site.pagesHint':
       'Links inside the page work; this list also reaches pages the entry page never links to.',
     'embed.notPreviewable': 'This course embedded a file MBZoo cannot show inline.',
+    'resource.alsoStored': 'Also stored with this resource',
     'embed.external': 'Embedded from another site',
     'embed.externalHint':
       'The course embedded this here. MBZoo never loads content from other sites, so it is offered as a link instead.',
@@ -493,6 +494,7 @@ const STRINGS = {
     'site.pagesHint':
       'Los enlaces dentro de la página funcionan; esta lista además llega a páginas que la portada no enlaza.',
     'embed.notPreviewable': 'Este curso incrusta un fichero que MBZoo no puede mostrar en línea.',
+    'resource.alsoStored': 'También guardado con este recurso',
     'embed.external': 'Incrustado desde otro sitio',
     'embed.externalHint':
       'El curso lo incrustaba aquí. MBZoo nunca carga contenido de otros sitios, así que se ofrece como enlace.',
