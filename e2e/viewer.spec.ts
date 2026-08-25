@@ -1255,6 +1255,53 @@ test('a backup carrying people says so, and does not spill the names by default'
   )
 })
 
+test('the personal-data banner folds into a pill on Understood and unfolds again', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', withUsersFixture())
+
+  const box = page.locator('#personal-data')
+  const banner = box.locator('.personal-data-banner')
+  const pill = box.getByRole('button', { name: /Personal data|Datos personales/ })
+  await expect(banner).toBeVisible()
+  await expect(banner).toContainText(/This file contains personal data|Este archivo contiene/)
+  await expect(banner).toContainText(/Nothing leaves your device|Nada sale de tu dispositivo/)
+  await expect(pill).toBeHidden()
+
+  // Open the list, then fold the banner: the pill takes over, still naming
+  // the count and the kinds from the parser, and the names are gone with it.
+  await box.locator('summary').click()
+  await expect(page.locator('.user-list')).toBeVisible()
+  await box.getByRole('button', { name: /Understood|Entendido/ }).click()
+  await expect(banner).toBeHidden()
+  await expect(page.locator('.user-list')).toBeHidden()
+  await expect(pill).toBeVisible()
+  await expect(pill).toBeFocused()
+  await expect(pill).toContainText('2')
+  await expect(pill).toContainText(/emails|correos/)
+  await expect(pill).toContainText(/IPs/)
+  await expect(pill).toContainText(/Details|Detalles/)
+  await expect(pill).toHaveAttribute('aria-expanded', 'false')
+
+  // Unfolding leads with the disclosure again; the names stay closed.
+  await pill.click()
+  await expect(banner).toBeVisible()
+  await expect(pill).toBeHidden()
+  await expect(box.locator('details')).not.toHaveAttribute('open', /.*/)
+  await expect(page.locator('.user-list')).toBeHidden()
+
+  // The choice lives in memory for this page session: the next file opened
+  // here starts folded, and nothing was written to storage.
+  await box.getByRole('button', { name: /Understood|Entendido/ }).click()
+  await page.setInputFiles('#file-input', withUsersFixture())
+  await expect(page.locator('#course-title')).toBeVisible()
+  await expect(pill).toBeVisible()
+  await expect(banner).toBeHidden()
+  const stored = await page.evaluate(() => localStorage.length + sessionStorage.length)
+  expect(stored).toBe(0)
+})
+
 test('a content-only backup shows no personal-data warning', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', FIXTURE)
