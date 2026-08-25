@@ -283,6 +283,14 @@ export function contentKind(mime: string, fileName: string): string {
   return 'File'
 }
 
+/** Formats a count or measure with the UI language's digit grouping and decimal mark. */
+export function formatNumber(n: number, lang: string, maxFractionDigits = 0): string {
+  if (!Number.isFinite(n)) return ''
+  return new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
+    maximumFractionDigits: maxFractionDigits,
+  }).format(n)
+}
+
 /** Formats a Moodle unix timestamp for the UI language. */
 export function formatDate(ts: number, lang: string): string {
   if (!Number.isFinite(ts) || ts <= 0) return ''

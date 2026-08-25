@@ -3,6 +3,7 @@ import {
   ALLOWED_URI_REGEXP,
   decodeRefPath,
   formatBytes,
+  formatNumber,
   guessMime,
   H5P_CSP,
   injectCsp,
@@ -21,6 +22,21 @@ describe('formatBytes', () => {
     expect(formatBytes(512)).toBe('512 B')
     expect(formatBytes(2048)).toBe('2.0 KB')
     expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB')
+  })
+})
+
+describe('formatNumber', () => {
+  test('groups digits and picks the decimal mark for the UI language', () => {
+    expect(formatNumber(1234, 'en')).toBe('1,234')
+    expect(formatNumber(1234, 'es')).toBe('1234')
+    expect(formatNumber(12345, 'es')).toBe('12.345')
+    expect(formatNumber(48.25, 'en', 1)).toBe('48.3')
+    expect(formatNumber(48.25, 'es', 1)).toBe('48,3')
+  })
+
+  test('drops fraction digits by default and never prints NaN', () => {
+    expect(formatNumber(7.9, 'en')).toBe('8')
+    expect(formatNumber(Number.NaN, 'en')).toBe('')
   })
 })
 

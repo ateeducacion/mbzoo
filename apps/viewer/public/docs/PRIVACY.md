@@ -37,6 +37,9 @@ nobody has one teaches people to ignore the warning.
 The list of names sits behind a disclosure that stays closed. Knowing a file
 names four hundred people is what everyone needs; reading their names is a
 deliberate act, and not one to perform by accident while screen-sharing.
+"Understood" folds the banner into a one-line pill that keeps the count and
+the kinds on screen; that choice lives in memory for the page session only and
+is never written to browser storage.
 
 **Treat a backup with user data as personal data** before emailing it,
 uploading it, or committing it to a repository.

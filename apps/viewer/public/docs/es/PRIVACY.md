@@ -40,7 +40,10 @@ enseña a la gente a ignorar el aviso.
 La lista de nombres queda tras un desplegable que permanece cerrado. Saber que
 un fichero nombra a cuatrocientas personas es lo que todo el mundo necesita;
 leer sus nombres es un acto deliberado, y no de los que conviene hacer sin
-querer mientras compartes pantalla.
+querer mientras compartes pantalla. «Entendido» pliega el aviso en una línea
+que mantiene a la vista el número de personas y los tipos de dato; esa elección
+vive en memoria solo durante la sesión y nunca se escribe en el almacenamiento
+del navegador.
 
 **Trata una copia con datos de usuario como datos personales** antes de
 enviarla por correo, subirla o commitearla a un repositorio.

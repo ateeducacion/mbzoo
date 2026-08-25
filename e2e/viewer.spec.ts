@@ -1314,6 +1314,53 @@ test('a backup carrying people says so, and does not spill the names by default'
   )
 })
 
+test('the personal-data banner folds into a pill on Understood and unfolds again', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', withUsersFixture())
+
+  const box = page.locator('#personal-data')
+  const banner = box.locator('.personal-data-banner')
+  const pill = box.getByRole('button', { name: /Personal data|Datos personales/ })
+  await expect(banner).toBeVisible()
+  await expect(banner).toContainText(/This file contains personal data|Este archivo contiene/)
+  await expect(banner).toContainText(/Nothing leaves your device|Nada sale de tu dispositivo/)
+  await expect(pill).toBeHidden()
+
+  // Open the list, then fold the banner: the pill takes over, still naming
+  // the count and the kinds from the parser, and the names are gone with it.
+  await box.locator('summary').click()
+  await expect(page.locator('.user-list')).toBeVisible()
+  await box.getByRole('button', { name: /Understood|Entendido/ }).click()
+  await expect(banner).toBeHidden()
+  await expect(page.locator('.user-list')).toBeHidden()
+  await expect(pill).toBeVisible()
+  await expect(pill).toBeFocused()
+  await expect(pill).toContainText('2')
+  await expect(pill).toContainText(/emails|correos/)
+  await expect(pill).toContainText(/IPs/)
+  await expect(pill).toContainText(/Details|Detalles/)
+  await expect(pill).toHaveAttribute('aria-expanded', 'false')
+
+  // Unfolding leads with the disclosure again; the names stay closed.
+  await pill.click()
+  await expect(banner).toBeVisible()
+  await expect(pill).toBeHidden()
+  await expect(box.locator('details')).not.toHaveAttribute('open', /.*/)
+  await expect(page.locator('.user-list')).toBeHidden()
+
+  // The choice lives in memory for this page session: the next file opened
+  // here starts folded, and nothing was written to storage.
+  await box.getByRole('button', { name: /Understood|Entendido/ }).click()
+  await page.setInputFiles('#file-input', withUsersFixture())
+  await expect(page.locator('#course-title')).toBeVisible()
+  await expect(pill).toBeVisible()
+  await expect(banner).toBeHidden()
+  const stored = await page.evaluate(() => localStorage.length + sessionStorage.length)
+  expect(stored).toBe(0)
+})
+
 test('a content-only backup shows no personal-data warning', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', FIXTURE)
@@ -1753,4 +1800,180 @@ test('a video embedded from another site is named, not silently dropped', async 
   // Named, never loaded (ADR-0009).
   await expect(content.locator('iframe')).toHaveCount(0)
   expect(requests.filter((u) => u.includes('youtube'))).toEqual([])
+})
+
+/**
+ * Navigation (mockup 3c): the breadcrumb, Previous/Next with a counter and
+ * J / K / ← / → all walk the tree in the order it is drawn — a delegated
+ * subsection hangs under its owner and comes before the next top-level
+ * section — and never steal keystrokes meant for the search box.
+ */
+test('breadcrumb and previous/next walk activities in tree order', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  const title = page.locator('#detail-title')
+  const counter = page.locator('.detail-nav-counter')
+  const crumbs = page.locator('.detail-breadcrumb li')
+  const next = page.getByRole('button', { name: 'Next activity' })
+  const previous = page.getByRole('button', { name: 'Previous activity' })
+
+  await page.getByRole('button', { name: /Demo subsection/ }).click()
+  await expect(title).toHaveText('Demo subsection')
+  await expect(counter).toHaveText('13 / 28')
+  await expect(crumbs).toHaveText(['Course', 'Introduction', 'Demo subsection'])
+  await expect(previous).toBeEnabled()
+
+  // Next descends into the subsection this activity owns, walks the rest of
+  // its parent section, then crosses into the following top-level section.
+  await next.click()
+  await expect(title).toHaveText('Page inside the subsection')
+  await expect(counter).toHaveText('14 / 28')
+  await next.click()
+  await expect(title).toHaveText('Demo H5P (mod_hvp)')
+  await expect(counter).toHaveText('15 / 28')
+  await expect(crumbs).toHaveText(['Course', 'Introduction', 'Demo H5P (mod_hvp)'])
+  await next.click()
+  await expect(title).toHaveText('Unknown third-party module')
+  await expect(counter).toHaveText('16 / 28')
+  await expect(crumbs).toHaveText(['Course', 'Resources', 'Unknown third-party module'])
+  await expect(page.locator('.activity-button.selected')).toContainText(
+    'Unknown third-party module',
+  )
+
+  // K / J and the arrow keys step from wherever focus happens to be.
+  await page.keyboard.press('k')
+  await expect(title).toHaveText('Demo H5P (mod_hvp)')
+  await page.keyboard.press('j')
+  await expect(title).toHaveText('Unknown third-party module')
+  await page.keyboard.press('ArrowLeft')
+  await expect(title).toHaveText('Demo H5P (mod_hvp)')
+  await page.keyboard.press('ArrowRight')
+  await expect(title).toHaveText('Unknown third-party module')
+  await expect(counter).toHaveText('16 / 28')
+
+  // Typing in the search box is typing, not navigation.
+  const search = page.locator('#activity-search')
+  await search.focus()
+  await page.keyboard.type('jk')
+  await expect(search).toHaveValue('jk')
+  await expect(title).toHaveText('Unknown third-party module')
+  await search.fill('')
+
+  // The section crumb puts focus on that section in the tree; the course
+  // crumb returns to the course overview with nothing selected.
+  const breadcrumb = page.locator('.detail-breadcrumb')
+  await breadcrumb.getByRole('button', { name: 'Resources', exact: true }).click()
+  await expect(
+    page.locator('#sections li[data-section-id] > h3', { hasText: 'Resources' }),
+  ).toBeFocused()
+  await breadcrumb.getByRole('button', { name: 'Course', exact: true }).click()
+  await expect(page.locator('#detail .course-summary')).toBeVisible()
+  await expect(page.locator('#detail-title')).toHaveText('Demo Course for MBZoo')
+  await expect(page.locator('.detail-pager')).toHaveCount(0)
+  await expect(page.locator('.activity-button.selected')).toHaveCount(0)
+
+  // The ends are ends: the first activity has no Previous and K stays put.
+  await page.getByRole('button', { name: /Welcome page/ }).click()
+  await expect(counter).toHaveText('1 / 28')
+  await expect(previous).toBeDisabled()
+  await page.keyboard.press('k')
+  await expect(title).toHaveText('Welcome page')
+  await expect(counter).toHaveText('1 / 28')
+})
+
+const USERS_FIXTURE = join(here, '..', 'fixtures', 'files', 'demo-course-users.mbz')
+
+/**
+ * The detail pane used to sit blank until something was selected. Now it
+ * carries the backup at a glance (mockup 3a): real provenance from
+ * moodle_backup.xml, size metrics, the module mix, the gradebook and the
+ * warnings — and it steps aside as soon as an activity opens.
+ */
+test('the course summary fills the detail pane until an activity is opened', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', USERS_FIXTURE)
+
+  const summary = page.locator('#detail .course-summary')
+  await expect(summary).toBeVisible()
+  await expect(summary.locator('.detail-title')).toHaveText('Demo Course with People')
+
+  // Provenance is the backup's own, not a placeholder: release, container,
+  // the date it was taken (1700000000 → November 2023) and the parse time.
+  const meta = summary.locator('.summary-meta')
+  await expect(meta).toContainText('Moodle 4.4')
+  await expect(meta).toContainText('ZIP')
+  await expect(meta).toContainText('2023')
+  await expect(meta).toContainText(/parsed in|analizado en/)
+  await expect(meta).toContainText(' ms')
+
+  const tiles = summary.locator('.summary-tile')
+  await expect(tiles).toHaveCount(4)
+  await expect(tiles.nth(0)).toContainText('1')
+  await expect(tiles.nth(1)).toContainText('2')
+  await expect(tiles.nth(1)).toContainText(/activities|actividades/)
+  await expect(tiles.nth(3)).toContainText(/KB|MB/)
+
+  // One bar per module type, scaled to the most common one.
+  const bars = summary.locator('.summary-bar-row')
+  await expect(bars).toHaveCount(2)
+  await expect(bars.first().locator('.mod-badge')).toHaveText(/^(page|assign)$/)
+  await expect(bars.first().locator('.summary-bar-count')).toHaveText('1')
+  expect(
+    await bars
+      .first()
+      .locator('.summary-bar-fill')
+      .evaluate((n) => (n as HTMLElement).style.width),
+  ).toBe('100%')
+
+  // The gradebook block: course total, the graded items and the letters.
+  const book = summary.locator('.summary-gradebook')
+  await expect(book).toContainText(/Course total|Total del curso/)
+  await expect(book).toContainText(/natural/)
+  await expect(book).toContainText('Unit 1 report')
+  await expect(book).toContainText('/ 100')
+  await expect(book).toContainText('A ≥ 90')
+  // The full tree stays folded behind the same disclosure as before.
+  await expect(book.locator('.course-gradebook')).toBeVisible()
+  await expect(book.locator('.gradebook-tree')).toBeHidden()
+
+  await expect(summary.locator('.summary-warnings')).toHaveCount(0)
+  await expect(summary.locator('.summary-hint')).toBeVisible()
+
+  // Opening an activity replaces the summary…
+  await page.getByRole('button', { name: /Course guide/ }).click()
+  await expect(page.locator('#detail .course-summary')).toHaveCount(0)
+  await expect(page.locator('#detail .detail-title')).toHaveText('Course guide')
+
+  // …and the course title brings it back, with nothing left selected.
+  await page.locator('#course-title button').click()
+  await expect(page.locator('#detail .course-summary')).toBeVisible()
+  await expect(page.locator('.activity-button.selected')).toHaveCount(0)
+})
+
+test('the course summary counts hidden activities and surfaces parse warnings', async ({
+  page,
+}) => {
+  // Dropping files.xml is the cheapest way to make the parser warn.
+  const noFilesIndex = mutatedFixture((entries) => {
+    delete entries['files.xml']
+  }, 'no-files-index.mbz')
+  await page.goto('/')
+  await page.setInputFiles('#file-input', noFilesIndex)
+
+  const summary = page.locator('#detail .course-summary')
+  await expect(summary).toBeVisible()
+  await expect(summary.locator('.summary-tile').nth(1)).toContainText('28')
+
+  // 24 module types in the demo: the most common ones get bars, the rest
+  // are named in one line, and the one hidden activity is counted.
+  const types = summary.locator('.summary-types')
+  await expect(types.locator('.summary-bar-row')).toHaveCount(8)
+  await expect(types.locator('.summary-bar-row').first().locator('.mod-badge')).toHaveText('page')
+  await expect(types.locator('.summary-more')).toContainText(/hidden: 1|ocultas: 1/)
+  await expect(types.locator('.summary-more')).toContainText('url 1')
+
+  const warnings = summary.locator('.summary-warnings')
+  await expect(warnings).toContainText(/1 warning|1 aviso/)
+  await expect(warnings).toContainText('files.xml')
 })
