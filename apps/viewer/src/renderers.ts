@@ -14,6 +14,24 @@ import {
   parseActivityXml,
 } from '@mbzoo/core'
 import DOMPurify from 'dompurify'
+import * as pdfjs from 'pdfjs-dist'
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+
+// pdf.js renders PDFs onto canvas (ADR-0014): Chrome blocks blob-PDF iframes
+// inside sandboxed contexts.
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
+
+/** Max PDF pages rendered inline; the rest are available via download. */
+const MAX_PDF_PAGES = 8
+
+/**
+ * CSP injected into sandboxed HTML previews (ADR-0014): opaque-origin iframe
+ * plus no network access; sub-resources must come from rewritten blob URLs.
+ */
+const SANDBOX_CSP =
+  "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +
+  "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
+  "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
 /** Reads an archive entry (by path or 40-char sha1) through the worker. */
 export type EntryReader = (path: string) => Promise<Uint8Array>
@@ -230,12 +248,12 @@ export class Renderer {
       return card
     }
     if (mime === 'application/pdf') {
-      const frame = document.createElement('iframe')
-      frame.src = this.blobUrl(data, mime)
-      frame.title = rec.fileName
-      frame.className = 'pdf-frame'
-      frame.sandbox.add('allow-same-origin', 'allow-popups-to-escape-sandbox')
-      card.appendChild(frame)
+      await this.renderPdf(data, rec, card)
+      addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      return card
+    }
+    if (mime === 'text/html' || /\.html?$/i.test(rec.fileName)) {
+      await this.renderSandboxedHtml(data, rec, card)
       addDownload(card, this.blobUrl(data, mime), rec.fileName)
       return card
     }
@@ -250,6 +268,105 @@ export class Renderer {
     }
     addDownload(card, this.blobUrl(data, mime), rec.fileName)
     return card
+  }
+
+  /** Draws PDF pages onto canvases with pdf.js (ADR-0014). */
+  private async renderPdf(
+    data: Uint8Array,
+    rec: BackupFileRecord,
+    card: HTMLElement,
+  ): Promise<void> {
+    try {
+      const doc = await pdfjs.getDocument({ data: data.slice() }).promise
+      const pages = Math.min(doc.numPages, MAX_PDF_PAGES)
+      for (let i = 1; i <= pages; i++) {
+        const page = await doc.getPage(i)
+        const base = page.getViewport({ scale: 1 })
+        const scale = Math.min(2, Math.max(1, 900 / base.width))
+        const viewport = page.getViewport({ scale })
+        const canvas = document.createElement('canvas')
+        canvas.className = 'pdf-canvas'
+        canvas.width = Math.floor(viewport.width)
+        canvas.height = Math.floor(viewport.height)
+        await page.render({
+          canvas,
+          canvasContext: canvas.getContext('2d') as CanvasRenderingContext2D,
+          viewport,
+        }).promise
+        card.appendChild(canvas)
+      }
+      if (doc.numPages > MAX_PDF_PAGES) {
+        const note = document.createElement('p')
+        note.className = 'fallback-note'
+        note.textContent = `Showing ${MAX_PDF_PAGES} of ${doc.numPages} pages — use Download for the rest.`
+        card.appendChild(note)
+      }
+    } catch {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = `Could not render “${rec.fileName}” inline — use Download.`
+      card.appendChild(note)
+    }
+  }
+
+  /**
+   * Renders a backup HTML file inside an opaque-origin sandboxed iframe
+   * (ADR-0014): scripts may run but cannot touch the app, and the injected
+   * CSP blocks all network access. Relative references are rewritten to
+   * blob URLs of sibling archive files when found.
+   */
+  private async renderSandboxedHtml(
+    data: Uint8Array,
+    rec: BackupFileRecord,
+    card: HTMLElement,
+  ): Promise<void> {
+    let html = new TextDecoder().decode(data)
+    const dir = rec.filePath.replace(/[^/]+$/, '')
+    html = await this.rewriteRelativeRefs(html, dir)
+    html = injectCsp(html, SANDBOX_CSP)
+    const frame = document.createElement('iframe')
+    frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    frame.title = rec.fileName
+    frame.className = 'html-frame'
+    // allow-scripts only: opaque origin — no same-origin access to the app.
+    frame.sandbox.add('allow-scripts')
+    card.appendChild(frame)
+  }
+
+  /** Rewrites relative src/href references to blob URLs of archive files. */
+  private async rewriteRelativeRefs(html: string, dir: string): Promise<string> {
+    const re = /\s(src|href)=("([^"]*)"|'([^']*)')/gi
+    const refs: Array<{ raw: string; ref: string }> = []
+    for (const m of html.matchAll(re)) {
+      const ref = (m[3] ?? m[4] ?? '').trim()
+      if (!ref || ref.startsWith('#') || /^(https?:|data:|blob:|mailto:|javascript:)/i.test(ref)) {
+        continue
+      }
+      refs.push({ raw: m[0], ref })
+    }
+    for (const { raw, ref } of refs) {
+      const target = resolveRelative(dir, ref)
+      const fileName = target.split('/').pop() ?? ''
+      const rec =
+        matchFileRecord(this.ctx.backup.files, { fileName }) ??
+        (await this.findByPathSuffix(target))
+      if (!rec) continue
+      const bytes = await this.tryRead(contentHashPath(rec.contentHash))
+      if (!bytes) continue
+      const url = this.blobUrl(bytes, rec.mimeType || guessMime(rec.fileName))
+      const quote = raw.includes('"') ? '"' : "'"
+      const attr = /src=/i.test(raw) ? 'src' : 'href'
+      html = html.replace(raw, ` ${attr}=${quote}${url}${quote}`)
+    }
+    return html
+  }
+
+  private async findByPathSuffix(path: string): Promise<BackupFileRecord | undefined> {
+    const needle = path.replace(/^\//, '')
+    for (const r of this.ctx.backup.files.values()) {
+      if ((r.filePath + r.fileName).replace(/^\//, '').endsWith(needle)) return r
+    }
+    return undefined
   }
 
   private async renderFallback(
@@ -340,4 +457,34 @@ function guessMime(name: string): string {
     mp3: 'audio/mpeg',
   }
   return map[ext] ?? 'application/octet-stream'
+}
+
+/** Injects a CSP <meta> as the first head child (or wraps fragment HTML). */
+function injectCsp(html: string, csp: string): string {
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${csp.replace(/"/g, '&quot;')}">`
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
+  }
+  if (/<html[^>]*>/i.test(html)) {
+    return html.replace(/<html([^>]*)>/i, `<html$1><head>${meta}</head>`)
+  }
+  return `${meta}${html}`
+}
+
+/** Joins an archive directory with a possibly-relative reference. */
+function resolveRelative(dir: string, ref: string): string {
+  const base = dir.replace(/^\//, '').replace(/\/$/, '')
+  const parts: string[] = []
+  if (ref.startsWith('/')) {
+    parts.push(...ref.split('/'))
+  } else {
+    parts.push(...base.split('/').filter(Boolean), ...ref.split('/'))
+  }
+  const out: string[] = []
+  for (const part of parts) {
+    if (part === '' || part === '.') continue
+    if (part === '..') out.pop()
+    else out.push(part)
+  }
+  return out.join('/')
 }

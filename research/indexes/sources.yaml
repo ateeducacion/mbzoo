@@ -90,3 +90,9 @@ sources:
     url: https://github.com/cure53/DOMPurify
     accessed: 2026-08-25
     license: "MPL-2.0 OR Apache-2.0"
+  TECH-010:
+    title: pdf.js (pdfjs-dist)
+    kind: technology
+    url: https://github.com/mozilla/pdf.js
+    accessed: 2026-08-25
+    license: Apache-2.0

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/media/mbzoo-logo.png" alt="MBZoo logo — See what's inside your MBZ." width="480" />
+</p>
+
 # MBZoo
 
 [![CI](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml/badge.svg)](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml)

@@ -8,6 +8,7 @@ MBZoo is MIT. Runtime dependencies of shipped packages:
 | fflate | 0.8.3 | MIT | ZIP read/write (core dep + fixtures) | permissive; no transitive deps |
 | saxes | 6.0.0 | ISC | event XML parser | permissive; no transitive deps |
 | dompurify | 3.4.14 | MPL-2.0 OR Apache-2.0 | HTML sanitization (viewer) | dual-licensed; MIT-compatible |
+| pdfjs-dist | 6.2.108 | Apache-2.0 | PDF canvas rendering (viewer) | no PDF iframe (Chrome blocks); ADR-0014 |
 
 Dev/tooling (not shipped): vite 8.2.2 (MIT), typescript 5.9.3 (Apache-2.0),
 biome 2.5.10 (MIT OR Apache-2.0), playwright 1.62.1 (Apache-2.0),

@@ -52,3 +52,7 @@ adrs:
     title: Activity content model — generic XML capture plus per-module renderers
     status: Accepted
     date: 2026-08-25
+  ADR-0014:
+    title: Static content previews — pdf.js canvas and opaque-origin HTML sandbox
+    status: Accepted
+    date: 2026-08-25
