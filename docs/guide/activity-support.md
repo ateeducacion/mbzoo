@@ -11,10 +11,16 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Resource / File | ✅ | ✅ inline preview | PDF via pdf.js canvas, images, text, sandboxed HTML (ADR-0014) |
 | Folder | ✅ | ✅ file cards | |
 | HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014). A multi-page site (e.g. an eXeLearning export) is paged from MBZoo's own list, not by following links inside the frame (ADR-0020) |
-| Book | ✅ metadata | 🔜 planned | chapters renderable from activity XML |
-| Forum | ✅ metadata | 🔜 planned (read-only) | discussions only exist if backup included user data |
+| Book | ✅ | ✅ chapters with TOC | |
+| Forum | ✅ | ✅ typed summary | forum type and settings; discussions only exist if the backup included user data |
 | Glossary | ✅ | ✅ entries rendered | entries are user-generated, so a backup taken without user data has none — the viewer says so |
-| Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
+| Assignment | ✅ | ✅ summary | dates and submission types; submissions only present with user data |
+| Lesson | ✅ | ✅ branching pages | pages, answers and where each jump leads — all of it travels in a content-only backup |
+| Choice | ✅ | ✅ question + options | |
+| Database | ✅ | ✅ field schema | the fields collected; records only exist with user data |
+| Workshop | ✅ | ✅ instructions + examples | example submissions and both instruction blocks; peer work is user data |
+| IMS content package | ✅ | ✅ TOC + sandboxed pages | table of contents read from the PHP-serialized `structure` (ADR-0021) |
+| Chat · Wiki | ✅ | ✅ typed summary | schedule / wiki mode; messages and pages are user data |
 | Feedback (questionnaire) | ✅ | ✅ items rendered | labels, questions and their options in author order; responses only exist with user data |
 | Quiz | ✅ metadata + question bank | ✅ read-only question navigation | multichoice/true-false/short answer/essay/match; random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
 | SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
@@ -23,6 +29,9 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Unknown third-party plugins | ✅ | ✅ metadata fallback | never break the course view |
 
 Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
+
+Media files (video, audio) preview inline with native controls; a media
+element decodes its file but never executes it.
 
 ## Course links
 

@@ -81,14 +81,28 @@ function workerCall<T extends { id: number }>(
   return new Promise((resolve, reject) => {
     const w = getWorker()
     const id = ++requestId
-    w.onmessage = (
+    // One listener per call, removed when it settles. Assigning to onmessage
+    // instead would let a second call in flight replace the first one's
+    // handler: the first reply then matches no handler and its promise never
+    // settles, which reads as a renderer that silently stops half-way.
+    const onMessage = (
       ev: MessageEvent<T & { id: number; ok: boolean; error?: string; data?: ArrayBuffer }>,
-    ) => {
+    ): void => {
       if (ev.data.id !== id) return
+      done()
       if (ev.data.ok) resolve(ev.data as T)
       else reject(new Error(ev.data.error ?? 'worker call failed'))
     }
-    w.onerror = (ev) => reject(new Error(`Worker failed: ${ev.message || 'unknown error'}`))
+    const onError = (ev: ErrorEvent): void => {
+      done()
+      reject(new Error(`Worker failed: ${ev.message || 'unknown error'}`))
+    }
+    const done = (): void => {
+      w.removeEventListener('message', onMessage as EventListener)
+      w.removeEventListener('error', onError as EventListener)
+    }
+    w.addEventListener('message', onMessage as EventListener)
+    w.addEventListener('error', onError as EventListener)
     w.postMessage({ ...message, id }, transfer ?? [])
   })
 }

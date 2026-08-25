@@ -19,7 +19,10 @@ content and files locally.
 metadata parsing, course tree, and content previews for pages, labels, URLs,
 resources (PDF via pdf.js, images, text, sandboxed HTML websites), quizzes
 (read-only question navigation — random slots page through the pool they draw
-from), glossaries, books, assignment summaries and unknown-plugin fallbacks.
+from), lessons (branching pages and where each jump leads), choices, feedback
+questionnaires, database field schemas, workshops, IMS content packages,
+glossaries, books, forum/chat/wiki summaries, assignment summaries, inline
+video and audio, and unknown-plugin fallbacks.
 Course links the backup encoded as `$@…@$` tokens resolve to the activity in
 this backup or to the original site, and are never fetched (ADR-0019).
 Experimental H5P playback runs inside the same opaque-origin sandbox

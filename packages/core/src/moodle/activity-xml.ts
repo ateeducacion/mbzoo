@@ -53,6 +53,58 @@ export async function parseActivityXml(xml: string): Promise<ParsedActivity> {
 }
 
 /**
+ * Reads a flat list of repeated records nested inside an activity payload,
+ * e.g. <choice><options><option><text>…, <data><fields><field>…,
+ * <workshop><examplesubmissions><examplesubmission>….
+ *
+ * These lists are the shape several modules use for their authored content,
+ * and they sit one level below what parseActivityXml captures. Each record
+ * becomes a map of its leaf fields plus its `id` attribute when present.
+ */
+export async function parseNestedRecords(
+  xml: string,
+  container: string,
+  record: string,
+): Promise<Array<Map<string, string>>> {
+  if (xml.length > MAX_ACTIVITY_XML_BYTES) {
+    throw new Error(`activity XML exceeds ${MAX_ACTIVITY_XML_BYTES} byte limit`)
+  }
+  const out: Array<Map<string, string>> = []
+  const path: string[] = []
+  let text = ''
+  let current: Map<string, string> | undefined
+
+  await parseXmlEvents(xml, (ev) => {
+    if (ev.type === 'open') {
+      if (ev.name === record && path[path.length - 1] === container) {
+        current = new Map()
+        const id = ev.attributes.id
+        if (id !== undefined) current.set('id', id)
+      }
+      path.push(ev.name)
+      return
+    }
+    if (ev.type === 'text') {
+      text += ev.data
+      return
+    }
+    if (current) {
+      const leaf = path[path.length - 1]
+      const parent = path[path.length - 2]
+      if (leaf === record && parent === container) {
+        out.push(current)
+        current = undefined
+      } else if (parent === record && leaf !== undefined) {
+        current.set(leaf, leafValue(text))
+      }
+    }
+    path.pop()
+    text = ''
+  })
+  return out
+}
+
+/**
  * Extracts filenames referenced via Moodle's @@PLUGINFILE@@ token inside
  * HTML content (REPO-005: tokens are stored verbatim in backup XML).
  */

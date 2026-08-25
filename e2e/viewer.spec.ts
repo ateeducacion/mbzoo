@@ -106,7 +106,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('2 sections')
-  expect(meta).toContain('12 activities')
+  expect(meta).toContain('18 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -637,6 +637,119 @@ test('a match question shows the pairs it asks you to relate', async ({ page }) 
   await expect(card.locator('.q-match-list dd').first()).toBeHidden()
   await page.getByRole('button', { name: /Mostrar respuestas|Reveal answers/ }).click()
   await expect(card.locator('.q-match-list dd').first()).toHaveText('Moodle backup')
+})
+
+/**
+ * Two reads in flight at once used to clobber each other's worker handler, so
+ * the first promise never settled and the renderer stopped half-way with no
+ * error to show for it.
+ */
+test('concurrent activity opens both finish', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  await Promise.all([
+    page.getByRole('button', { name: /Demo lesson/ }).click(),
+    page.getByRole('button', { name: /Demo book/ }).click(),
+  ])
+  await expect(page.locator('#detail-title')).toHaveText('Demo book')
+  await expect(page.locator('.book-chapter')).toBeVisible()
+
+  // And the one that lost the race still renders when reopened.
+  await page.getByRole('button', { name: /Demo lesson/ }).click()
+  await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
+})
+
+/**
+ * A lesson is the one unhandled module that ships complete: mod_lesson writes
+ * pages and answers unconditionally and gates only attempts behind userinfo.
+ */
+test('a lesson walks its branching pages in chain order', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo lesson/ }).click()
+
+  // Page 501 is written second in the file; the prevpageid chain puts it first.
+  await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
+  await expect(page.locator('#lesson-start')).toBeVisible()
+  await expect(page.locator('.quiz-card')).toContainText('Start here')
+
+  // On a content page the answers are branch buttons, so the jump is the point.
+  await expect(page.locator('.lesson-jump').first()).toContainText('Which container is an .mbz?')
+
+  await page.locator('.quiz-nav .btn-outline').nth(1).click()
+  await expect(page.locator('#lesson-q')).toBeVisible()
+  const answers = page.locator('.lesson-answers li')
+  await expect(answers).toHaveCount(2)
+  await expect(answers.first()).toHaveClass(/q-correct/)
+  // LESSON_EOL (-9) and LESSON_THISPAGE (0) are named, not printed raw.
+  await expect(answers.first().locator('.lesson-jump')).toContainText(
+    /end of lesson|fin de la lección/,
+  )
+  await expect(answers.nth(1).locator('.lesson-jump')).toContainText(/this page|esta página/)
+})
+
+test('a choice shows the options it offered', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo choice/ }).click()
+
+  const options = page.locator('.q-answers li')
+  await expect(options).toHaveCount(2)
+  await expect(options.first()).toContainText('ZIP')
+  // limitanswers is on, so the per-option capacity is worth showing.
+  await expect(options.first()).toContainText('20')
+  await expect(page.locator('.q-answers input[type="radio"]')).toHaveCount(2)
+})
+
+test('a database shows the fields it collected, and says why there are no entries', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo database/ }).click()
+
+  await expect(page.locator('.glossary-list dt')).toHaveCount(2)
+  await expect(page.locator('.glossary-list dt').first()).toContainText('Backup name')
+  await expect(page.locator('.glossary-list dt').first()).toContainText('text')
+  await expect(page.locator('#detail .quiz-notice')).toContainText(/without user data|sin datos/)
+})
+
+test('a workshop shows its instructions and example submission', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo workshop/ }).click()
+
+  await expect(page.locator('#ws-authors')).toBeVisible()
+  await expect(page.locator('#ws-reviewers')).toBeVisible()
+  await expect(page.locator('#ws-example')).toBeVisible()
+  await expect(page.locator('#detail')).toContainText(/Submission|Envío/)
+})
+
+test('an IMS package shows the table of contents from its serialized structure', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo content package/ }).click()
+
+  const toc = page.locator('.imscp-toc')
+  await expect(toc.first()).toContainText('Overview')
+  await expect(toc.first()).toContainText('overview.html')
+  // A nested entry stays nested, and a heading with no file is still listed.
+  await expect(toc.locator('.imscp-toc')).toContainText('Details')
+  await expect(toc.first()).toContainText('Appendix')
+})
+
+test('a forum names its type and says its discussions are user data', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo forum/ }).click()
+
+  await expect(page.locator('#detail')).toContainText(/Question and answer|pregunta y respuesta/)
+  await expect(page.locator('#detail .fallback-note')).toContainText(
+    /without user data|sin datos de usuario/,
+  )
 })
 
 /**

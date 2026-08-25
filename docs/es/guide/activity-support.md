@@ -13,7 +13,13 @@ vista del curso.
 | Carpeta (Folder) | ✅ | ✅ tarjetas de archivo | |
 | Página web con CSS+JS | ✅ | ✅ iframe en sandbox | origen opaco + CSP; el JS queda aislado de la app (ADR-0014). Un sitio de varias páginas (p. ej. una exportación de eXeLearning) se recorre desde la lista de páginas de MBZoo, no siguiendo los enlaces dentro del iframe (ADR-0020) |
 | Libro (Book) | ✅ metadatos | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0013) |
-| Foro | ✅ metadatos | 🔜 planeado (solo lectura) | los debates solo existen si la copia incluyó usuarios |
+| Foro | ✅ | ✅ resumen con tipo | tipo de foro y ajustes; los debates solo existen si la copia incluyó usuarios |
+| Lección | ✅ | ✅ páginas ramificadas | páginas, respuestas y a dónde salta cada una: todo viaja en una copia sin datos de usuario |
+| Consulta (Choice) | ✅ | ✅ pregunta + opciones | |
+| Base de datos | ✅ | ✅ esquema de campos | los campos que recoge; las entradas solo existen con datos de usuario |
+| Taller (Workshop) | ✅ | ✅ instrucciones + ejemplos | envíos de ejemplo y ambos bloques de instrucciones; el trabajo entre pares es dato de usuario |
+| Paquete IMS (imscp) | ✅ | ✅ índice + páginas en sandbox | índice leído del campo `structure` serializado en PHP (ADR-0021) |
+| Chat · Wiki | ✅ | ✅ resumen con tipo | horario / modo del wiki; mensajes y páginas son datos de usuario |
 | Glosario | ✅ | ✅ entradas renderizadas | concepto + definición; las entradas las escriben los usuarios, así que una copia hecha sin datos de usuario no trae ninguna y el visor lo indica |
 | Tarea (Assignment) | ✅ | ✅ resumen | fechas de entrega/cierre y tipos de entrega |
 | Encuesta (Feedback) | ✅ | ✅ elementos renderizados | etiquetas, preguntas y sus opciones en el orden del autor; las respuestas solo existen con datos de usuario |
@@ -24,6 +30,9 @@ vista del curso.
 | Plugins desconocidos | ✅ | ✅ fallback de metadatos | nunca rompen la vista del curso |
 
 Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).
+
+Los archivos de vídeo y audio se previsualizan en línea con los controles
+nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
 
 ## Enlaces del curso
 

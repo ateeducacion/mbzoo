@@ -69,6 +69,16 @@ added:
       of showing an empty stem. Undecodable link tokens carry a visible marker
       and name the code. Fixture grew a feedback activity; the recorded sha256
       for the PRDV103 specimen was wrong and is corrected in the manifest.
+  - date: 2026-08-25
+    note: >-
+      Module coverage survey against moodle/moodle 5.3dev: the gate is not which
+      modules exist but which still carry authored content once userinfo is off.
+      Implemented lesson (pages/answers/jumps), choice, data (field schema),
+      workshop (instructions + examples), imscp (ADR-0021 PHP-serialized TOC)
+      and typed summaries for forum/chat/wiki; video and audio now preview
+      inline. SCORM deliberately left out — tracked separately. Fixed a latent
+      worker bug where two reads in flight clobbered each other's handler, so
+      one promise never settled and a renderer stopped mid-way in silence.
 
 risks:
   RISK-001:

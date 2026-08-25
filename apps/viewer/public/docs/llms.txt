@@ -9,8 +9,8 @@
 
 ## Activity support
 
-- [Activity & content support](/mbzoo/docs/guide/activity-support.md): MBZoo renders what the backup actually contains, and is transparent about what it cannot do. Unknown third-party plugins never break the course view. Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
-- [Actividades y contenidos soportados](/mbzoo/docs/es/guide/activity-support.md): MBZoo renderiza lo que la copia contiene realmente y es transparente con lo que no puede hacer. Los plugins de terceros desconocidos nunca rompen la vista del curso. Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).
+- [Activity & content support](/mbzoo/docs/guide/activity-support.md): MBZoo renders what the backup actually contains, and is transparent about what it cannot do. Unknown third-party plugins never break the course view. Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016). Media files (video, audio) preview inline with native controls; a media element decodes its file but never executes it.
+- [Actividades y contenidos soportados](/mbzoo/docs/es/guide/activity-support.md): MBZoo renderiza lo que la copia contiene realmente y es transparente con lo que no puede hacer. Los plugins de terceros desconocidos nunca rompen la vista del curso. Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016). Los archivos de vídeo y audio se previsualizan en línea con los controles nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
 
 ## Architecture
 

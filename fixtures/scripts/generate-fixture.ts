@@ -186,6 +186,48 @@ function moodleBackupXml(): string {
           <title>Demo questionnaire</title>
           <directory>activities/feedback_3012</directory>
         </activity>
+        <activity>
+          <moduleid>3013</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>lesson</modulename>
+          <title>Demo lesson</title>
+          <directory>activities/lesson_3013</directory>
+        </activity>
+        <activity>
+          <moduleid>3014</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>choice</modulename>
+          <title>Demo choice</title>
+          <directory>activities/choice_3014</directory>
+        </activity>
+        <activity>
+          <moduleid>3015</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>forum</modulename>
+          <title>Demo forum</title>
+          <directory>activities/forum_3015</directory>
+        </activity>
+        <activity>
+          <moduleid>3016</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>data</modulename>
+          <title>Demo database</title>
+          <directory>activities/data_3016</directory>
+        </activity>
+        <activity>
+          <moduleid>3017</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>workshop</modulename>
+          <title>Demo workshop</title>
+          <directory>activities/workshop_3017</directory>
+        </activity>
+        <activity>
+          <moduleid>3018</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>imscp</modulename>
+          <title>Demo content package</title>
+          <directory>activities/imscp_3018</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -220,6 +262,36 @@ function sectionXml(id: number, number_: number, name: string, sequence: string)
   <visible>1</visible>
 </section>
 `
+}
+
+/**
+ * mod/imscp stores its table of contents as a PHP-serialized array. PHP
+ * counts string lengths in bytes, so the payload is built rather than typed:
+ * a hand-written length is silently wrong and the whole value stops parsing.
+ */
+interface TocNode {
+  title: string
+  href: string
+  children: TocNode[]
+}
+
+function imscpStructure(): string {
+  const str = (v: string): string => `s:${new TextEncoder().encode(v).byteLength}:"${v}";`
+  const list = (values: string[]): string =>
+    `a:${values.length}:{${values.map((v, i) => `i:${i};${v}`).join('')}}`
+  const node = (n: TocNode): string =>
+    `a:3:{${str('title')}${str(n.title)}${str('href')}${str(n.href)}` +
+    `${str('subitems')}${list(n.children.map(node))}}`
+  return list(
+    [
+      {
+        title: 'Overview',
+        href: 'overview.html',
+        children: [{ title: 'Details', href: 'detail.html', children: [] }],
+      },
+      { title: 'Appendix', href: '', children: [] },
+    ].map(node),
+  )
 }
 
 function activityXml(modname: string, title: string): string {
@@ -419,12 +491,12 @@ ${specFiles.map(fileRecord).join('\n')}
   add('course/course.xml', courseXml())
   add(
     'sections/section_2001/section.xml',
-    sectionXml(2001, 1, 'Introduction', '3001,3002,3004,3006,3007,3012'),
+    sectionXml(2001, 1, 'Introduction', '3001,3002,3004,3006,3007,3012,3013,3014,3015'),
   )
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
   add(
     'sections/section_2002/section.xml',
-    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011'),
+    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018'),
   )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
@@ -533,6 +605,145 @@ ${specFiles.map(fileRecord).join('\n')}
       </item>
     </items>
   </feedback>
+</activity>
+`,
+  )
+  // A branching lesson: a content page whose buttons jump, then a question
+  // page. Written out of reading order on purpose — Moodle serializes pages
+  // by prevpageid, and the chain is what decides the order.
+  add(
+    'activities/lesson_3013/lesson.xml',
+    `${XML_HEADER}<activity id="13" moduleid="13" modulename="lesson" contextid="113">
+  <lesson id="13">
+    <name>Demo lesson</name>
+    <intro>&lt;p&gt;A two-page branching lesson.&lt;/p&gt;</intro>
+    <pages>
+      <page id="502">
+        <prevpageid>501</prevpageid>
+        <nextpageid>0</nextpageid>
+        <qtype>3</qtype>
+        <title>Which container is an .mbz?</title>
+        <contents>&lt;p id="lesson-q"&gt;Pick the one that is always valid.&lt;/p&gt;</contents>
+        <answers>
+          <answer id="6002">
+            <jumpto>-9</jumpto>
+            <grade>1</grade>
+            <answer_text>ZIP or TAR.GZ</answer_text>
+            <response>&lt;p&gt;Correct.&lt;/p&gt;</response>
+          </answer>
+          <answer id="6003">
+            <jumpto>0</jumpto>
+            <grade>0</grade>
+            <answer_text>Only RAR</answer_text>
+            <response>Try again.</response>
+          </answer>
+        </answers>
+      </page>
+      <page id="501">
+        <prevpageid>0</prevpageid>
+        <nextpageid>502</nextpageid>
+        <qtype>20</qtype>
+        <title>Start here</title>
+        <contents>&lt;p id="lesson-start"&gt;Choose where to go.&lt;/p&gt;</contents>
+        <answers>
+          <answer id="6001">
+            <jumpto>502</jumpto>
+            <grade>0</grade>
+            <answer_text>Go to the question</answer_text>
+            <response></response>
+          </answer>
+        </answers>
+      </page>
+    </pages>
+  </lesson>
+</activity>
+`,
+  )
+  add(
+    'activities/choice_3014/choice.xml',
+    `${XML_HEADER}<activity id="14" moduleid="14" modulename="choice" contextid="114">
+  <choice id="14">
+    <name>Demo choice</name>
+    <intro>&lt;p&gt;Which format did you drop?&lt;/p&gt;</intro>
+    <allowmultiple>0</allowmultiple>
+    <limitanswers>1</limitanswers>
+    <allowupdate>1</allowupdate>
+    <options>
+      <option id="801"><text>ZIP</text><maxanswers>20</maxanswers></option>
+      <option id="802"><text>TAR.GZ</text><maxanswers>0</maxanswers></option>
+    </options>
+  </choice>
+</activity>
+`,
+  )
+  // Discussions are user data, so this forum ships empty by construction.
+  add(
+    'activities/forum_3015/forum.xml',
+    `${XML_HEADER}<activity id="15" moduleid="15" modulename="forum" contextid="115">
+  <forum id="15">
+    <type>qanda</type>
+    <name>Demo forum</name>
+    <intro>&lt;p&gt;Ask about the fixture.&lt;/p&gt;</intro>
+    <discussions>
+    </discussions>
+  </forum>
+</activity>
+`,
+  )
+  add(
+    'activities/data_3016/data.xml',
+    `${XML_HEADER}<activity id="16" moduleid="16" modulename="data" contextid="116">
+  <data id="16">
+    <name>Demo database</name>
+    <intro>&lt;p&gt;Collect one entry per backup.&lt;/p&gt;</intro>
+    <fields>
+      <field id="901">
+        <type>text</type>
+        <name>Backup name</name>
+        <description>File name of the .mbz</description>
+        <required>1</required>
+      </field>
+      <field id="902">
+        <type>number</type>
+        <name>Activities</name>
+        <description>How many activities it holds</description>
+        <required>0</required>
+      </field>
+    </fields>
+    <records>
+    </records>
+  </data>
+</activity>
+`,
+  )
+  add(
+    'activities/workshop_3017/workshop.xml',
+    `${XML_HEADER}<activity id="17" moduleid="17" modulename="workshop" contextid="117">
+  <workshop id="17">
+    <name>Demo workshop</name>
+    <intro>&lt;p&gt;Peer-assess a backup report.&lt;/p&gt;</intro>
+    <phase>20</phase>
+    <instructauthors>&lt;p id="ws-authors"&gt;Submit a one-page report.&lt;/p&gt;</instructauthors>
+    <instructreviewers>&lt;p id="ws-reviewers"&gt;Assess clarity first.&lt;/p&gt;</instructreviewers>
+    <examplesubmissions>
+      <examplesubmission id="951">
+        <title>Worked example</title>
+        <content>&lt;p id="ws-example"&gt;This is what a good report looks like.&lt;/p&gt;</content>
+      </examplesubmission>
+    </examplesubmissions>
+  </workshop>
+</activity>
+`,
+  )
+  // imscp.structure is a PHP-serialized table of contents (mod/imscp/lib.php).
+  add(
+    'activities/imscp_3018/imscp.xml',
+    `${XML_HEADER}<activity id="18" moduleid="18" modulename="imscp" contextid="118">
+  <imscp id="18">
+    <name>Demo content package</name>
+    <intro>&lt;p&gt;An IMS package with two pages.&lt;/p&gt;</intro>
+    <structure>${imscpStructure()}</structure>
+  </imscp>
 </activity>
 `,
   )

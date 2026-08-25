@@ -179,6 +179,30 @@ export class Renderer {
       await this.renderFeedback(activity, fields, contextId, container)
       return
     }
+    if (mod === 'lesson') {
+      await this.renderLesson(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'choice') {
+      await this.renderChoice(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'data') {
+      await this.renderDatabase(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'workshop') {
+      await this.renderWorkshop(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'imscp') {
+      await this.renderImscp(fields, contextId, container)
+      return
+    }
+    if (mod === 'forum' || mod === 'chat' || mod === 'wiki') {
+      await this.renderDiscussionLike(mod, fields, contextId, container)
+      return
+    }
     if (mod === 'assign') {
       await this.renderAssign(activity, fields, contextId, container)
       return
@@ -519,6 +543,19 @@ export class Renderer {
       img.loading = 'lazy'
       card.appendChild(img)
       addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      return card
+    }
+    // contentKind() already labels these "Video"/"Audio"; without a branch
+    // they fell through to a download button. A media element decodes the
+    // file, it never executes it, so this adds no scripting surface.
+    if (mime.startsWith('video/') || mime.startsWith('audio/')) {
+      const media = document.createElement(mime.startsWith('video/') ? 'video' : 'audio')
+      media.controls = true
+      media.preload = 'metadata'
+      media.className = 'media-preview'
+      media.src = this.blobUrl(data, mime)
+      card.appendChild(media)
+      addDownload(card, media.src, rec.fileName)
       return card
     }
     if (mime === 'application/pdf') {
@@ -923,6 +960,431 @@ export class Renderer {
   }
 
   /** Glossary: concept/definition entries from glossary.xml. */
+  /** Label/value facts that are not dates — module settings worth naming. */
+  private buildFacts(pairs: Array<[string, string | undefined]>): HTMLElement {
+    const grid = document.createElement('div')
+    grid.className = 'summary-grid'
+    for (const [label, value] of pairs) {
+      if (!value) continue
+      const item = document.createElement('div')
+      item.className = 'summary-item'
+      const k = document.createElement('span')
+      k.className = 'summary-key'
+      k.textContent = label
+      const v = document.createElement('b')
+      v.textContent = value
+      item.append(k, v)
+      grid.appendChild(item)
+    }
+    return grid
+  }
+
+  /**
+   * Lesson: the authored branching sequence. Every page and answer travels in
+   * a content-only backup, so this is the whole lesson minus the attempts.
+   */
+  private async renderLesson(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_lesson', 'intro')
+    const { parseLessonXml } = await import('@mbzoo/core')
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const lesson = xml ? await parseLessonXml(new TextDecoder().decode(xml)) : { pages: [] }
+    if (lesson.pages.length === 0) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('lesson.noPages')
+      container.appendChild(note)
+      return
+    }
+
+    const titleOf = (id: number): string => lesson.pages.find((p) => p.id === id)?.title ?? `#${id}`
+
+    const toc = document.createElement('div')
+    toc.className = 'book-toc'
+    container.appendChild(toc)
+
+    const nav = document.createElement('div')
+    nav.className = 'quiz-nav'
+    const prev = document.createElement('button')
+    prev.type = 'button'
+    prev.className = 'btn-outline'
+    prev.textContent = `‹ ${t('prev')}`
+    const counter = document.createElement('span')
+    counter.className = 'quiz-counter'
+    const next = document.createElement('button')
+    next.type = 'button'
+    next.className = 'btn-outline'
+    next.textContent = `${t('next')} ›`
+    nav.append(prev, counter, next)
+    container.appendChild(nav)
+
+    const body = document.createElement('div')
+    body.className = 'quiz-card'
+    container.appendChild(body)
+
+    let index = 0
+    const show = (i: number): void => {
+      index = Math.max(0, Math.min(lesson.pages.length - 1, i))
+      const page = lesson.pages[index]
+      if (!page) return
+      counter.textContent = `${index + 1} ${t('quiz.of')} ${lesson.pages.length}`
+      prev.toggleAttribute('disabled', index === 0)
+      next.toggleAttribute('disabled', index === lesson.pages.length - 1)
+      for (const [i2, b] of [...toc.querySelectorAll('.book-toc-item')].entries()) {
+        b.classList.toggle('selected', i2 === index)
+      }
+
+      const head = document.createElement('div')
+      head.className = 'quiz-q-head'
+      const badge = document.createElement('span')
+      badge.className = `mod-badge ${page.kind === 'content' ? 't-purple' : 't-blue'}`
+      badge.textContent = t(`lesson.kind.${page.kind}`)
+      const title = document.createElement('strong')
+      title.textContent = page.title
+      head.append(badge, ' ', title)
+
+      const content = document.createElement('div')
+      content.className = 'activity-content'
+      content.innerHTML = this.safeHtml(page.contents)
+
+      body.replaceChildren(head, content)
+
+      if (page.answers.length > 0) {
+        // On a content page these are the branch buttons; on a question page
+        // they are the answers. Either way the jump is the interesting part.
+        const label = document.createElement('div')
+        label.className = 'q-answers-title'
+        label.textContent = page.kind === 'content' ? t('lesson.branches') : t('quiz.answers')
+        const list = document.createElement('ul')
+        list.className = 'lesson-answers'
+        for (const answer of page.answers) {
+          const li = document.createElement('li')
+          li.className = answer.grade > 0 && page.kind !== 'content' ? 'q-correct' : 'q-neutral'
+          const text = document.createElement('span')
+          text.className = 'lesson-answer-text'
+          text.innerHTML = this.safeHtml(answer.text)
+          const jump = document.createElement('em')
+          jump.className = 'lesson-jump'
+          jump.textContent =
+            answer.jump.kind === 'page'
+              ? `→ ${titleOf(answer.jump.pageId)}`
+              : `→ ${t(`lesson.jump.${answer.jump.kind}`)}`
+          li.append(text, jump)
+          if (answer.response !== '') {
+            const response = document.createElement('div')
+            response.className = 'lesson-response'
+            response.innerHTML = this.safeHtml(answer.response)
+            li.appendChild(response)
+          }
+          list.appendChild(li)
+        }
+        body.append(label, list)
+      }
+    }
+
+    for (const [i, page] of lesson.pages.entries()) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'book-toc-item'
+      button.textContent = page.title || `#${page.id}`
+      button.addEventListener('click', () => show(i))
+      toc.appendChild(button)
+    }
+    prev.addEventListener('click', () => show(index - 1))
+    next.addEventListener('click', () => show(index + 1))
+    show(0)
+  }
+
+  /** Choice: the poll question and the options it offered. */
+  private async renderChoice(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_choice', 'intro')
+    const { parseNestedRecords } = await import('@mbzoo/core')
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const options = xml
+      ? await parseNestedRecords(new TextDecoder().decode(xml), 'options', 'option')
+      : []
+
+    container.appendChild(
+      this.buildSummary([
+        ['availableFrom', fields.get('timeopen')],
+        ['dueDate', fields.get('timeclose')],
+      ]),
+    )
+    container.appendChild(
+      this.buildFacts([
+        [t('choice.multiple'), fields.get('allowmultiple') === '1' ? t('info.yes') : t('info.no')],
+        [t('choice.limit'), fields.get('limitanswers') === '1' ? t('info.yes') : t('info.no')],
+        [t('choice.update'), fields.get('allowupdate') === '1' ? t('info.yes') : t('info.no')],
+      ]),
+    )
+
+    if (options.length === 0) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('choice.noOptions')
+      container.appendChild(note)
+      return
+    }
+    const title = document.createElement('div')
+    title.className = 'q-answers-title'
+    title.textContent = `${t('choice.options')} (${options.length})`
+    const list = document.createElement('ul')
+    list.className = 'q-answers moodle-inputs'
+    const multiple = fields.get('allowmultiple') === '1'
+    for (const [i, option] of options.entries()) {
+      const li = document.createElement('li')
+      li.className = 'q-neutral'
+      const label = document.createElement('label')
+      const input = document.createElement('input')
+      input.type = multiple ? 'checkbox' : 'radio'
+      input.name = `choice-${activity.id}`
+      input.value = String(i)
+      const text = document.createElement('span')
+      text.textContent = option.get('text') ?? ''
+      label.append(input, text)
+      li.appendChild(label)
+      const limit = Number(option.get('maxanswers') ?? '0')
+      if (fields.get('limitanswers') === '1' && limit > 0) {
+        const cap = document.createElement('em')
+        cap.className = 'q-fraction'
+        cap.textContent = t('choice.capacity', { n: limit })
+        li.appendChild(cap)
+      }
+      list.appendChild(li)
+    }
+    container.append(title, list)
+  }
+
+  /**
+   * Database: the field schema. Records are user-generated, so a content-only
+   * backup carries the shape of what was collected but never the entries.
+   */
+  private async renderDatabase(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_data', 'intro')
+    const { parseNestedRecords } = await import('@mbzoo/core')
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const defs = xml
+      ? await parseNestedRecords(new TextDecoder().decode(xml), 'fields', 'field')
+      : []
+
+    const note = document.createElement('p')
+    note.className = 'quiz-notice'
+    note.textContent = this.ctx.backup.includesUserData
+      ? t('data.schemaOnly')
+      : `${t('data.schemaOnly')} ${t('data.noUserData')}`
+    container.appendChild(note)
+
+    if (defs.length === 0) {
+      const empty = document.createElement('p')
+      empty.className = 'fallback-note'
+      empty.textContent = t('data.noFields')
+      container.appendChild(empty)
+      return
+    }
+    const title = document.createElement('div')
+    title.className = 'q-answers-title'
+    title.textContent = `${t('data.fields')} (${defs.length})`
+    const list = document.createElement('dl')
+    list.className = 'glossary-list'
+    for (const def of defs) {
+      const dt = document.createElement('dt')
+      const badge = document.createElement('span')
+      badge.className = 'mod-badge t-teal'
+      badge.textContent = def.get('type') ?? '?'
+      const name = document.createElement('span')
+      name.textContent = ` ${def.get('name') ?? ''}`
+      dt.append(badge, name)
+      if (def.get('required') === '1') {
+        const req = document.createElement('span')
+        req.className = 'q-pool-chip'
+        req.textContent = t('feedback.required')
+        dt.append(' ', req)
+      }
+      const dd = document.createElement('dd')
+      dd.textContent = def.get('description') ?? ''
+      list.append(dt, dd)
+    }
+    container.append(title, list)
+  }
+
+  /**
+   * Workshop: the instructions and the example submissions, which are the
+   * parts an author writes. Peer submissions and assessments are user data.
+   */
+  private async renderWorkshop(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_workshop', 'intro')
+    const { parseNestedRecords } = await import('@mbzoo/core')
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const examples = xml
+      ? await parseNestedRecords(
+          new TextDecoder().decode(xml),
+          'examplesubmissions',
+          'examplesubmission',
+        )
+      : []
+
+    // workshop::PHASE_* in mod/workshop/locallib.php (REPO-005).
+    const PHASES: Record<string, string> = {
+      '10': t('workshop.phase.setup'),
+      '20': t('workshop.phase.submission'),
+      '30': t('workshop.phase.assessment'),
+      '40': t('workshop.phase.evaluation'),
+      '50': t('workshop.phase.closed'),
+    }
+    container.appendChild(
+      this.buildFacts([[t('workshop.phase'), PHASES[fields.get('phase') ?? ''] ?? undefined]]),
+    )
+
+    for (const [key, label] of [
+      ['instructauthors', t('workshop.instructAuthors')],
+      ['instructreviewers', t('workshop.instructReviewers')],
+    ] as const) {
+      const html = await this.resolveHtml(fields.get(key), 'mod_workshop', key, contextId)
+      if (!html) continue
+      const details = document.createElement('details')
+      details.className = 'advanced'
+      details.open = true
+      const summary = document.createElement('summary')
+      summary.textContent = label
+      const el = document.createElement('div')
+      el.className = 'activity-content'
+      el.innerHTML = html
+      details.append(summary, el)
+      container.appendChild(details)
+    }
+
+    if (examples.length === 0) return
+    const title = document.createElement('div')
+    title.className = 'q-answers-title'
+    title.textContent = `${t('workshop.examples')} (${examples.length})`
+    container.appendChild(title)
+    for (const example of examples) {
+      const card = document.createElement('div')
+      card.className = 'quiz-card'
+      const head = document.createElement('strong')
+      head.textContent = example.get('title') ?? ''
+      const content = document.createElement('div')
+      content.className = 'activity-content'
+      content.innerHTML = this.safeHtml(example.get('content') ?? '')
+      card.append(head, content)
+      container.appendChild(card)
+    }
+  }
+
+  /**
+   * IMS content package: a website in files, plus a table of contents stored
+   * as a PHP-serialized array in the module's own `structure` field.
+   */
+  private async renderImscp(
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const { parseImscpStructure } = await import('@mbzoo/core')
+    const items = parseImscpStructure(fields.get('structure') ?? '')
+    if (items.length > 0) {
+      const details = document.createElement('details')
+      details.className = 'advanced'
+      details.open = true
+      const summary = document.createElement('summary')
+      summary.textContent = t('imscp.contents')
+      details.appendChild(summary)
+      const build = (nodes: typeof items): HTMLElement => {
+        const ul = document.createElement('ul')
+        ul.className = 'imscp-toc'
+        for (const node of nodes) {
+          const li = document.createElement('li')
+          const name = document.createElement('span')
+          name.textContent = node.title
+          li.appendChild(name)
+          if (node.href !== '') {
+            const file = document.createElement('code')
+            file.textContent = node.href
+            li.append(' ', file)
+          }
+          if (node.children.length > 0) li.appendChild(build(node.children))
+          ul.appendChild(li)
+        }
+        return ul
+      }
+      details.appendChild(build(items))
+      container.appendChild(details)
+    }
+    await this.renderFileList('imscp', contextId, fields, container)
+  }
+
+  /**
+   * Forum, chat and wiki: their content is user-generated, so a content-only
+   * backup carries the settings that change what the activity meant and
+   * nothing else. Naming those beats the generic metadata fallback.
+   */
+  private async renderDiscussionLike(
+    mod: string,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, `mod_${mod}`, 'intro')
+
+    if (mod === 'forum') {
+      const TYPES: Record<string, string> = {
+        general: t('forum.type.general'),
+        news: t('forum.type.news'),
+        qanda: t('forum.type.qanda'),
+        single: t('forum.type.single'),
+        eachuser: t('forum.type.eachuser'),
+        blog: t('forum.type.blog'),
+      }
+      const raw = fields.get('type') ?? ''
+      container.appendChild(this.buildFacts([[t('forum.type'), TYPES[raw] ?? raw]]))
+    } else if (mod === 'chat') {
+      container.appendChild(this.buildSummary([['availableFrom', fields.get('chattime')]]))
+    } else {
+      const MODES: Record<string, string> = {
+        collaborative: t('wiki.mode.collaborative'),
+        individual: t('wiki.mode.individual'),
+      }
+      const raw = fields.get('wikimode') ?? ''
+      container.appendChild(
+        this.buildFacts([
+          [t('wiki.mode'), MODES[raw] ?? raw],
+          [t('wiki.firstPage'), fields.get('firstpagetitle')],
+        ]),
+      )
+    }
+
+    const EMPTY = { forum: 'forum.empty', chat: 'chat.empty', wiki: 'wiki.empty' } as const
+    const ABSENT = {
+      forum: 'forum.noUserData',
+      chat: 'chat.noUserData',
+      wiki: 'wiki.noUserData',
+    } as const
+    const key = mod as keyof typeof EMPTY
+    const note = document.createElement('p')
+    note.className = 'fallback-note'
+    note.textContent = this.ctx.backup.includesUserData ? t(EMPTY[key]) : t(ABSENT[key])
+    container.appendChild(note)
+  }
+
   /** Feedback questionnaire: every item, in author order (read-only). */
   private async renderFeedback(
     activity: ActivityInfo,

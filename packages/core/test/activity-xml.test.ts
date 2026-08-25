@@ -93,3 +93,53 @@ describe('$@NULL@$ never becomes content', () => {
     expect(course.fullname).toBe('Real')
   })
 })
+
+// choice options, data fields and workshop example submissions all use the
+// same shape: repeated records one level below the module element.
+describe('parseNestedRecords', () => {
+  const CHOICE = `<?xml version="1.0"?>
+<activity id="1" moduleid="1" modulename="choice" contextid="1">
+  <choice id="1">
+    <name>Pick one</name>
+    <options>
+      <option id="7"><text>Morning</text><maxanswers>10</maxanswers></option>
+      <option id="8"><text>Afternoon</text><maxanswers>0</maxanswers></option>
+    </options>
+  </choice>
+</activity>`
+
+  test('reads each record with its id and leaf fields', async () => {
+    const { parseNestedRecords } = await import('../src/moodle/activity-xml.ts')
+    const options = await parseNestedRecords(CHOICE, 'options', 'option')
+    expect(options).toHaveLength(2)
+    expect(options[0]?.get('id')).toBe('7')
+    expect(options[0]?.get('text')).toBe('Morning')
+    expect(options[1]?.get('maxanswers')).toBe('0')
+  })
+
+  test('the NULL sentinel is absence here too', async () => {
+    const { parseNestedRecords } = await import('../src/moodle/activity-xml.ts')
+    const options = await parseNestedRecords(
+      CHOICE.replace('<text>Morning</text>', '<text>$@NULL@$</text>'),
+      'options',
+      'option',
+    )
+    expect(options[0]?.get('text')).toBe('')
+  })
+
+  test('a container that is not there yields no records', async () => {
+    const { parseNestedRecords } = await import('../src/moodle/activity-xml.ts')
+    expect(await parseNestedRecords(CHOICE, 'fields', 'field')).toEqual([])
+  })
+
+  test('only direct children of the container count as records', async () => {
+    const { parseNestedRecords } = await import('../src/moodle/activity-xml.ts')
+    const nested = CHOICE.replace(
+      '<maxanswers>0</maxanswers>',
+      '<maxanswers>0</maxanswers><options><option id="9"><text>Nested</text></option></options>',
+    )
+    const options = await parseNestedRecords(nested, 'options', 'option')
+    expect(options.map((o) => o.get('text'))).toContain('Morning')
+    expect(options.map((o) => o.get('id'))).toContain('9')
+  })
+})

@@ -8,6 +8,7 @@ export {
   extractPluginFileRefs,
   matchFileRecord,
   parseActivityXml,
+  parseNestedRecords,
 } from './moodle/activity-xml.ts'
 export {
   type AvailabilityCondition,
@@ -26,6 +27,15 @@ export {
 export { fileKey, NULL_SENTINEL, parseFilesXml } from './moodle/files-xml.ts'
 export { type GlossaryEntry, parseGlossaryXml } from './moodle/glossary-xml.ts'
 export {
+  type LessonAnswer,
+  type LessonJump,
+  type LessonJumpKind,
+  type LessonPage,
+  type LessonPageKind,
+  type MoodleLesson,
+  parseLessonXml,
+} from './moodle/lesson-xml.ts'
+export {
   BACKUP_LINK_TOKEN,
   type BackupLink,
   backupLinkUrl,
@@ -35,6 +45,14 @@ export {
   type ActivitySettings,
   parseModuleXml,
 } from './moodle/module-xml.ts'
+export {
+  type ImscpItem,
+  MAX_PHP_BYTES,
+  type PhpArray,
+  type PhpValue,
+  parseImscpStructure,
+  parsePhpSerialized,
+} from './moodle/php-serialized.ts'
 export {
   parseQuestionsXml,
   parseQuizQuestionIds,

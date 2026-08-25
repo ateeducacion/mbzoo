@@ -1478,3 +1478,64 @@ footer a {
   border-top: 1px dashed var(--line-2);
   margin: 4px 0;
 }
+
+/* Media previews: the file plays in place instead of only downloading. */
+.media-preview {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin-top: 10px;
+  border-radius: 8px;
+  background: #000;
+}
+audio.media-preview {
+  background: none;
+}
+
+/* Lesson: a page's answers double as its branch buttons, so each row shows
+   where it leads. */
+.lesson-answers {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lesson-answers li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.lesson-jump {
+  font: 600 12px var(--font-body);
+  font-style: normal;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lesson-response {
+  grid-column: 1 / -1;
+  font: 400 13px var(--font-body);
+  color: var(--ink-2);
+  border-top: 1px dashed var(--line);
+  padding-top: 6px;
+}
+
+/* IMS content package table of contents. */
+.imscp-toc {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 400 13.5px var(--font-body);
+  color: var(--ink-2);
+}
+.imscp-toc code {
+  font-size: 12px;
+  color: var(--muted);
+}
