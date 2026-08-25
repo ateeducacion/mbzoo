@@ -673,6 +673,16 @@ main {
   border-top: 1px solid var(--line);
   background: #fff;
 }
+.h5p-frame {
+  height: 60vh;
+}
+.h5p-note {
+  margin: 0;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.75rem;
+  color: var(--muted, #667);
+  border-top: 1px solid var(--line);
+}
 .text-preview {
   max-height: 40vh;
   overflow: auto;

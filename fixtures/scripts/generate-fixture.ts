@@ -13,12 +13,12 @@
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { type Zippable, zipSync } from 'fflate'
+import { strToU8, type Zippable, zipSync } from 'fflate'
 
 const OUT_DIR = join(import.meta.dir, '..', 'files')
 const FIXED_MTIME = new Date('2023-11-14T22:13:20Z') // matches backup_date below
 
-function sha1(content: string): string {
+function sha1(content: string | Uint8Array): string {
   return createHash('sha1').update(content).digest('hex')
 }
 
@@ -27,7 +27,7 @@ const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n'
 interface SpecFile {
   filepath: string
   filename: string
-  content: string
+  content: string | Uint8Array
   component: string
   contextId: string
   filearea: string
@@ -35,6 +35,7 @@ interface SpecFile {
 }
 
 function fileRecord(f: SpecFile): string {
+  const size = typeof f.content === 'string' ? f.content.length : f.content.byteLength
   return `  <file>
     <contenthash>${sha1(f.content)}</contenthash>
     <contextid>${f.contextId}</contextid>
@@ -44,7 +45,7 @@ function fileRecord(f: SpecFile): string {
     <filepath>/${f.filepath}</filepath>
     <filename>${f.filename}</filename>
     <userid>2</userid>
-    <filesize>${f.content.length}</filesize>
+    <filesize>${size}</filesize>
     <mimetype>${f.mimetype}</mimetype>
     <status>0</status>
     <timecreated>1700000000</timecreated>
@@ -77,7 +78,7 @@ function moodleBackupXml(): string {
       <detail>
         <backup_id>00000000-0000-0000-0000-000000000001</backup_id>
         <contents>
-          <activities>3</activities>
+          <activities>11</activities>
           <sections>2</sections>
         </contents>
       </detail>
@@ -171,6 +172,13 @@ function moodleBackupXml(): string {
           <title>Restricted page</title>
           <directory>activities/page_3010</directory>
         </activity>
+        <activity>
+          <moduleid>3011</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>h5pactivity</modulename>
+          <title>Demo H5P content</title>
+          <directory>activities/h5pactivity_3011</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -217,6 +225,68 @@ function activityXml(modname: string, title: string): string {
 `
 }
 
+/**
+ * Minimal synthetic .h5p package (ADR-0017): a self-contained "text"
+ * content type so playback is verifiable without vendoring real
+ * third-party content-type libraries. Deterministic by construction.
+ */
+function h5pPackageBytes(): Uint8Array {
+  const h5pJson = {
+    title: 'MBZoo demo text',
+    language: 'en',
+    mainLibrary: 'H5P.MBZooText',
+    embedTypes: ['div', 'iframe'],
+    license: 'CC BY',
+    licenseVersion: '4.0',
+    defaultLanguage: 'en',
+    preloadedDependencies: [{ machineName: 'H5P.MBZooText', majorVersion: 1, minorVersion: 0 }],
+  }
+  const libraryJson = {
+    title: 'MBZoo Text',
+    description: 'Synthetic text display content type for the MBZoo fixture.',
+    machineName: 'H5P.MBZooText',
+    majorVersion: 1,
+    minorVersion: 0,
+    patchVersion: 0,
+    runnable: 1,
+    author: 'MBZoo',
+    license: 'MIT',
+    embedTypes: ['div', 'iframe'],
+    preloadedJs: [{ path: 'mbzoo-text.js' }],
+    semantics: [
+      { name: 'text', type: 'text', label: 'Text', default: '<p>MBZoo synthetic H5P text.</p>' },
+    ],
+  }
+  const libraryJs = `var H5P = window.H5P || {};
+H5P.MBZooText = function (params) {
+  this.params = params || {};
+};
+H5P.MBZooText.prototype.attach = function ($container) {
+  var host = $container && $container[0] ? $container[0] : $container;
+  var div = document.createElement('div');
+  div.className = 'h5p-mbzoo-text';
+  if (typeof this.params.text === 'string') {
+    div.innerHTML = this.params.text;
+  }
+  host.appendChild(div);
+};
+`
+  const contentJson = {
+    text: '<p><strong>Synthetic H5P</strong>: if you can read this inside MBZoo, H5P playback works.</p>',
+  }
+  const entries: Zippable = {
+    'h5p.json': strToU8(`${JSON.stringify(h5pJson, null, 2)}\n`),
+    'content/content.json': strToU8(`${JSON.stringify(contentJson, null, 2)}\n`),
+    'H5P.MBZooText-1.0/library.json': strToU8(`${JSON.stringify(libraryJson, null, 2)}\n`),
+    'H5P.MBZooText-1.0/semantics.json': strToU8(
+      `${JSON.stringify(libraryJson.semantics, null, 2)}\n`,
+    ),
+    'H5P.MBZooText-1.0/mbzoo-text.js': strToU8(libraryJs),
+  }
+  // Fixed mtime keeps the nested package byte-stable across regenerations.
+  return zipSync(entries, { level: 6, mtime: FIXED_MTIME })
+}
+
 async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true })
 
@@ -249,6 +319,15 @@ async function main(): Promise<void> {
       filearea: 'overviewfiles',
       mimetype: 'image/svg+xml',
     },
+    {
+      filepath: '',
+      filename: 'demo-text.h5p',
+      content: h5pPackageBytes(),
+      component: 'mod_h5pactivity',
+      contextId: '111',
+      filearea: 'package',
+      mimetype: 'application/zip',
+    },
   ]
 
   const filesXml = `${XML_HEADER}<files>
@@ -257,8 +336,11 @@ ${specFiles.map(fileRecord).join('\n')}
 `
 
   const entries: Zippable = {}
-  const add = (name: string, content: string): void => {
-    entries[name] = [new TextEncoder().encode(content), { mtime: FIXED_MTIME }]
+  const add = (name: string, content: string | Uint8Array): void => {
+    entries[name] = [
+      typeof content === 'string' ? new TextEncoder().encode(content) : content,
+      { mtime: FIXED_MTIME },
+    ]
   }
 
   add('moodle_backup.xml', moodleBackupXml())
@@ -271,7 +353,7 @@ ${specFiles.map(fileRecord).join('\n')}
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
   add(
     'sections/section_2002/section.xml',
-    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010'),
+    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011'),
   )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
@@ -388,6 +470,16 @@ ${specFiles.map(fileRecord).join('\n')}
 `,
   )
   add(
+    'activities/h5pactivity_3011/h5pactivity.xml',
+    `${XML_HEADER}<activity id="11" moduleid="11" modulename="h5pactivity" contextid="111">
+  <h5pactivity id="11">
+    <name>Demo H5P content</name>
+    <intro>&lt;p&gt;Interactive content packaged as .h5p.&lt;/p&gt;</intro>
+  </h5pactivity>
+</activity>
+`,
+  )
+  add(
     'questions.xml',
     `${XML_HEADER}<question_categories>
   <question_category id="1">
@@ -436,7 +528,19 @@ ${specFiles.map(fileRecord).join('\n')}
   const data = zipSync(entries, { level: 6 })
   const outPath = join(OUT_DIR, 'demo-course-zip.mbz')
   await writeFile(outPath, data)
+  // Keep the landing-page example link from drifting behind the fixture.
+  const publicCopy = join(
+    import.meta.dir,
+    '..',
+    '..',
+    'apps',
+    'viewer',
+    'public',
+    'demo-course-zip.mbz',
+  )
+  await writeFile(publicCopy, data)
   console.log(`wrote ${outPath}`)
+  console.log(`wrote ${publicCopy}`)
   console.log(`sha256 ${createHash('sha256').update(data).digest('hex')}`)
   console.log(`bytes   ${data.byteLength}`)
 }

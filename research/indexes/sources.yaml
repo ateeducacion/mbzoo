@@ -132,3 +132,9 @@ sources:
     url: https://starlight.astro.build
     accessed: 2026-08-25
     license: MIT
+  TECH-014:
+    title: h5p-standalone
+    kind: technology
+    url: https://github.com/tunapanda/h5p-standalone
+    accessed: 2026-08-25
+    license: MIT

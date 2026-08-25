@@ -19,7 +19,7 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     expect(b.sections.map((s) => s.number)).toEqual([1, 2])
     expect(b.sections[0]?.name).toBe('Introduction')
     expect(b.sections[0]?.activityIds).toEqual([3001, 3002, 3004, 3006, 3007])
-    expect(b.sections[1]?.activityIds).toEqual([3003, 3005, 3008, 3009, 3010])
+    expect(b.sections[1]?.activityIds).toEqual([3003, 3005, 3008, 3009, 3010, 3011])
   })
 
   test('exposes unknown third-party modules instead of dropping them', async () => {
@@ -30,11 +30,14 @@ describe('openBackup (synthetic ZIP fixture)', () => {
 
   test('indexes files.xml records', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
-    expect(b.files.size).toBe(3)
+    expect(b.files.size).toBe(4)
     const names = [...b.files.values()].map((f) => f.fileName)
     expect(names).toContain('readme.txt')
     expect(names).toContain('dot.svg')
     expect(names).toContain('guide.txt')
+    const h5p = [...b.files.values()].find((f) => f.fileName === 'demo-text.h5p')
+    expect(h5p?.component).toBe('mod_h5pactivity')
+    expect(h5p?.fileArea).toBe('package')
   })
 })
 

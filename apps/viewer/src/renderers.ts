@@ -22,9 +22,20 @@ import {
   parseQuizQuestionIds,
 } from '@mbzoo/core'
 import DOMPurify from 'dompurify'
+// Raw texts, not processed assets: they are inlined into the sandboxed player
+// page; opaque origins cannot load blob URLs created by the application origin.
+import h5pCoreJsRaw from 'h5p-standalone/dist/frame.bundle.js?raw'
+import h5pCssRaw from 'h5p-standalone/dist/styles/h5p.css?raw'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { scanExternalRefs } from './lib/external-refs.ts'
+import {
+  buildPlayerHtml,
+  type H5pEntries,
+  isH5pFileName,
+  type PlayerAssets,
+  unzipH5p,
+} from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
 import {
   contentKind,
@@ -172,6 +183,10 @@ export class Renderer {
     }
     if (mod === 'assign') {
       await this.renderAssign(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'hvp' || mod === 'h5pactivity') {
+      await this.renderH5pActivity(activity, fields, contextId, container)
       return
     }
     // Known module families without a dedicated body renderer: show the
@@ -389,6 +404,11 @@ export class Renderer {
     if (!data) return card
 
     const mime = rec.mimeType || guessMime(rec.fileName)
+    if (isH5pFileName(rec.fileName)) {
+      await this.renderH5p(data, card)
+      addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      return card
+    }
     if (mime.startsWith('image/')) {
       const img = document.createElement('img')
       img.src = this.blobUrl(data, mime)
@@ -465,8 +485,7 @@ export class Renderer {
    * (ADR-0014): scripts may run but cannot touch the app, and the injected
    * CSP blocks all network access. Relative references are rewritten to
    * blob URLs of sibling archive files when found.
-   */
-  private async renderSandboxedHtml(
+   */ private async renderSandboxedHtml(
     data: Uint8Array,
     rec: BackupFileRecord,
     card: HTMLElement,
@@ -479,6 +498,93 @@ export class Renderer {
     frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
     frame.title = rec.fileName
     frame.className = 'html-frame'
+    // allow-scripts only: opaque origin — no same-origin access to the app.
+    frame.sandbox.add('allow-scripts')
+    card.appendChild(frame)
+  }
+
+  /**
+   * H5P activity: intro plus experimental playback of the stored .h5p
+   * package (ADR-0017); falls back to the download card when the package
+   * cannot be played.
+   */
+  private async renderH5pActivity(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const mod = activity.moduleName
+    const introHtml = await this.resolveHtml(fields.get('intro'), `mod_${mod}`, 'intro', contextId)
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+      this.renderExternalPanel(this.lastRawHtml, container)
+    }
+
+    const records = [...this.ctx.backup.files.values()].filter(
+      (f) =>
+        isH5pFileName(f.fileName) &&
+        f.fileSize > 0 &&
+        (f.component === `mod_${mod}` || (contextId !== '' && f.contextId === contextId)),
+    )
+    const record =
+      records.find((f) => f.component === `mod_${mod}` && f.contextId === contextId) ?? records[0]
+    if (!record) {
+      notAvailable(container)
+      return
+    }
+    const data = await this.tryRead(contentHashPath(record.contentHash))
+    if (!data) {
+      notAvailable(container)
+      return
+    }
+    const card = document.createElement('div')
+    card.className = 'file-card'
+    container.appendChild(card)
+    await this.renderH5p(data, card)
+    addDownload(
+      card,
+      this.blobUrl(data, record.mimeType || guessMime(record.fileName)),
+      record.fileName,
+    )
+  }
+
+  /**
+   * Experimental H5P playback (ADR-0017): unzips the package in memory and
+   * boots h5p-standalone inside an opaque-origin sandboxed iframe with the
+   * ADR-0014 CSP; every package path is served by an in-frame shim.
+   */
+  private async renderH5p(data: Uint8Array, card: HTMLElement): Promise<void> {
+    let entries: H5pEntries
+    try {
+      entries = unzipH5p(data)
+    } catch {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('h5p.invalid')
+      card.appendChild(note)
+      return
+    }
+    const assets = await loadPlayerAssets()
+    if (!assets) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('h5p.playerUnavailable')
+      card.appendChild(note)
+      return
+    }
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t('h5p.experimental')
+    card.appendChild(chip)
+    const html = buildPlayerHtml(entries, assets)
+    const frame = document.createElement('iframe')
+    frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    frame.title = t('h5p.frameTitle')
+    frame.className = 'html-frame h5p-frame'
     // allow-scripts only: opaque origin — no same-origin access to the app.
     frame.sandbox.add('allow-scripts')
     card.appendChild(frame)
@@ -1142,6 +1248,20 @@ function sortRecords(records: BackupFileRecord[]): BackupFileRecord[] {
   return [...records].sort((a, b) =>
     (a.filePath + a.fileName).localeCompare(b.filePath + b.fileName),
   )
+}
+
+/**
+ * Player assets are read once as raw texts and inlined into the generated
+ * player page; nothing is fetched at preview time (ADR-0017 rule 3).
+ */
+let playerAssetsPromise: Promise<PlayerAssets | undefined> | undefined
+
+function loadPlayerAssets(): Promise<PlayerAssets | undefined> {
+  playerAssetsPromise ??= Promise.resolve({
+    coreJs: h5pCoreJsRaw,
+    css: h5pCssRaw,
+  })
+  return playerAssetsPromise
 }
 
 function addDownload(card: HTMLElement, url: string, name: string): void {

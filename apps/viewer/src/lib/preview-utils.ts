@@ -15,6 +15,16 @@ export const SANDBOX_CSP =
   "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
   "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
+/**
+ * CSP injected into the experimental H5P player page (ADR-0017): same
+ * default-deny model; all package files and player assets must come from
+ * blobs created inside the sandboxed frame itself.
+ */
+export const H5P_CSP =
+  "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +
+  "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
+  "connect-src 'none'; frame-src 'none'; form-action 'none'"
+
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
