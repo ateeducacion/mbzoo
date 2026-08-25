@@ -719,6 +719,288 @@ function toneWav(): Uint8Array {
   return bytes
 }
 
+/**
+ * Second fixture: a small course taken WITH user data.
+ *
+ * The main demo is content-only on purpose — the public example should not
+ * greet a visitor with a personal-data warning — which left the paths that
+ * only exist in a `users=1` backup reachable only by mutating a fixture in a
+ * test. This one exercises them for real: the disclosure, the people behind
+ * it, and the gradebook.
+ *
+ * Every person here is invented. Emails use the reserved `example.invalid`
+ * domain and addresses use TEST-NET-3 (203.0.113.0/24, RFC 5737), so nothing
+ * in this file can be mistaken for, or routed to, anyone real.
+ */
+async function buildUsersFixture(): Promise<void> {
+  const entries: Zippable = {}
+  const add = (path: string, content: string | Uint8Array): void => {
+    entries[path] = typeof content === 'string' ? strToU8(content) : content
+  }
+
+  add(
+    'moodle_backup.xml',
+    `${XML_HEADER}<moodle_backup>
+  <information>
+    <name>demo-course-users.mbz</name>
+    <moodle_version>2024042200</moodle_version>
+    <moodle_release>4.4 (Build: 20240422)</moodle_release>
+    <backup_version>2024042200</backup_version>
+    <backup_release>4.4</backup_release>
+    <backup_date>1700000000</backup_date>
+    <original_wwwroot>https://demo.example.invalid</original_wwwroot>
+    <site_identifier>mbzoosyntheticusers</site_identifier>
+    <format>moodle2</format>
+    <type>course</type>
+    <details>
+      <detail>
+        <backup_id>00000000-0000-0000-0000-000000000002</backup_id>
+        <contents><activities>2</activities><sections>1</sections></contents>
+      </detail>
+    </details>
+    <contents>
+      <course>
+        <courseid>2001</courseid>
+        <title>Demo Course with People</title>
+        <directory>course</directory>
+      </course>
+      <sections>
+        <section>
+          <sectionid>4001</sectionid>
+          <title>Unit 1</title>
+          <directory>sections/section_4001</directory>
+        </section>
+      </sections>
+      <activities>
+        <activity>
+          <moduleid>5001</moduleid>
+          <sectionid>4001</sectionid>
+          <modulename>page</modulename>
+          <title>Course guide</title>
+          <directory>activities/page_5001</directory>
+        </activity>
+        <activity>
+          <moduleid>5002</moduleid>
+          <sectionid>4001</sectionid>
+          <modulename>assign</modulename>
+          <title>Unit 1 report</title>
+          <directory>activities/assign_5002</directory>
+        </activity>
+      </activities>
+    </contents>
+    <settings>
+      <setting><level>root</level><name>users</name><value>1</value></setting>
+      <setting><level>root</level><name>anonymize</name><value>0</value></setting>
+    </settings>
+  </information>
+</moodle_backup>
+`,
+  )
+
+  add(
+    'course/course.xml',
+    `${XML_HEADER}<course id="2001" contextid="201">
+  <shortname>DEMO-PEOPLE</shortname>
+  <fullname>Demo Course with People</fullname>
+  <idnumber>MBZOO-USERS</idnumber>
+  <summary>&lt;p&gt;A small synthetic course backed up with user data.&lt;/p&gt;</summary>
+  <summaryformat>1</summaryformat>
+  <format>topics</format>
+  <startdate>1700000000</startdate>
+</course>
+`,
+  )
+  add('sections/section_4001/section.xml', sectionXml(4001, 1, 'Unit 1', '5001,5002'))
+
+  add(
+    'activities/page_5001/page.xml',
+    `${XML_HEADER}<activity id="1" moduleid="5001" modulename="page" contextid="202">
+  <page id="1">
+    <name>Course guide</name>
+    <intro>&lt;p&gt;How this unit is assessed.&lt;/p&gt;</intro>
+    <content>&lt;p id="guide-body"&gt;Submit the report before the deadline.&lt;/p&gt;</content>
+    <contentformat>1</contentformat>
+  </page>
+</activity>
+`,
+  )
+  add(
+    'activities/assign_5002/assign.xml',
+    `${XML_HEADER}<activity id="2" moduleid="5002" modulename="assign" contextid="203">
+  <assign id="2">
+    <name>Unit 1 report</name>
+    <intro>&lt;p&gt;Upload a short report.&lt;/p&gt;</intro>
+    <grade>100</grade>
+  </assign>
+</activity>
+`,
+  )
+
+  // The activity's own grade item. Marks live in <grade_grades>, which is
+  // gated behind userinfo and is not written here.
+  add(
+    'activities/assign_5002/grades.xml',
+    `${XML_HEADER}<activity_gradebook>
+  <grade_items>
+    <grade_item id="7001">
+      <itemname>Unit 1 report</itemname>
+      <itemtype>mod</itemtype>
+      <itemmodule>assign</itemmodule>
+      <gradetype>1</gradetype>
+      <grademax>100.00000</grademax>
+      <grademin>0.00000</grademin>
+      <gradepass>50.00000</gradepass>
+      <aggregationcoef2>0.60000</aggregationcoef2>
+      <sortorder>2</sortorder>
+      <hidden>0</hidden>
+      <locked>0</locked>
+    </grade_item>
+  </grade_items>
+</activity_gradebook>
+`,
+  )
+
+  add(
+    'gradebook.xml',
+    `${XML_HEADER}<gradebook>
+  <grade_categories>
+    <grade_category id="6001">
+      <parent>$@NULL@$</parent>
+      <depth>1</depth>
+      <fullname>?</fullname>
+      <aggregation>13</aggregation>
+      <keephigh>0</keephigh>
+      <droplow>0</droplow>
+    </grade_category>
+    <grade_category id="6002">
+      <parent>6001</parent>
+      <depth>2</depth>
+      <fullname>Coursework</fullname>
+      <aggregation>10</aggregation>
+      <keephigh>0</keephigh>
+      <droplow>1</droplow>
+    </grade_category>
+  </grade_categories>
+  <grade_items>
+    <grade_item id="7001">
+      <categoryid>6002</categoryid>
+      <itemname>Unit 1 report</itemname>
+      <itemtype>mod</itemtype>
+      <itemmodule>assign</itemmodule>
+      <gradetype>1</gradetype>
+      <grademax>100.00000</grademax>
+      <grademin>0.00000</grademin>
+      <gradepass>50.00000</gradepass>
+      <aggregationcoef2>0.60000</aggregationcoef2>
+      <sortorder>2</sortorder>
+      <hidden>0</hidden>
+      <locked>0</locked>
+    </grade_item>
+    <grade_item id="7002">
+      <categoryid>6001</categoryid>
+      <itemname></itemname>
+      <itemtype>course</itemtype>
+      <gradetype>1</gradetype>
+      <grademax>100.00000</grademax>
+      <grademin>0.00000</grademin>
+      <gradepass>50.00000</gradepass>
+      <sortorder>1</sortorder>
+      <hidden>0</hidden>
+      <locked>0</locked>
+    </grade_item>
+  </grade_items>
+  <grade_letters>
+    <grade_letter id="8001"><lowerboundary>90.00000</lowerboundary><letter>A</letter></grade_letter>
+    <grade_letter id="8002"><lowerboundary>70.00000</lowerboundary><letter>B</letter></grade_letter>
+    <grade_letter id="8003"><lowerboundary>50.00000</lowerboundary><letter>C</letter></grade_letter>
+  </grade_letters>
+</gradebook>
+`,
+  )
+
+  // Invented people. example.invalid cannot resolve and 203.0.113.0/24 is
+  // TEST-NET-3, reserved for documentation (RFC 5737).
+  add(
+    'users.xml',
+    `${XML_HEADER}<users>
+  <user id="9101" contextid="301">
+    <username>rosa.docente</username>
+    <idnumber>T-1001</idnumber>
+    <email>rosa.docente@example.invalid</email>
+    <phone1>+34 000 000 001</phone1>
+    <institution>Instituto de Ejemplo</institution>
+    <department>Informática</department>
+    <address>Calle Inventada 1</address>
+    <city>Las Palmas</city>
+    <country>ES</country>
+    <lastip>203.0.113.11</lastip>
+    <auth>manual</auth>
+    <firstname>Rosa</firstname>
+    <lastname>Docente</lastname>
+    <description>&lt;p&gt;Invented teacher account.&lt;/p&gt;</description>
+    <deleted>0</deleted>
+  </user>
+  <user id="9102" contextid="302">
+    <username>luis.alumno</username>
+    <idnumber>S-2001</idnumber>
+    <email>luis.alumno@example.invalid</email>
+    <city>Santa Cruz</city>
+    <country>ES</country>
+    <lastip>203.0.113.24</lastip>
+    <auth>manual</auth>
+    <firstname>Luis</firstname>
+    <lastname>Alumno</lastname>
+    <deleted>0</deleted>
+  </user>
+  <user id="9103" contextid="303">
+    <username>ana.antigua</username>
+    <email>ana.antigua@example.invalid</email>
+    <auth>manual</auth>
+    <firstname>Ana</firstname>
+    <lastname>Antigua</lastname>
+    <deleted>1</deleted>
+  </user>
+</users>
+`,
+  )
+
+  const guide: SpecFile = {
+    filepath: '',
+    filename: 'rubric.txt',
+    content: 'Invented marking notes for the synthetic people fixture.\n',
+    component: 'mod_assign',
+    contextId: '203',
+    filearea: 'intro',
+    mimetype: 'text/plain',
+  }
+  add(
+    'files.xml',
+    `${XML_HEADER}<files>
+${fileRecord(guide)}
+</files>
+`,
+  )
+  const h = sha1(guide.content)
+  add(`files/${h.slice(0, 2)}/${h}`, guide.content)
+
+  const data = zipSync(entries, { level: 6, mtime: FIXED_MTIME })
+  const outPath = join(OUT_DIR, 'demo-course-users.mbz')
+  await writeFile(outPath, data)
+  const publicCopy = join(
+    import.meta.dir,
+    '..',
+    '..',
+    'apps',
+    'viewer',
+    'public',
+    'demo-course-users.mbz',
+  )
+  await writeFile(publicCopy, data)
+  console.log(`wrote ${outPath}`)
+  console.log(`sha256 ${createHash('sha256').update(data).digest('hex')}`)
+  console.log(`bytes   ${data.byteLength}`)
+}
+
 async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true })
 
@@ -1560,6 +1842,7 @@ ${specFiles.map(fileRecord).join('\n')}
   console.log(`wrote ${publicCopy}`)
   console.log(`sha256 ${createHash('sha256').update(data).digest('hex')}`)
   console.log(`bytes   ${data.byteLength}`)
+  await buildUsersFixture()
 }
 
 main()

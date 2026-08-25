@@ -1527,6 +1527,31 @@ function embeddedVideoFixture(): { name: string; mimeType: string; buffer: Buffe
   }, 'embedded-video.mbz')
 }
 
+test('the people example opens from the home page and discloses what it carries', async ({
+  page,
+}) => {
+  await page.goto('/')
+  // The second example exists because the main demo is content-only: the
+  // disclosure path had no committed backup that actually reaches it.
+  await page.getByRole('link', { name: /people and grades|personas y calificaciones/ }).click()
+
+  await expect(page.locator('#course-title')).toHaveText('Demo Course with People')
+
+  const box = page.locator('#personal-data')
+  await expect(box).toBeVisible()
+  await expect(box).toContainText('3')
+  await expect(box).toContainText(/email addresses|correos/)
+  await expect(box).toContainText(/IP addresses|direcciones IP/)
+  // Names stay behind a closed disclosure rather than being listed outright.
+  await expect(box.locator('details')).not.toHaveAttribute('open', /.*/)
+
+  // And the gradebook it was taken with: structure, never anyone's marks.
+  const book = page.locator('.course-gradebook')
+  await expect(book).toBeVisible()
+  await book.locator('summary').click()
+  await expect(book).toContainText('Coursework')
+})
+
 test('the personal-data and warnings boxes stay invisible when empty', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', FIXTURE)
