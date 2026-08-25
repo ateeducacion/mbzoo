@@ -289,6 +289,13 @@ function moodleBackupXml(): string {
           <title>Page inside the subsection</title>
           <directory>activities/page_3026</directory>
         </activity>
+        <activity>
+          <moduleid>3027</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>scorm</modulename>
+          <title>Demo SCORM package</title>
+          <directory>activities/scorm_3027</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -399,6 +406,185 @@ function demoPngBytes(): Uint8Array {
  * 3. An image under content/, addressed through H5P.getPath() and assigned
  *    with new Image() — the path that bypasses document.createElement.
  */
+/** 1x1 red PNG, used wherever a fixture needs a real image. */
+function onePixelPng(): Uint8Array {
+  return Uint8Array.from(
+    atob(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    ),
+    (c) => c.charCodeAt(0),
+  )
+}
+
+/**
+ * Synthetic eXeLearning 4 package. A real `.elpx` carries BOTH the
+ * re-importable project (`content.xml`) and the rendered site, and is
+ * recognised by the site's own marker files rather than by its extension —
+ * real files are routinely mislabelled (ADR-0025).
+ */
+function elpxBytes(): Uint8Array {
+  const page = (title: string, other: string): string =>
+    `<!doctype html>
+<html><head><title>${title}</title><link rel="stylesheet" href="content/css/base.css"></head>
+<body><h1 id="exe-title">${title}</h1>
+<img id="exe-img" src="content/img/dot.png" alt="dot">
+<a id="exe-link" href="${other}">other page</a>
+</body></html>
+`
+  const files: Zippable = {
+    'content.xml': strToU8(
+      `${XML_HEADER}<odeProject version="2.0"><title>Demo eXeLearning project</title>
+  <odeNavStructures><odeNavStructure><pageName>Home</pageName></odeNavStructure></odeNavStructures>
+</odeProject>
+`,
+    ),
+    'index.html': strToU8(page('Demo eXeLearning site', 'page2.html')),
+    'page2.html': strToU8(page('Second eXe page', 'index.html')),
+    'content/css/base.css': strToU8('#exe-title{color:rgb(128,0,128)}'),
+    'content/img/dot.png': onePixelPng(),
+    'libs/exe_export.js': strToU8('/* exported by eXeLearning */\n'),
+    'libs/common.js': strToU8('/* common */\n'),
+  }
+  return zipSync(files, { level: 6, mtime: FIXED_MTIME })
+}
+
+/**
+ * Synthetic EPUB 3 package: container -> OPF -> two-chapter spine, plus a
+ * stylesheet and an image the chapters reference relatively, so the reader's
+ * asset inlining is exercised (ADR-0024).
+ */
+function epubBytes(): Uint8Array {
+  const chapter = (n: number, title: string, other: string): string =>
+    `<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>${title}</title>
+<link rel="stylesheet" href="style.css"/></head>
+<body><h1 id="chapter-title">${title}</h1>
+<p id="chapter-body">Body of chapter ${n}.</p>
+<img id="chapter-img" src="cover.png" alt="cover"/>
+<a id="chapter-link" href="${other}">other chapter</a>
+</body></html>
+`
+  const opf = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">urn:uuid:mbzoo-demo-epub</dc:identifier>
+    <dc:title>Demo EPUB book</dc:title>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="c2" href="chapter2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="css" href="style.css" media-type="text/css"/>
+    <item id="img" href="cover.png" media-type="image/png"/>
+  </manifest>
+  <spine>
+    <itemref idref="c1"/>
+    <itemref idref="c2"/>
+  </spine>
+</package>
+`
+  const container = `<?xml version="1.0" encoding="utf-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+</container>
+`
+  const files: Zippable = {
+    mimetype: strToU8('application/epub+zip'),
+    'META-INF/container.xml': strToU8(container),
+    'OEBPS/content.opf': strToU8(opf),
+    'OEBPS/chapter1.xhtml': strToU8(chapter(1, 'First chapter', 'chapter2.xhtml')),
+    'OEBPS/chapter2.xhtml': strToU8(chapter(2, 'Second chapter', 'chapter1.xhtml')),
+    'OEBPS/style.css': strToU8('#chapter-title{color:rgb(0,0,255)}'),
+    'OEBPS/cover.png': onePixelPng(),
+  }
+  return zipSync(files, { level: 6, mtime: FIXED_MTIME })
+}
+
+/**
+ * Synthetic SCORM 1.2 manifest. MBZoo does not read it — the course
+ * structure comes from scorm.xml, which is where Moodle already put it — but
+ * a real package always carries one, and its presence is what Moodle uses to
+ * tell SCORM from AICC (mod/scorm/locallib.php:297).
+ */
+function scormManifest(): string {
+  return `${XML_HEADER}<manifest identifier="DEMO-MANIFEST" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2">
+  <metadata><schema>ADL SCORM</schema><schemaversion>1.2</schemaversion></metadata>
+  <organizations default="DEMO-ORG">
+    <organization identifier="DEMO-ORG">
+      <title>Demo course structure</title>
+      <item identifier="DEMO-ITEM-1" identifierref="RES-1">
+        <title>First step</title>
+        <item identifier="DEMO-ITEM-2" identifierref="RES-2"><title>Second step</title></item>
+      </item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="RES-1" type="webcontent" adlcp:scormtype="sco" href="sco1.html">
+      <file href="sco1.html"/>
+    </resource>
+    <resource identifier="RES-2" type="webcontent" adlcp:scormtype="sco" href="sco2.html">
+      <file href="sco2.html"/>
+    </resource>
+  </resources>
+</manifest>
+`
+}
+
+/**
+ * A SCO that proves the runtime is present: it finds the API the way the ADL
+ * wrapper does — window.API on the current window first — calls it, and
+ * writes the outcome into the document so a test can assert on it.
+ */
+function scormScoHtml(index: number, title: string): string {
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><title>${title}</title></head>
+<body>
+<h1 id="sco-title">${title}</h1>
+<p id="sco-api">api-missing</p>
+<p id="sco-value">no-value</p>
+<a id="sco-next" href="sco${index === 1 ? 2 : 1}.html">other step</a>
+<script>
+(function () {
+  function findAPI(win) {
+    var depth = 0
+    // Real ADL wrappers walk up the opener/parent chain. Reaching a
+    // cross-origin parent throws, which is exactly what happens when the API
+    // is not on the SCO's own window, so the walk is guarded.
+    try {
+      while (win && !win.API && win.parent && win.parent !== win && depth < 10) {
+        depth++
+        win = win.parent
+      }
+      return win ? win.API : null
+    } catch (err) {
+      return null
+    }
+  }
+  var api = findAPI(window)
+  if (!api) return
+  document.getElementById('sco-api').textContent = 'api-found'
+  api.LMSInitialize('')
+  api.LMSSetValue('cmi.core.lesson_status', 'completed')
+  document.getElementById('sco-value').textContent =
+    api.LMSGetValue('cmi.core.lesson_status')
+})()
+</script>
+</body></html>
+`
+}
+
+/** The uploaded archive, as stored in the `package` file area. */
+function scormPackageBytes(): Uint8Array {
+  const files: Zippable = {
+    'imsmanifest.xml': strToU8(scormManifest()),
+    'sco1.html': strToU8(scormScoHtml(1, 'First step')),
+    'sco2.html': strToU8(scormScoHtml(2, 'Second step')),
+  }
+  return zipSync(files, { level: 6, mtime: FIXED_MTIME })
+}
+
 function h5pPackageBytes(): Uint8Array {
   const h5pJson = {
     title: 'MBZoo demo text',
@@ -590,6 +776,33 @@ async function main(): Promise<void> {
       filearea: 'package',
       mimetype: 'application/zip',
     },
+    {
+      filepath: '',
+      filename: 'demo-project.elpx',
+      content: elpxBytes(),
+      component: 'mod_folder',
+      contextId: '120',
+      filearea: 'content',
+      mimetype: 'application/zip',
+    },
+    {
+      filepath: '',
+      filename: 'demo-book.epub',
+      content: epubBytes(),
+      component: 'mod_folder',
+      contextId: '120',
+      filearea: 'content',
+      mimetype: 'application/epub+zip',
+    },
+    {
+      filepath: '',
+      filename: 'demo-scorm.zip',
+      content: scormPackageBytes(),
+      component: 'mod_scorm',
+      contextId: '127',
+      filearea: 'package',
+      mimetype: 'application/zip',
+    },
   ]
 
   const filesXml = `${XML_HEADER}<files>
@@ -635,7 +848,12 @@ ${specFiles.map(fileRecord).join('\n')}
   )
   add(
     'sections/section_2002/section.xml',
-    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020,3023,3024'),
+    sectionXml(
+      2002,
+      2,
+      'Resources',
+      '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020,3023,3024,3027',
+    ),
   )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   // A grade item beside the assignment, and the rubric that judges it —
@@ -1093,6 +1311,59 @@ ${specFiles.map(fileRecord).join('\n')}
     <submissions>
     </submissions>
   </assignment>
+</activity>
+`,
+  )
+  // Shape from mod/scorm/backup/moodle2/backup_scorm_stepslib.php:39-61:
+  // Moodle flattens imsmanifest.xml into <scoes>, so the course structure is
+  // already here and MBZoo never has to read the manifest (ADR-0023).
+  add(
+    'activities/scorm_3027/scorm.xml',
+    `${XML_HEADER}<activity id="27" moduleid="27" modulename="scorm" contextid="127">
+  <scorm id="27">
+    <name>Demo SCORM package</name>
+    <scormtype>local</scormtype>
+    <reference>demo-scorm.zip</reference>
+    <intro>&lt;p&gt;A two-item SCORM 1.2 package.&lt;/p&gt;</intro>
+    <introformat>1</introformat>
+    <version>SCORM_1.2</version>
+    <launch>231</launch>
+    <hidetoc>0</hidetoc>
+    <displaycoursestructure>1</displaycoursestructure>
+    <timemodified>1700000000</timemodified>
+    <scoes>
+      <sco id="230">
+        <manifest></manifest>
+        <organization></organization>
+        <parent>/</parent>
+        <identifier>DEMO-ORG</identifier>
+        <launch></launch>
+        <scormtype></scormtype>
+        <title>Demo course structure</title>
+        <sortorder>1</sortorder>
+      </sco>
+      <sco id="231">
+        <manifest></manifest>
+        <organization>DEMO-ORG</organization>
+        <parent>DEMO-ORG</parent>
+        <identifier>DEMO-ITEM-1</identifier>
+        <launch>sco1.html</launch>
+        <scormtype>sco</scormtype>
+        <title>First step</title>
+        <sortorder>2</sortorder>
+      </sco>
+      <sco id="232">
+        <manifest></manifest>
+        <organization>DEMO-ORG</organization>
+        <parent>DEMO-ITEM-1</parent>
+        <identifier>DEMO-ITEM-2</identifier>
+        <launch>sco2.html</launch>
+        <scormtype>sco</scormtype>
+        <title>Second step</title>
+        <sortorder>3</sortorder>
+      </sco>
+    </scoes>
+  </scorm>
 </activity>
 `,
   )

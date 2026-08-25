@@ -201,6 +201,16 @@ const STRINGS = {
     'site.pagesHint':
       'Links inside the page work; this list also reaches pages the entry page never links to.',
     'embed.notPreviewable': 'This course embedded a file MBZoo cannot show inline.',
+    'scorm.experimental':
+      'Experimental: MBZoo runs this SCORM package offline, with no attempt tracking and nothing saved.',
+    'scorm.contents': 'Contents of this package',
+    'scorm.contentsHint':
+      'Each entry is a launchable item from the package manifest, indented to match its place in the course structure.',
+    'scorm.noContent':
+      'This backup stores the SCORM package but not its extracted contents, so there is nothing to play.',
+    'scorm.noLaunchable': 'This SCORM package declares no launchable item.',
+    'scorm.runtimeUnavailable':
+      'The SCORM runtime could not be loaded, so the package is shown without one.',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -455,6 +465,16 @@ const STRINGS = {
     'site.pagesHint':
       'Los enlaces dentro de la página funcionan; esta lista además llega a páginas que la portada no enlaza.',
     'embed.notPreviewable': 'Este curso incrusta un fichero que MBZoo no puede mostrar en línea.',
+    'scorm.experimental':
+      'Experimental: MBZoo ejecuta este paquete SCORM sin conexión, sin registrar intentos y sin guardar nada.',
+    'scorm.contents': 'Contenido de este paquete',
+    'scorm.contentsHint':
+      'Cada entrada es un elemento lanzable del manifiesto del paquete, sangrado según su lugar en la estructura del curso.',
+    'scorm.noContent':
+      'Este backup guarda el paquete SCORM pero no su contenido extraído, así que no hay nada que reproducir.',
+    'scorm.noLaunchable': 'Este paquete SCORM no declara ningún elemento lanzable.',
+    'scorm.runtimeUnavailable':
+      'No se ha podido cargar el runtime de SCORM, así que el paquete se muestra sin él.',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',

@@ -219,7 +219,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('3 sections')
-  expect(meta).toContain('26 activities')
+  expect(meta).toContain('27 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -766,6 +766,54 @@ test('a PDF embedded in a Page renders instead of vanishing', async ({ page }) =
   // this must not become a way to load remote content (ADR-0009).
   await expect(page.locator('#remote')).toHaveCount(0)
   expect(requests.filter((u) => u.includes('evil.example'))).toEqual([])
+})
+
+test('a SCORM package plays inside the opaque-origin sandbox (ADR-0023)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo SCORM package/ }).click()
+
+  // The table of contents comes from scorm.xml, where Moodle already
+  // flattened the package manifest — MBZoo never reads imsmanifest.xml.
+  const items = page.locator('.site-pages button')
+  await expect(items).toHaveCount(2)
+  await expect(items.first()).toHaveText('First step')
+  await expect(items.nth(1)).toHaveText('Second step')
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#sco-title')).toHaveText('First step')
+  // The SCO finds the API with the ADL findAPI(window) walk and drives it.
+  // Runtime and SCO share one document precisely so that walk succeeds.
+  await expect(frame.locator('#sco-api')).toHaveText('api-found')
+  await expect(frame.locator('#sco-value')).toHaveText('completed')
+
+  // The sandbox is unchanged: opaque origin, no same-origin access.
+  const sandbox = await page.locator('.html-frame').getAttribute('sandbox')
+  expect(sandbox).toContain('allow-scripts')
+  expect(sandbox).not.toContain('allow-same-origin')
+
+  // Nothing the runtime does may reach the network (ADR-0009).
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+
+  // Second item, through MBZoo's own chrome.
+  await items.nth(1).click()
+  await expect(page.frameLocator('.html-frame').locator('#sco-title')).toHaveText('Second step')
+})
+
+test('a link between SCOs navigates through MBZoo (ADR-0022 + ADR-0023)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo SCORM package/ }).click()
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#sco-title')).toHaveText('First step')
+  // The same validated bridge the multi-page site uses, reused unchanged.
+  await expect(frame.locator('#sco-next')).toHaveAttribute('data-mbz-page', 'sco2.html')
+  await frame.locator('#sco-next').click()
+  await expect(page.frameLocator('.html-frame').locator('#sco-title')).toHaveText('Second step')
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

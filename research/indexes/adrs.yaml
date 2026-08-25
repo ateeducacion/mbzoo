@@ -88,3 +88,7 @@ adrs:
     title: Multi-page sites navigate in-frame through a validated request to MBZoo
     status: Accepted
     date: 2026-08-25
+  ADR-0023:
+    title: Experimental SCORM playback — scorm-again in the same document as the SCO
+    status: Accepted
+    date: 2026-08-25

@@ -1,6 +1,33 @@
+import { existsSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import type { Plugin } from 'vite'
 import { defineConfig } from 'vite'
+
+/**
+ * scorm-again's `exports` map publishes `./scorm12` and `./scorm2004`, whose
+ * `import` condition resolves to the ESM builds — which export a binding and
+ * define no global. MBZoo needs the CLASSIC builds: they are IIFEs that
+ * self-assign `Scorm12API`/`Scorm2004API`, and a classic script executes
+ * during parsing, so `window.API` exists before the package's own scripts
+ * look for it (ADR-0023). `dist/` is not an exported subpath, so it is
+ * aliased here rather than deep-imported. Resolved through the package's own
+ * manifest so it does not depend on where the installer hoisted it.
+ */
+function scormAgainDist(): string {
+  const require = createRequire(import.meta.url)
+  // Neither `./dist/*` nor `./package.json` is an exported subpath, so the
+  // package root is found by walking up from whatever `.` resolves to until
+  // the classic bundle is in sight.
+  let dir = dirname(require.resolve('scorm-again'))
+  for (let i = 0; i < 4; i++) {
+    if (existsSync(join(dir, 'scorm12.min.js'))) return dir
+    if (existsSync(join(dir, 'dist', 'scorm12.min.js'))) return join(dir, 'dist')
+    dir = dirname(dir)
+  }
+  throw new Error('scorm-again: classic bundles not found')
+}
 
 function serveDocsIndex(): Plugin {
   const rewrite = (req: IncomingMessage, _res: ServerResponse, next: () => void): void => {
@@ -26,6 +53,9 @@ export default defineConfig({
   // including GitHub Pages project sites (ADR-0011).
   base: './',
   plugins: [serveDocsIndex()],
+  resolve: {
+    alias: { 'scorm-again-classic': scormAgainDist() },
+  },
   build: {
     target: 'es2022',
     sourcemap: true,

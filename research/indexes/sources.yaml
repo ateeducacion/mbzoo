@@ -144,3 +144,9 @@ sources:
     url: https://github.com/tunapanda/h5p-standalone
     accessed: 2026-08-25
     license: MIT
+  TECH-015:
+    title: scorm-again
+    kind: technology
+    url: https://github.com/jcputney/scorm-again
+    accessed: 2026-08-25
+    license: MIT
