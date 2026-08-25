@@ -9,17 +9,17 @@ Q-002:
   What is the true minimum XML subset for a faithful navigation tree across
   course formats (topics, weekly, flexsections, social…)? flexsections showed
   empty-sequence edge cases.
-  status: open
+  status: answered — ADR-0030 (flexsections parents by section number; delegated sections; other formats keep raw options)
 Q-003:
   Efficient files.xml indexing strategy for huge courses (lazy vs eager, keying).
   status: open
 Q-004:
   Can ZIP be inspected lazily in browsers via zip.js while keeping CI coverage?
   (EXP-002 blocks Bun-side testing.)
-  status: open
+  status: answered — no, and not needed: ADR-0029 reads the central directory over Blob.slice with fflate inflateSync, portable to Bun
 Q-005:
   Streaming strategy for multi-GB TAR.GZ (DecompressionStream + incremental ustar)?
-  status: open
+  status: answered — ADR-0029 streams DecompressionStream into one ISIZE-sized buffer with entries as views; incremental ustar without the buffer is Q-007 (TASK-012)
 Q-006:
   Which browser memory limits materially affect MBZoo (per-tab heaps, Blob limits)?
   status: open

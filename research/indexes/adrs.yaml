@@ -112,3 +112,11 @@ adrs:
     title: A resource is the file Moodle marked, not the file whose name looks right
     status: Accepted
     date: 2026-08-25
+  ADR-0029:
+    title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer
+    status: Accepted
+    date: 2026-08-25
+  ADR-0030:
+    title: Sections form a tree when the course format says so
+    status: Accepted
+    date: 2026-08-25

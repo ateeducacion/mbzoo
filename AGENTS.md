@@ -12,12 +12,17 @@ detection (ZIP + TAR.GZ) → parsing in a Web Worker → normalized course model
 course/section/activity explorer.
 
 Implemented content support includes sanitized Page/Label HTML, URL activities,
-Resource/File/Folder previews, PDF/image/text previews, sandboxed HTML files,
-experimental H5P playback in the opaque-origin sandbox (ADR-0018), and metadata
-fallback for unknown modules. Dedicated Book/Forum/Glossary/
-Assignment/Quiz experiences, SCORM launchers, eXeLearning inspection,
-whole-backup re-packaging and multi-gigabyte streaming/lazy access remain
-planned or under research. Do not advertise planned capabilities as existing.
+Resource/File/Folder previews (main file by Moodle's marker, ADR-0028),
+PDF/image/text/video previews, sandboxed HTML and multi-page sites with
+validated in-frame navigation (ADR-0022), EPUB chapters (ADR-0024),
+eXeLearning package inspection (ADR-0025), embedded and remote-embed
+content named rather than dropped, section hierarchy for flexsections and
+delegated sections (ADR-0030), and metadata fallback for unknown modules.
+H5P (ADR-0018) and SCORM (ADR-0023) playback are **experimental** inside the
+opaque-origin sandbox. ZIP backups are read lazily by central directory;
+TAR.GZ is streamed into one buffer, so its decompressed size is the memory
+ceiling (ADR-0029; OPFS staging is TASK-012). Whole-backup re-packaging
+remains planned. Do not advertise planned capabilities as existing.
 
 ## Repository map
 

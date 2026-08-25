@@ -23,6 +23,8 @@ decisions:
   ADR-0025: { title: eXeLearning packages are classified by what is inside them, not by their extension, status: Accepted, date: 2026-08-25 }
   ADR-0027: { title: Every browser runs on every change, and the worker stays one chunk, status: Accepted, date: 2026-08-25 }
   ADR-0028: { title: A resource is the file Moodle marked, not the file whose name looks right, status: Accepted, date: 2026-08-25 }
+  ADR-0029: { title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer, status: Accepted, date: 2026-08-25 }
+  ADR-0030: { title: Sections form a tree when the course format says so, status: Accepted, date: 2026-08-25 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }
@@ -154,20 +156,35 @@ risks:
     title: fflate materializes every entry in memory during unzip
     severity: high
     probability: certain-for-large-files
-    mitigation: documented limit in ADR-0005; TASK-003 tracks streaming/lazy access
-    status: accepted-for-bootstrap
+    mitigation: >
+      ADR-0029. ZIP is read by central directory and inflated per entry, so
+      the archive never enters memory: a 400 MB, 32,150-entry ZIP peaks at
+      257 MB where the previous reader inflated everything (EXP-004).
+      TAR.GZ is streamed into one pre-sized buffer with entries as views,
+      cutting peak by 24-47 % on the corpus; the decompressed tar itself is
+      inherent to gzip and is what TASK-012 (OPFS staging, Q-007) removes.
+    status: mitigated
   RISK-002:
     title: Section-to-activity mapping inferred from sectionid/sequence may miss course-format-specific nesting (e.g. flexsections)
     severity: medium
     probability: likely
-    mitigation: Q-002 kept open; parser emits warnings instead of failing
-    status: monitored
+    mitigation: >
+      ADR-0030. flexsections parents and delegated sections resolve into
+      SectionInfo.parentId; unresolved parents and cycles are warnings. The
+      "emits warnings" promise had never fired — 111 of 111 Saylor backups
+      were flattened with zero warnings (AN-008) — because the parser had no
+      concept to warn about; it does now.
+    status: mitigated
   RISK-003:
     title: zip.js currently unusable under Bun runtime (EXP-002); browser-only adoption would create untested-in-CI code paths
     severity: medium
     probability: observed
-    mitigation: single fflate path until large-file milestone re-evaluates (Q-004)
-    status: mitigated-by-decision
+    mitigation: >
+      Retired by ADR-0029: lazy ZIP access is a hand-rolled central-directory
+      reader over Blob.slice plus fflate's inflateSync, which runs identically
+      in browsers, Bun and Node, so zip.js is no longer the planned path and
+      the untested-in-CI risk does not arise (Q-004 answered: not needed).
+    status: retired
   RISK-004:
     title: h5p-standalone vendors H5P core JS from a GPL-3.0 repository distribution while the npm package declares MIT
     severity: medium

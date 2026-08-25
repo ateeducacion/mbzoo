@@ -12,3 +12,7 @@ experiments:
     title: Core parser against real-world and synthetic backups
     status: completed
     date: 2026-08-24
+  EXP-004:
+    title: Peak memory and time of archive access before and after lazy readers
+    status: completed
+    date: 2026-08-25

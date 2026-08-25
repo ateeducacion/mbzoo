@@ -10,7 +10,7 @@ tasks:
     priority: medium
   TASK-003:
     title: Large-file strategy spike (streaming TAR.GZ + lazy ZIP)
-    status: open
+    status: done
     priority: medium
   TASK-004:
     title: Activity renderers behind the capability model
@@ -32,3 +32,23 @@ tasks:
     title: Content QA tab (headings, alt, links) for Page/Book/Label
     status: open
     priority: low
+  TASK-009:
+    title: External-link inventory per course
+    status: open
+    priority: high
+  TASK-010:
+    title: Verify H5P and SCORM playback against real packages
+    status: open
+    priority: high
+  TASK-011:
+    title: Say when stored content cannot play anywhere
+    status: open
+    priority: medium
+  TASK-012:
+    title: OPFS staging for TAR.GZ
+    status: open
+    priority: medium
+  TASK-013:
+    title: Record a users=1 backup specimen
+    status: open
+    priority: medium
