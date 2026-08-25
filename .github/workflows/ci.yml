@@ -59,8 +59,7 @@ jobs:
       # Build first: vite preview serves apps/viewer/dist.
       - run: bun run build:viewer
       - run: bunx playwright install ${{ matrix.browser }} --with-deps
-      # --bun: the runner needs no Node, which is what DEVELOPMENT.md promises.
-      - run: bunx --bun playwright test --project=${{ matrix.browser }}
+      - run: bunx playwright test --project=${{ matrix.browser }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: failure()
         with:

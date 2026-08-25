@@ -5,7 +5,8 @@
 ## Requirements
 
 - [Bun](https://bun.sh) ≥ 1.4 (package manager, test runner, CLI runtime)
-- `bunx --bun playwright install` for E2E browsers
+- Node 20+ — the Playwright runner is invoked through it
+- `bunx playwright install` for E2E browsers
 
 ## Commands
 

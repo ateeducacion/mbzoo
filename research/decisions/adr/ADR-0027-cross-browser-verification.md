@@ -87,9 +87,13 @@ roughly three times the e2e minutes, and a browser-specific failure now
 blocks a merge. That is the point, but it is a real cost on a repository
 that will accumulate tests.
 
-**Neutral.** The runner is invoked as `bunx --bun playwright test`, which
-runs it on Bun. Verified with `node` absent from `PATH`: the full suite
-passes, so the Node prerequisite the development guide listed was not one.
+**Neutral.** The runner still goes through Node. Bun *can* host it — with
+`node` absent from `PATH`, `bunx --bun playwright test` passes the full suite
+locally — but shipping that to CI crashed the preview server it spawns
+(`ERR_STREAM_WRITE_AFTER_END` out of `[WebServer]`), taking 16 Firefox tests
+down with it while Chromium and WebKit happened to survive. Load-dependent,
+therefore worse than a deterministic failure. Reverted; the Node prerequisite
+stands until the child-process piping is understood.
 
 ## Risks
 
@@ -140,6 +144,26 @@ exactly.
 
 The generalisable part: when a module's state appears to vanish, count the
 module's evaluations before suspecting the state.
+
+### What the first three-browser run cost, and taught
+
+The first run under this decision went red — on Firefox, on `main`. Sixteen
+failures with one cause: the preview server died mid-run and every test after
+it got `NS_ERROR_CONNECTION_REFUSED`. The single non-cascade failure, a
+gradebook assertion, was simply the test in flight when the server went.
+
+The cause was not the browser matrix. It was a second change made in the same
+push: invoking the runner under Bun. That had been verified locally, on
+macOS, including with `node` removed from `PATH` — and it was still wrong,
+because what broke was Playwright piping a *child* process's output, on
+Linux, under load. Two of the three engines passed anyway, which is exactly
+the shape of a flake that would have reddened random PRs for weeks.
+
+The lesson is about the verification, not the runtime: "the full suite passes
+locally" is evidence about one OS and one machine's timing. A change to how
+processes are spawned is not verified until it has run where processes are
+spawned differently. Coverage and runtime were separable changes and should
+have been separate pushes.
 
 ### Why this was invisible for the repository's whole life
 
