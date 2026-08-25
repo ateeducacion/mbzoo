@@ -1695,3 +1695,77 @@ test('a video embedded from another site is named, not silently dropped', async 
   await expect(content.locator('iframe')).toHaveCount(0)
   expect(requests.filter((u) => u.includes('youtube'))).toEqual([])
 })
+
+/**
+ * Navigation (mockup 3c): the breadcrumb, Previous/Next with a counter and
+ * J / K / ← / → all walk the tree in the order it is drawn — a delegated
+ * subsection hangs under its owner and comes before the next top-level
+ * section — and never steal keystrokes meant for the search box.
+ */
+test('breadcrumb and previous/next walk activities in tree order', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  const title = page.locator('#detail-title')
+  const counter = page.locator('.detail-nav-counter')
+  const crumbs = page.locator('.detail-breadcrumb li')
+  const next = page.getByRole('button', { name: 'Next activity' })
+  const previous = page.getByRole('button', { name: 'Previous activity' })
+
+  await page.getByRole('button', { name: /Demo subsection/ }).click()
+  await expect(title).toHaveText('Demo subsection')
+  await expect(counter).toHaveText('13 / 27')
+  await expect(crumbs).toHaveText(['Course', 'Introduction', 'Demo subsection'])
+  await expect(previous).toBeEnabled()
+
+  // Next descends into the subsection this activity owns, then crosses into
+  // the following top-level section.
+  await next.click()
+  await expect(title).toHaveText('Page inside the subsection')
+  await expect(counter).toHaveText('14 / 27')
+  await next.click()
+  await expect(title).toHaveText('Unknown third-party module')
+  await expect(counter).toHaveText('15 / 27')
+  await expect(crumbs).toHaveText(['Course', 'Resources', 'Unknown third-party module'])
+  await expect(page.locator('.activity-button.selected')).toContainText(
+    'Unknown third-party module',
+  )
+
+  // K / J and the arrow keys step from wherever focus happens to be.
+  await page.keyboard.press('k')
+  await expect(title).toHaveText('Page inside the subsection')
+  await page.keyboard.press('j')
+  await expect(title).toHaveText('Unknown third-party module')
+  await page.keyboard.press('ArrowLeft')
+  await expect(title).toHaveText('Page inside the subsection')
+  await page.keyboard.press('ArrowRight')
+  await expect(title).toHaveText('Unknown third-party module')
+  await expect(counter).toHaveText('15 / 27')
+
+  // Typing in the search box is typing, not navigation.
+  const search = page.locator('#activity-search')
+  await search.focus()
+  await page.keyboard.type('jk')
+  await expect(search).toHaveValue('jk')
+  await expect(title).toHaveText('Unknown third-party module')
+  await search.fill('')
+
+  // The section crumb puts focus on that section in the tree; the course
+  // crumb returns to the course overview with nothing selected.
+  const breadcrumb = page.locator('.detail-breadcrumb')
+  await breadcrumb.getByRole('button', { name: 'Resources', exact: true }).click()
+  await expect(
+    page.locator('#sections li[data-section-id] > h3', { hasText: 'Resources' }),
+  ).toBeFocused()
+  await breadcrumb.getByRole('button', { name: 'Course', exact: true }).click()
+  await expect(page.locator('#detail')).toContainText('Select an activity on the left')
+  await expect(page.locator('.activity-button.selected')).toHaveCount(0)
+
+  // The ends are ends: the first activity has no Previous and K stays put.
+  await page.getByRole('button', { name: /Welcome page/ }).click()
+  await expect(counter).toHaveText('1 / 27')
+  await expect(previous).toBeDisabled()
+  await page.keyboard.press('k')
+  await expect(title).toHaveText('Welcome page')
+  await expect(counter).toHaveText('1 / 27')
+})

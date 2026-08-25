@@ -18,7 +18,7 @@ function applyI18nDom(): void {
   }
 }
 
-import { renderDetail } from './detail-panel.ts'
+import { type Crumb, type DetailNavigation, renderDetail } from './detail-panel.ts'
 import { Renderer } from './renderers.ts'
 import './style.css'
 
@@ -56,6 +56,17 @@ let worker: Worker | undefined
 let requestId = 0
 let currentBackup: ParsedBackup | undefined
 let renderer: Renderer | undefined
+
+interface TreeEntry {
+  readonly id: number
+  readonly trail: readonly Crumb[]
+}
+
+/** Activities in the order the tree shows them, each with the sections above it. */
+let treeOrder: TreeEntry[] = []
+let currentActivityId: number | undefined
+/** Bumped by every open; an open whose number is stale has been superseded. */
+let openSeq = 0
 
 function setStatus(message: string, kind: 'info' | 'error' = 'info'): void {
   status.textContent = message
@@ -139,15 +150,7 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   renderer = new Renderer({ backup, readEntry })
 
   show('explorer')
-  detail.hidden = false
-  detail.replaceChildren()
-  const empty = document.createElement('p')
-  empty.className = 'fallback-note'
-  empty.textContent = t('detail.empty')
-  detail.appendChild(empty)
-  // The course gradebook has no better home than the panel that is otherwise
-  // blank until something is selected.
-  void renderCourseGradebook(detail)
+  showCourseHome()
 
   courseTitle.textContent = backup.course.fullname || backup.course.shortname || '(untitled course)'
   courseSub.textContent = [
@@ -181,6 +184,7 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   void renderUserDisclosure()
 
   sectionsList.replaceChildren()
+  treeOrder = []
   // A delegated section belongs under the activity that owns it, not beside
   // the numbered ones (Moodle 4.5+ mod_subsection).
   const delegated = new Map<number, (typeof backup.sections)[number]>()
@@ -204,11 +208,15 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     section: (typeof backup.sections)[number],
     depth: number,
     into: HTMLElement,
+    trail: readonly Crumb[],
   ): void => {
     const li = document.createElement('li')
     li.dataset.depth = String(depth)
+    li.dataset.sectionId = String(section.id)
     if (depth > 0) li.classList.add('nested-section')
     const heading = document.createElement('h3')
+    // Focusable by the breadcrumb, but not a tab stop of its own.
+    heading.tabIndex = -1
     // An unnamed section serializes its name as Moodle's NULL sentinel, so it
     // reaches us empty. Moodle labels section 0 "General" (REPO-005,
     // format_topics section0name) and numbers the rest.
@@ -220,11 +228,15 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
           ? `${t('section.numbered')} ${section.number}`
           : t('section.unnamed'))
     li.appendChild(heading)
+    const crumbs: readonly Crumb[] = [...trail, { id: section.id, name: heading.textContent ?? '' }]
     const ul = document.createElement('ul')
     ul.className = 'activity-list'
     const addActivity = (activityId: number, into: HTMLElement): void => {
       const activity = backup.activities.find((a) => a.id === activityId)
       if (!activity) return
+      // Pushed before any delegated subsection recurses, so the order is the
+      // one the eye reads: an owner first, then what hangs under it.
+      treeOrder.push({ id: activity.id, trail: crumbs })
       const item = document.createElement('li')
       const button = document.createElement('button')
       button.type = 'button'
@@ -243,10 +255,7 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
       badge.className = `mod-badge ${badgeTone(activity.moduleName)}`.trim()
       badge.textContent = activity.moduleName
       button.append(name, badge)
-      button.addEventListener(
-        'click',
-        () => void openActivity(activity.id, heading.textContent ?? ''),
-      )
+      button.addEventListener('click', () => void openActivity(activity.id))
       item.appendChild(button)
 
       // The activities this one owns hang off it, so the tree keeps the
@@ -274,7 +283,7 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     if (children.length > 0) {
       const nested = document.createElement('ul')
       nested.className = 'section-children'
-      for (const child of children) renderSection(child, depth + 1, nested)
+      for (const child of children) renderSection(child, depth + 1, nested, crumbs)
       li.appendChild(nested)
     }
     into.appendChild(li)
@@ -282,9 +291,62 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
 
   for (const section of backup.sections) {
     if (section.delegatedTo || section.parentId !== undefined) continue
-    renderSection(section, 0, sectionsList)
+    renderSection(section, 0, sectionsList, [])
   }
   searchInput.value = ''
+}
+
+function clearSelection(): void {
+  for (const b of document.querySelectorAll('.activity-button.selected')) {
+    b.classList.remove('selected')
+  }
+}
+
+/** The pane's resting state: nothing selected, course-level information only. */
+function showCourseHome(): void {
+  openSeq++
+  currentActivityId = undefined
+  clearSelection()
+  detail.hidden = false
+  const home = document.createElement('div')
+  home.className = 'course-home'
+  const empty = document.createElement('p')
+  empty.className = 'fallback-note'
+  empty.textContent = t('detail.empty')
+  home.appendChild(empty)
+  detail.replaceChildren(home)
+  // The course gradebook has no better home than the panel that is otherwise
+  // blank until something is selected. It lands inside `home`, so an activity
+  // opened before it resolves is not handed a gradebook it never asked for.
+  void renderCourseGradebook(home)
+}
+
+/** Brings a section heading into view and puts keyboard focus on it. */
+function focusSection(sectionId: number): void {
+  const item = sectionsList.querySelector<HTMLElement>(
+    `li[data-section-id="${CSS.escape(String(sectionId))}"]`,
+  )
+  const heading = item?.querySelector<HTMLElement>(':scope > h3')
+  if (!item || !heading) return
+  // A search filter may be hiding the section; clicking its crumb is a
+  // request to see it, which outranks the filter.
+  if (searchInput.value !== '' && item.offsetParent === null) {
+    searchInput.value = ''
+    searchInput.dispatchEvent(new Event('input'))
+  }
+  heading.scrollIntoView({ block: 'nearest' })
+  heading.focus({ preventScroll: true })
+  item.classList.add('section-target')
+  setTimeout(() => item.classList.remove('section-target'), 1500)
+}
+
+/** Opens the activity before (-1) or after (+1) the current one in tree order. */
+function stepActivity(delta: -1 | 1): void {
+  if (treeOrder.length === 0) return
+  const index =
+    currentActivityId === undefined ? -1 : treeOrder.findIndex((e) => e.id === currentActivityId)
+  const target = index < 0 ? (delta > 0 ? treeOrder[0] : undefined) : treeOrder[index + delta]
+  if (target) void openActivity(target.id)
 }
 
 /**
@@ -438,32 +500,78 @@ async function renderCourseGradebook(container: HTMLElement): Promise<void> {
   container.appendChild(details)
 }
 
-async function openActivity(activityId: number, sectionName: string): Promise<void> {
+async function openActivity(activityId: number): Promise<void> {
   if (!currentBackup || !renderer) return
   const activity = currentBackup.activities.find((a) => a.id === activityId)
   if (!activity || !renderer) return
-  for (const b of document.querySelectorAll('.activity-button.selected')) {
-    b.classList.remove('selected')
+  const seq = ++openSeq
+  currentActivityId = activityId
+  clearSelection()
+  const button = document.querySelector<HTMLElement>(
+    `.activity-button[data-activity-id="${CSS.escape(String(activityId))}"]`,
+  )
+  button?.classList.add('selected')
+  button?.scrollIntoView({ block: 'nearest' })
+
+  // A Previous/Next button that has focus is about to be replaced with the
+  // new pane; keep the keyboard on the same control so Enter keeps stepping.
+  const active = document.activeElement
+  const refocus =
+    active instanceof HTMLElement && detail.contains(active) ? active.dataset.nav : undefined
+
+  const index = treeOrder.findIndex((e) => e.id === activityId)
+  const navigation: DetailNavigation = {
+    trail: treeOrder[index]?.trail ?? [],
+    index,
+    total: treeOrder.length,
+    onCourse: showCourseHome,
+    onSection: focusSection,
+    onStep: stepActivity,
   }
-  document
-    .querySelector(`.activity-button[data-activity-id="${CSS.escape(String(activityId))}"]`)
-    ?.classList.add('selected')
 
   detail.hidden = false
   try {
-    await renderDetail(activity, sectionName, detail, { renderer, badgeTone, setStatus })
+    await renderDetail(activity, detail, {
+      renderer,
+      badgeTone,
+      setStatus,
+      navigation,
+      isCurrent: () => seq === openSeq,
+    })
   } catch (e) {
     setStatus(e instanceof Error ? e.message : 'Could not render this item.', 'error')
   }
+  if (refocus !== undefined && seq === openSeq) {
+    detail.querySelector<HTMLElement>(`[data-nav="${CSS.escape(refocus)}"]`)?.focus()
+  }
 }
 
-/** Section heading a given activity is listed under, for the detail header. */
-function sectionNameOf(activityId: number): string {
-  const button = document.querySelector(
-    `.activity-button[data-activity-id="${CSS.escape(String(activityId))}"]`,
-  )
-  return button?.closest('li')?.parentElement?.parentElement?.querySelector('h3')?.textContent ?? ''
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  return ['INPUT', 'TEXTAREA', 'SELECT', 'VIDEO', 'AUDIO'].includes(target.tagName)
 }
+
+const STEP_KEYS = new Map<string, -1 | 1>([
+  ['j', 1],
+  ['J', 1],
+  ['ArrowRight', 1],
+  ['k', -1],
+  ['K', -1],
+  ['ArrowLeft', -1],
+])
+
+// J / K and ← / → step through activities in tree order, unless the key is
+// going somewhere it already means something: a text field, media controls,
+// or a widget that handled it itself (the tab strip's arrow keys).
+document.addEventListener('keydown', (ev) => {
+  if (ev.defaultPrevented || ev.altKey || ev.ctrlKey || ev.metaKey) return
+  if (!currentBackup || courseSection.hidden || isTypingTarget(ev.target)) return
+  const delta = STEP_KEYS.get(ev.key)
+  if (delta === undefined) return
+  ev.preventDefault()
+  stepActivity(delta)
+})
 
 // Course links inside rendered content that point at an activity travelling in
 // this same backup (renderers.ts resolveBackupLinks). Their href still points
@@ -476,7 +584,7 @@ detail.addEventListener('click', (ev) => {
   const id = Number(link.getAttribute('data-mbz-activity'))
   if (!Number.isFinite(id)) return
   ev.preventDefault()
-  void openActivity(id, sectionNameOf(id))
+  void openActivity(id)
 })
 
 async function handleBlob(blob: Blob, name: string): Promise<void> {

@@ -19,10 +19,31 @@ import { formatBytes, formatDate } from './lib/preview-utils.ts'
 import { tokenizeXml } from './lib/xml-highlight.ts'
 import type { ParsedActivity, Renderer } from './renderers.ts'
 
+/** One section on the breadcrumb. */
+export interface Crumb {
+  readonly id: number
+  readonly name: string
+}
+
+/** Where the open activity sits in the course tree, and how to move from it. */
+export interface DetailNavigation {
+  /** Sections enclosing the activity, outermost first. */
+  readonly trail: readonly Crumb[]
+  /** Position in the tree's visual order, or -1 when the tree does not list it. */
+  readonly index: number
+  readonly total: number
+  readonly onCourse: () => void
+  readonly onSection: (sectionId: number) => void
+  readonly onStep: (delta: -1 | 1) => void
+}
+
 export interface DetailDeps {
   readonly renderer: Renderer
   readonly badgeTone: (moduleName: string) => string
   readonly setStatus: (message: string, kind?: 'info' | 'error') => void
+  readonly navigation: DetailNavigation
+  /** False once a later open has superseded this one. */
+  readonly isCurrent: () => boolean
 }
 
 /** Moodle's "no value" marker; shown as nothing rather than as text. */
@@ -403,24 +424,88 @@ async function buildActions(
   if (items.length > 0) actions.appendChild(exportMenu(items, deps))
 }
 
+// ---------------------------------------------------------- navigation
+
+function buildBreadcrumb(activityTitle: string, nav: DetailNavigation): HTMLElement {
+  const crumbs = el('nav', 'detail-breadcrumb')
+  crumbs.setAttribute('aria-label', t('nav.breadcrumb'))
+  const list = el('ol')
+
+  const linkCrumb = (label: string, onClick: () => void): HTMLLIElement => {
+    const item = el('li')
+    const button = el('button', 'crumb crumb-link', label)
+    button.type = 'button'
+    button.addEventListener('click', onClick)
+    item.appendChild(button)
+    return item
+  }
+
+  list.appendChild(linkCrumb(t('nav.course'), nav.onCourse))
+  for (const crumb of nav.trail) {
+    list.appendChild(linkCrumb(crumb.name, () => nav.onSection(crumb.id)))
+  }
+
+  const current = el('li')
+  const here = el('span', 'crumb crumb-current', activityTitle)
+  here.setAttribute('aria-current', 'page')
+  current.appendChild(here)
+  list.appendChild(current)
+
+  crumbs.appendChild(list)
+  return crumbs
+}
+
+/** Previous / counter / Next; nothing when the tree does not list the activity. */
+function buildPager(nav: DetailNavigation): HTMLElement | undefined {
+  if (nav.index < 0 || nav.total === 0) return undefined
+  const pager = el('div', 'detail-pager')
+
+  const step = (delta: -1 | 1, label: string, name: string): HTMLButtonElement => {
+    const button = actionButton(label, 'ghost')
+    button.classList.add(delta < 0 ? 'detail-nav-prev' : 'detail-nav-next')
+    button.dataset.nav = delta < 0 ? 'prev' : 'next'
+    button.setAttribute('aria-label', name)
+    button.disabled = delta < 0 ? nav.index === 0 : nav.index >= nav.total - 1
+    button.addEventListener('click', () => nav.onStep(delta))
+    return button
+  }
+
+  pager.append(
+    step(-1, t('nav.previous'), t('nav.previousActivity')),
+    el('span', 'detail-nav-counter', `${nav.index + 1} / ${nav.total}`),
+    step(1, t('nav.next'), t('nav.nextActivity')),
+  )
+  return pager
+}
+
 // ---------------------------------------------------------------- entry
 
 /** Renders one activity into the detail pane. */
 export async function renderDetail(
   activity: ActivityInfo,
-  sectionName: string,
   container: HTMLElement,
   deps: DetailDeps,
 ): Promise<void> {
   const parsed = await deps.renderer.parseActivity(activity)
+  // Keyboard stepping opens activities faster than they parse, and parses
+  // finish out of order; an open that has been superseded must not take
+  // the pane back from the one that superseded it.
+  if (!deps.isCurrent()) return
   container.replaceChildren()
+
+  const titleText = activity.title || `(unnamed ${activity.moduleName})`
+
+  const navRow = el('div', 'detail-nav-row')
+  navRow.appendChild(buildBreadcrumb(titleText, deps.navigation))
+  const pager = buildPager(deps.navigation)
+  if (pager) navRow.appendChild(pager)
+  container.appendChild(navRow)
 
   const head = el('div', 'detail-head')
   const headText = el('div', 'detail-head-text')
-  headText.appendChild(el('p', 'detail-breadcrumb', sectionName))
 
   const titleRow = el('div', 'detail-title-row')
-  const title = el('h3', 'detail-title', activity.title || `(unnamed ${activity.moduleName})`)
+  const title = el('h3', 'detail-title', titleText)
   title.id = 'detail-title'
   const badge = el(
     'span',
@@ -449,6 +534,7 @@ export async function renderDetail(
   tablist.setAttribute('role', 'tablist')
   const panels = el('div', 'detail-panels')
   container.append(tablist, panels)
+  container.appendChild(el('p', 'detail-shortcuts', t('nav.shortcuts')))
 
   const previewPanel = createPanel('preview', panels)
   const infoPanel = createPanel('info', panels)

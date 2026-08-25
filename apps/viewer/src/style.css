@@ -599,9 +599,10 @@ main {
   box-shadow: var(--shadow);
 }
 .detail-breadcrumb {
-  font: 400 11.5px var(--font-body);
-  color: var(--faint);
+  font: 500 12px var(--font-body);
+  color: var(--muted);
   margin: 0;
+  min-width: 0;
 }
 .detail-title-row {
   display: flex;
@@ -1083,13 +1084,6 @@ footer a:hover {
 #detail .detail-title {
   color: var(--boost-blue);
 }
-#detail .detail-breadcrumb {
-  background: var(--boost-lightblue);
-  border-radius: 6px;
-  padding: 4px 10px;
-  display: inline-block;
-  color: var(--boost-blue);
-}
 #detail .activity-intro,
 #detail .activity-content {
   font-size: 14px;
@@ -1296,6 +1290,103 @@ footer a:hover {
 }
 .detail-action-accent:hover {
   background: rgba(245, 130, 32, 0.16);
+}
+.detail-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.detail-action:disabled:hover {
+  border-color: var(--line-2);
+}
+
+/* Breadcrumb + Previous/Next above the title (mockup 3c). */
+.detail-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.detail-breadcrumb ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.detail-breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.detail-breadcrumb li + li::before {
+  content: "/";
+  color: var(--line-2);
+}
+.crumb-link {
+  all: unset;
+  cursor: pointer;
+  color: var(--orange-deep);
+  font-weight: 600;
+  border-radius: 4px;
+}
+.crumb-link:hover {
+  text-decoration: underline;
+}
+.crumb-link:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.crumb-current {
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 36ch;
+}
+.detail-pager {
+  display: flex;
+  gap: 6px;
+  flex: none;
+  align-items: center;
+}
+.detail-pager .detail-action {
+  padding: 5px 10px;
+}
+.detail-nav-counter {
+  font:
+    500 11px ui-monospace,
+    Menlo,
+    monospace;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.detail-shortcuts {
+  margin: 12px 0 0;
+  font: 400 11px var(--font-body);
+  color: var(--faint);
+}
+
+/* A section heading reached from the breadcrumb. */
+#sections h3:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+#sections li.section-target > h3 {
+  animation: section-target 1.5s ease-out;
+}
+@keyframes section-target {
+  from {
+    background: rgba(245, 130, 32, 0.25);
+  }
+  to {
+    background: transparent;
+  }
 }
 
 .export-menu {
