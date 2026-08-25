@@ -481,6 +481,8 @@ function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
 <a id="to-page2-deep" href="page2.html#deep">page two, deep</a>
 <button id="forge" onclick="parent.postMessage({source:'mbzoo',type:'navigate',page:'../../../secret.html'},'*')">forge</button>
 <button id="forge-known" onclick="parent.postMessage({source:'evil',type:'navigate',page:'page2.html'},'*')">forge known</button>
+<button id="forge-notoken" onclick="parent.postMessage({source:'mbzoo',type:'navigate',page:'page2.html'},'*')">forge no token</button>
+<button id="forge-badtoken" onclick="parent.postMessage({source:'mbzoo',type:'navigate',token:'guessed',page:'page2.html'},'*')">forge bad token</button>
 </body></html>`
   // A second page of the same site, styled by the same relative stylesheet —
   // the shape every eXeLearning export has (SMR_SOR "Solución a la tarea").
@@ -550,7 +552,7 @@ test('a sandboxed site loads its relative image and stylesheet', async ({ page }
   await expect(frame.locator('#site-marker')).toHaveCSS('color', 'rgb(0, 128, 0)')
 })
 
-test('a link inside a multi-page site navigates through MBZoo (ADR-0021)', async ({ page }) => {
+test('a link inside a multi-page site navigates through MBZoo (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -576,7 +578,7 @@ test('a link inside a multi-page site navigates through MBZoo (ADR-0021)', async
   await expect(page.locator('.site-pages button.selected')).toHaveText('page2.html')
 })
 
-test('a link fragment survives the navigation (ADR-0021)', async ({ page }) => {
+test('a link fragment survives the navigation (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -589,7 +591,7 @@ test('a link fragment survives the navigation (ADR-0021)', async ({ page }) => {
   await expect(page.locator('.html-frame')).toHaveAttribute('src', /^blob:.*#deep$/)
 })
 
-test('a forged navigation request cannot leave the resource (ADR-0021)', async ({ page }) => {
+test('a forged navigation request cannot leave the resource (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -602,6 +604,11 @@ test('a forged navigation request cannot leave the resource (ADR-0021)', async (
   // A message wearing the wrong source is refused even though the page it
   // names is a legitimate one.
   await frame.locator('#forge-known').click()
+  // And a well-formed message that cannot echo this document's token is
+  // refused too — that is what stops a document the frame navigated itself
+  // to from driving the preview (ADR-0022).
+  await frame.locator('#forge-notoken').click()
+  await frame.locator('#forge-badtoken').click()
 
   await expect(page.frameLocator('.html-frame').locator('#site-marker')).toBeVisible()
   await expect(page.locator('.site-pages button.selected')).toHaveText('index.html')
@@ -1000,4 +1007,3 @@ test('backup link tokens resolve instead of pointing at MBZoo', async ({ page })
   await page.locator('#to-welcome').click()
   await expect(page.locator('#detail-title')).toContainText('Welcome page')
 })
-

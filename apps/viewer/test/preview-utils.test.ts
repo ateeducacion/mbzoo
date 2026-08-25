@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  decodeRefPath,
   formatBytes,
   guessMime,
   H5P_CSP,
   injectCsp,
   injectHead,
-  PAGE_NAV_SCRIPT,
+  pageNavScript,
   parseNavigationRequest,
   resolveRelative,
   SANDBOX_CSP,
@@ -104,57 +105,86 @@ describe('resolveRelative with query and fragment', () => {
 })
 
 describe('parseNavigationRequest', () => {
+  const TOKEN = 'a5f1c3d2-0000-4000-8000-000000000000'
+  const ok = { source: 'mbzoo', type: 'navigate', token: TOKEN, page: 'page2.html' }
+
   test('accepts a well-formed MBZoo navigation message', () => {
-    expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 'page2.html' })).toBe(
-      'page2.html',
-    )
+    expect(parseNavigationRequest(ok, TOKEN)).toBe('page2.html')
   })
 
   test('rejects hostile shapes', () => {
-    expect(parseNavigationRequest(null)).toBeUndefined()
-    expect(parseNavigationRequest(undefined)).toBeUndefined()
-    expect(parseNavigationRequest('navigate')).toBeUndefined()
-    expect(parseNavigationRequest(42)).toBeUndefined()
-    expect(parseNavigationRequest([])).toBeUndefined()
-    expect(parseNavigationRequest({ type: 'navigate', page: 'p.html' })).toBeUndefined()
-    expect(
-      parseNavigationRequest({ source: 'other', type: 'navigate', page: 'p.html' }),
-    ).toBeUndefined()
-    expect(
-      parseNavigationRequest({ source: 'mbzoo', type: 'exec', page: 'p.html' }),
-    ).toBeUndefined()
-    expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 42 })).toBeUndefined()
-    expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: '' })).toBeUndefined()
-    expect(
-      parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 'a'.repeat(513) }),
-    ).toBeUndefined()
+    expect(parseNavigationRequest(null, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest(undefined, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest('navigate', TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest(42, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest([], TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest({ ...ok, source: undefined }, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest({ ...ok, source: 'other' }, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest({ ...ok, type: 'exec' }, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest({ ...ok, page: 42 }, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest({ ...ok, page: '' }, TOKEN)).toBeUndefined()
+    expect(parseNavigationRequest({ ...ok, page: 'a'.repeat(513) }, TOKEN)).toBeUndefined()
+  })
+
+  test('refuses a message that does not echo this document token', () => {
+    // The document a hostile frame navigated itself to keeps the same
+    // WindowProxy, but never saw the token (ADR-0022).
+    expect(parseNavigationRequest({ ...ok, token: 'wrong' }, TOKEN)).toBeUndefined()
+    const { token: _dropped, ...withoutToken } = ok
+    expect(parseNavigationRequest(withoutToken, TOKEN)).toBeUndefined()
+    // An empty expected token never matches, so a render without one is inert.
+    expect(parseNavigationRequest({ ...ok, token: '' }, '')).toBeUndefined()
   })
 
   test('is not fooled by a prototype-polluted payload', () => {
     const evil: unknown = JSON.parse(
-      '{"__proto__":{"source":"mbzoo","type":"navigate","page":"p.html"}}',
+      `{"__proto__":{"source":"mbzoo","type":"navigate","token":"${TOKEN}","page":"p.html"}}`,
     )
-    expect(parseNavigationRequest(evil)).toBeUndefined()
+    expect(parseNavigationRequest(evil, TOKEN)).toBeUndefined()
   })
 })
 
-describe('PAGE_NAV_SCRIPT', () => {
+describe('decodeRefPath', () => {
+  test('decodes percent-escapes and survives a malformed one', () => {
+    expect(decodeRefPath('a%20b.html')).toBe('a b.html')
+    expect(decodeRefPath('m%C3%A1quina.html')).toBe('máquina.html')
+    // A lone % would make decodeURIComponent throw inside the message handler.
+    expect(decodeRefPath('100%.html')).toBe('100%.html')
+  })
+})
+
+describe('pageNavScript', () => {
+  const TOKEN = 'a5f1c3d2-0000-4000-8000-000000000000'
+
   test('never breaks out of its own script element', () => {
-    expect(PAGE_NAV_SCRIPT.match(/<\/script>/gi)).toHaveLength(1)
-    expect(PAGE_NAV_SCRIPT.endsWith('</script>')).toBe(true)
+    const script = pageNavScript(TOKEN)
+    expect(script.match(/<\/script>/gi)).toHaveLength(1)
+    expect(script.endsWith('</script>')).toBe(true)
   })
 
-  test('asks the parent instead of navigating itself', () => {
-    expect(PAGE_NAV_SCRIPT).toContain('preventDefault')
-    expect(PAGE_NAV_SCRIPT).toContain('postMessage')
-    expect(PAGE_NAV_SCRIPT).toContain('data-mbz-page')
+  test('asks the parent instead of navigating itself, and echoes the token', () => {
+    const script = pageNavScript(TOKEN)
+    expect(script).toContain('preventDefault')
+    expect(script).toContain('postMessage')
+    expect(script).toContain('data-mbz-page')
+    expect(script).toContain(TOKEN)
+  })
+
+  test('a hostile token cannot terminate the script or inject syntax', () => {
+    const script = pageNavScript('</script><img src=x onerror=alert(1)>')
+    expect(script.match(/<\/script>/gi)).toHaveLength(1)
+    expect(script.endsWith('</script>')).toBe(true)
+  })
+
+  test('only the live page attribute is a navigation hook, not the inert one', () => {
+    expect(pageNavScript(TOKEN)).toContain('[data-mbz-page]')
   })
 
   test('the CSP meta precedes any script injected into a sandboxed page', () => {
     // injectHead prepends, so whatever is injected last ends up first. A
     // script placed before the CSP meta would run before the policy applied.
     const built = injectCsp(
-      injectHead('<html><head></head><body></body></html>', PAGE_NAV_SCRIPT),
+      injectHead('<html><head></head><body></body></html>', pageNavScript(TOKEN)),
       SANDBOX_CSP,
     )
     expect(built.indexOf('Content-Security-Policy')).toBeLessThan(built.indexOf('<script'))

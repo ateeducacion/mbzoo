@@ -78,9 +78,13 @@ adrs:
     date: 2026-08-25
   ADR-0020:
     title: Multi-page sites are navigated from MBZoo, not by following links inside the sandbox
-    status: Accepted
+    status: Superseded
     date: 2026-08-25
   ADR-0021:
     title: Read PHP-serialized backup fields with a refusing parser, never a reconstructing one
+    status: Accepted
+    date: 2026-08-25
+  ADR-0022:
+    title: Multi-page sites navigate in-frame through a validated request to MBZoo
     status: Accepted
     date: 2026-08-25

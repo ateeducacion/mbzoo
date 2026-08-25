@@ -1,12 +1,13 @@
 ---
 id: ADR-0020
 title: Multi-page sites are navigated from MBZoo, not by following links inside the sandbox
-status: Accepted
+status: Superseded
 date: 2026-08-25
 sources: [REPO-004]
 experiments: []
 related: [ADR-0009, ADR-0013, ADR-0014, ADR-0017]
 supersedes: []
+superseded_by: [ADR-0022]
 ai_tool: claude-code
 ai_model: claude-opus-5
 ---

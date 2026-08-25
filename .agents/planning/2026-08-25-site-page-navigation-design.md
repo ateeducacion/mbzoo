@@ -75,13 +75,21 @@ record list". That is exactly what step 3 does, and it is cheap.
   can already do by clicking a button in the page row. No escalation.
 - **`event.origin` is `"null"`.** The frame is an opaque origin, so origin
   carries no authority and is never used for authorization. Window identity
-  (`event.source`) is, and it is not forgeable by the frame's content.
+  (`event.source`) is not forgeable by the frame's content — but it
+  authenticates a *browsing context*, not a document: a sandboxed frame may
+  navigate itself, and the replacement document keeps the same WindowProxy
+  while losing the injected CSP. Each rendered page therefore carries a
+  freshly minted token that only that document ever saw. [CORRECTED after
+  adversarial review; see ADR-0022 addendum.]
 - **Injection through `page`.** The value is used only as a lookup key
   against the resource's records. It is never interpolated into HTML, never
   used to build a URL, and a miss is ignored rather than rendered.
-- **Escape of the resource.** Resolution is confined to records already
-  filtered by component and context for this activity, so a `../../`
-  payload cannot address another activity's files.
+- **Escape of the resource.** `renderFileList` drops its context predicate
+  when the activity XML omits `contextid`, which the backup controls, so the
+  record set can span the archive. The navigable set is therefore narrowed
+  explicitly to the entry page's own context and component before it is used
+  as the allowlist. [CORRECTED after adversarial review; the original claim
+  of confinement did not hold — see ADR-0022 addendum.]
 - **New capability.** None. No sandbox token is added (`allow-scripts`,
   `allow-popups`, `allow-popups-to-escape-sandbox` as today, never
   `allow-same-origin`), the CSP is unchanged, `connect-src` stays `'none'`.
@@ -140,7 +148,7 @@ renders through one pipeline and under the injected CSP; payload stays one
 page at a time. The page row remains, now as a table of contents rather
 than the only way to move.
 
-ADR-0021 supersedes ADR-0020. Its standing rule — "never inline an HTML
+ADR-0022 supersedes ADR-0020. Its standing rule — "never inline an HTML
 document as a `data:` URI; a document that has not been through
 `rewriteRelativeRefs` + `retargetExternalLinks` + `injectCsp` must not be
 reachable from the frame" — is carried forward unchanged, because this
@@ -199,3 +207,15 @@ DOMPurify profile is not widened; ADR-0012 keeps its single path.
 **Fixture.** `demo-course-zip.mbz` grows a `mod_scorm` activity, an
 `.epub`, an `.elpx` and a Page with an embedded PDF, all synthetic and
 deterministic, with `fixtures/manifest.yaml` checksums regenerated.
+
+
+## Post-implementation corrections
+
+An adversarial review of the landed code refuted two of the claims above and
+found two pre-existing defects in the code this change touches (a
+backup-controlled string used as a `String.replace` replacement, where `$'`
+expands to the document tail; and a rate limit evaluated after the parsing
+it was meant to bound). All four are addressed in the shipped
+implementation and recorded in the ADR-0022 addendum, which is the durable
+record. This document is the pre-implementation design and is kept as it was
+argued, with the two refuted claims marked inline.

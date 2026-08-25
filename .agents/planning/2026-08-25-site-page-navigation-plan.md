@@ -15,7 +15,7 @@
 - English everywhere: code, comments, docs, ADRs, commits.
 - Do not weaken TypeScript flags. No `any`, no unsafe assertions to silence validation.
 - Biome owns formatting/linting. Run `bun run check` before every commit.
-- Comments only for a non-obvious "why", citing decision IDs, e.g. `(ADR-0021)`.
+- Comments only for a non-obvious "why", citing decision IDs, e.g. `(ADR-0022)`.
 - No new sandbox tokens. The iframe keeps exactly `allow-scripts`, `allow-popups`, `allow-popups-to-escape-sandbox`, and never `allow-same-origin`.
 - `SANDBOX_CSP` is not modified by this plan.
 - ADR-0020's standing rule survives: never inline an HTML document as a `data:` URI.
@@ -107,7 +107,7 @@ export function splitRef(ref: string): { path: string; hash: string } {
 }
 
 /**
- * Validates a navigation message posted by a sandboxed preview (ADR-0021).
+ * Validates a navigation message posted by a sandboxed preview (ADR-0022).
  * The frame is hostile input: nothing here trusts the message beyond its
  * shape, and the returned reference is only ever used as a lookup key
  * against records the backup cannot extend.
@@ -212,7 +212,7 @@ In `apps/viewer/src/lib/preview-utils.ts`:
 ```ts
 /**
  * Injected into a sandboxed page that belongs to a multi-page site
- * (ADR-0021). It turns a click on a defused page link into a request the
+ * (ADR-0022). It turns a click on a defused page link into a request the
  * parent may refuse. It is a convenience for honest documents and carries no
  * authority: any script already in the frame can post the same message, so
  * the security of the feature lives entirely in the parent's validation.
@@ -246,7 +246,7 @@ Replace the `DEFUSED_LINK_STYLE` constant (currently at ~line 1524) with:
 ```ts
 /**
  * Page links used to be inert (ADR-0020) and were styled to say so. They
- * navigate again through the parent (ADR-0021), so they are styled as the
+ * navigate again through the parent (ADR-0022), so they are styled as the
  * live links they now are; the attribute stays as the navigation hook.
  */
 const PAGE_LINK_STYLE = '<style>[data-mbz-page]{cursor:pointer;text-decoration:underline}</style>'
@@ -294,14 +294,14 @@ Change `renderSandboxedHtml` (~line 586) to accept the options and reorder the h
     html = retargetExternalLinks(html)
     // injectHead prepends, so these run in reverse document order: the CSP
     // must be injected last to end up as the first head child, ahead of any
-    // script we add (ADR-0021).
+    // script we add (ADR-0022).
     if (opts?.pageNav) html = injectHead(html, PAGE_NAV_SCRIPT)
     html = injectHead(html, PAGE_LINK_STYLE)
     html = injectCsp(html, SANDBOX_CSP)
     const frame = document.createElement('iframe')
     const src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
     // The fragment is applied by the browser on load, so the anchor survives
-    // without anyone reaching into the frame's document (ADR-0021).
+    // without anyone reaching into the frame's document (ADR-0022).
     frame.src = opts?.hash ? `${src}${opts.hash}` : src
 ```
 
@@ -382,7 +382,7 @@ Replace the body of the `if (pages.length > 1) { ... }` branch in `renderWebsite
       const fullPath = (r: BackupFileRecord): string =>
         `${r.filePath}${r.fileName}`.replace(/^\/+/, '')
 
-      // A page of this site asks to navigate (ADR-0021). Every check below is
+      // A page of this site asks to navigate (ADR-0022). Every check below is
       // load-bearing: the frame is hostile input.
       const onMessage = (event: MessageEvent): void => {
         const frame = holder.querySelector('iframe')
@@ -501,7 +501,7 @@ In `e2e/viewer.spec.ts`, replace the `html` and `page2` constants inside `websit
 Replace the whole `test('a multi-page site is navigated from MBZoo, not by breaking out of the frame', ...)` block (~line 547) with:
 
 ```ts
-test('a link inside a multi-page site navigates through MBZoo (ADR-0021)', async ({ page }) => {
+test('a link inside a multi-page site navigates through MBZoo (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -527,7 +527,7 @@ test('a link inside a multi-page site navigates through MBZoo (ADR-0021)', async
   await expect(page.locator('.site-pages button.selected')).toHaveText('page2.html')
 })
 
-test('a link fragment survives the navigation (ADR-0021)', async ({ page }) => {
+test('a link fragment survives the navigation (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -542,7 +542,7 @@ test('a link fragment survives the navigation (ADR-0021)', async ({ page }) => {
     .toBeGreaterThan(0)
 })
 
-test('a forged navigation request cannot leave the resource (ADR-0021)', async ({ page }) => {
+test('a forged navigation request cannot leave the resource (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -581,16 +581,16 @@ git commit -m "Prove in-frame navigation, fragments and forgery rejection end to
 
 ---
 
-### Task 5: ADR-0021 and documentation
+### Task 5: ADR-0022 and documentation
 
 **Files:**
-- Create: `research/decisions/adr/ADR-0021-in-frame-navigation-for-multi-page-sites.md`
+- Create: `research/decisions/adr/ADR-0022-in-frame-navigation-for-multi-page-sites.md`
 - Modify: `research/decisions/adr/ADR-0020-multi-page-sites-navigated-from-mbzoo.md` (status only)
 - Modify: `research/status.yaml` (append-only)
 
-- [ ] **Step 1: Write ADR-0021**
+- [ ] **Step 1: Write ADR-0022**
 
-Use the template in `research/templates/`. Front matter: `id: ADR-0021`, `status: Accepted`, `date: 2026-08-25`, `supersedes: [ADR-0020]`, `related: [ADR-0009, ADR-0014, ADR-0017, ADR-0020]`, `sources: [REPO-004]`, `ai_tool: claude-code`, `ai_model: claude-opus-5`.
+Use the template in `research/templates/`. Front matter: `id: ADR-0022`, `status: Accepted`, `date: 2026-08-25`, `supersedes: [ADR-0020]`, `related: [ADR-0009, ADR-0014, ADR-0017, ADR-0020]`, `sources: [REPO-004]`, `ai_tool: claude-code`, `ai_model: claude-opus-5`.
 
 The argument, in full, is in the spec at `docs/superpowers/specs/2026-08-25-site-page-navigation-design.md`. The ADR must state:
 - the load-bearing insight, that the injected script is not the security boundary because any script in the frame can already call `parent.postMessage`, so validation must live in the parent and does;
@@ -600,7 +600,7 @@ The argument, in full, is in the spec at `docs/superpowers/specs/2026-08-25-site
 
 - [ ] **Step 2: Mark ADR-0020 superseded**
 
-Change only its front matter `status: Accepted` to `status: Superseded by ADR-0021`. Do not rewrite its body — accepted ADR history is never rewritten.
+Change only its front matter `status: Accepted` to `status: Superseded by ADR-0022`. Do not rewrite its body — accepted ADR history is never rewritten.
 
 - [ ] **Step 3: Append to `research/status.yaml`**
 
@@ -620,14 +620,14 @@ Expected: both PASS.
 
 ```bash
 git add research/
-git commit -m "ADR-0021: navigate multi-page sites from validated in-frame requests"
+git commit -m "ADR-0022: navigate multi-page sites from validated in-frame requests"
 ```
 
 ---
 
 ## Self-Review
 
-**Spec coverage.** Every spec section maps to a task: `resolveRelative` fragment handling and `parseNavigationRequest` -> Task 1; `PAGE_NAV_SCRIPT`, `DEFUSED_LINK_STYLE`, `filePreview`/`renderSandboxedHtml` threading and the hash-on-blob-URL -> Task 2; the `message` listener, `dispose()` teardown and `i18n` -> Task 3; the four e2e assertions -> Task 4; ADR-0021 and the supersede -> Task 5.
+**Spec coverage.** Every spec section maps to a task: `resolveRelative` fragment handling and `parseNavigationRequest` -> Task 1; `PAGE_NAV_SCRIPT`, `DEFUSED_LINK_STYLE`, `filePreview`/`renderSandboxedHtml` threading and the hash-on-blob-URL -> Task 2; the `message` listener, `dispose()` teardown and `i18n` -> Task 3; the four e2e assertions -> Task 4; ADR-0022 and the supersede -> Task 5.
 
 **Type consistency.** `splitRef` returns `{ path, hash }` in Task 1 and is destructured as such in Tasks 2 and 3. `parseNavigationRequest` returns `string | undefined` and Task 3 tests it with `=== undefined`. `filePreview(rec, opts?)` is defined in Task 2 and called with `{ pageNav: true, hash }` in Task 3. `cleanups` is declared and drained in Task 3 only.
 
