@@ -143,7 +143,7 @@ const STRINGS = {
     'section.unnamed': 'Section',
     'site.pages': 'Pages in this site',
     'site.pagesHint':
-      'Links between the pages of this site are inactive inside the preview — each page is opened from the list above so its stylesheet and images load.',
+      'Links inside the page work; this list also reaches pages the entry page never links to.',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -341,7 +341,7 @@ const STRINGS = {
     'section.unnamed': 'Sección',
     'site.pages': 'Páginas de este sitio',
     'site.pagesHint':
-      'Los enlaces entre las páginas de este sitio no navegan dentro de la vista previa: cada página se abre desde la lista de arriba para que carguen sus estilos e imágenes.',
+      'Los enlaces dentro de la página funcionan; esta lista además llega a páginas que la portada no enlaza.',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',

@@ -4,8 +4,12 @@ import {
   guessMime,
   H5P_CSP,
   injectCsp,
+  injectHead,
+  PAGE_NAV_SCRIPT,
+  parseNavigationRequest,
   resolveRelative,
   SANDBOX_CSP,
+  splitRef,
 } from '../src/lib/preview-utils.ts'
 
 describe('formatBytes', () => {
@@ -80,5 +84,79 @@ describe('sandbox CSP invariants', () => {
         )
       }
     }
+  })
+})
+
+describe('splitRef', () => {
+  test('separates path, query and fragment', () => {
+    expect(splitRef('page2.html')).toEqual({ path: 'page2.html', hash: '' })
+    expect(splitRef('page2.html#deep')).toEqual({ path: 'page2.html', hash: '#deep' })
+    expect(splitRef('page2.html?v=1#deep')).toEqual({ path: 'page2.html', hash: '#deep' })
+    expect(splitRef('#top')).toEqual({ path: '', hash: '#top' })
+  })
+})
+
+describe('resolveRelative with query and fragment', () => {
+  test('drops both so a file record can match', () => {
+    expect(resolveRelative('/site/', 'page2.html#deep')).toBe('site/page2.html')
+    expect(resolveRelative('/site/', '../other/page2.html?v=1')).toBe('other/page2.html')
+  })
+})
+
+describe('parseNavigationRequest', () => {
+  test('accepts a well-formed MBZoo navigation message', () => {
+    expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 'page2.html' })).toBe(
+      'page2.html',
+    )
+  })
+
+  test('rejects hostile shapes', () => {
+    expect(parseNavigationRequest(null)).toBeUndefined()
+    expect(parseNavigationRequest(undefined)).toBeUndefined()
+    expect(parseNavigationRequest('navigate')).toBeUndefined()
+    expect(parseNavigationRequest(42)).toBeUndefined()
+    expect(parseNavigationRequest([])).toBeUndefined()
+    expect(parseNavigationRequest({ type: 'navigate', page: 'p.html' })).toBeUndefined()
+    expect(
+      parseNavigationRequest({ source: 'other', type: 'navigate', page: 'p.html' }),
+    ).toBeUndefined()
+    expect(
+      parseNavigationRequest({ source: 'mbzoo', type: 'exec', page: 'p.html' }),
+    ).toBeUndefined()
+    expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 42 })).toBeUndefined()
+    expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: '' })).toBeUndefined()
+    expect(
+      parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 'a'.repeat(513) }),
+    ).toBeUndefined()
+  })
+
+  test('is not fooled by a prototype-polluted payload', () => {
+    const evil: unknown = JSON.parse(
+      '{"__proto__":{"source":"mbzoo","type":"navigate","page":"p.html"}}',
+    )
+    expect(parseNavigationRequest(evil)).toBeUndefined()
+  })
+})
+
+describe('PAGE_NAV_SCRIPT', () => {
+  test('never breaks out of its own script element', () => {
+    expect(PAGE_NAV_SCRIPT.match(/<\/script>/gi)).toHaveLength(1)
+    expect(PAGE_NAV_SCRIPT.endsWith('</script>')).toBe(true)
+  })
+
+  test('asks the parent instead of navigating itself', () => {
+    expect(PAGE_NAV_SCRIPT).toContain('preventDefault')
+    expect(PAGE_NAV_SCRIPT).toContain('postMessage')
+    expect(PAGE_NAV_SCRIPT).toContain('data-mbz-page')
+  })
+
+  test('the CSP meta precedes any script injected into a sandboxed page', () => {
+    // injectHead prepends, so whatever is injected last ends up first. A
+    // script placed before the CSP meta would run before the policy applied.
+    const built = injectCsp(
+      injectHead('<html><head></head><body></body></html>', PAGE_NAV_SCRIPT),
+      SANDBOX_CSP,
+    )
+    expect(built.indexOf('Content-Security-Policy')).toBeLessThan(built.indexOf('<script'))
   })
 })

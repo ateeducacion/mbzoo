@@ -39,8 +39,11 @@ import {
   injectCsp,
   injectHead,
   MAX_PDF_PAGES,
+  PAGE_NAV_SCRIPT,
+  parseNavigationRequest,
   resolveRelative,
   SANDBOX_CSP,
+  splitRef,
 } from './lib/preview-utils.ts'
 
 // pdf.js renders PDFs onto canvas (ADR-0014): Chrome blocks blob-PDF iframes
@@ -66,6 +69,8 @@ export interface ParsedActivity {
 
 export class Renderer {
   private readonly urls: string[] = []
+  /** Listeners registered by a render, torn down on the next one. */
+  private readonly cleanups: Array<() => void> = []
   /** Bytes behind each managed blob: URL, so exports can re-inline them. */
   private readonly blobSources = new Map<string, { data: Uint8Array; mime: string }>()
 
@@ -81,6 +86,8 @@ export class Renderer {
   }
 
   dispose(): void {
+    for (const fn of this.cleanups) fn()
+    this.cleanups.length = 0
     for (const u of this.urls) URL.revokeObjectURL(u)
     this.urls.length = 0
     this.blobSources.clear()
@@ -474,12 +481,50 @@ export class Renderer {
       label.className = 'site-pages-label'
       label.textContent = `${t('site.pages')} (${pages.length})`
       bar.appendChild(label)
-      const show = async (rec: BackupFileRecord): Promise<void> => {
+
+      let current = entry
+      let lastNavigation = 0
+      const show = async (rec: BackupFileRecord, hash = ''): Promise<void> => {
+        current = rec
         for (const b of bar.querySelectorAll('button')) {
           b.classList.toggle('selected', b.dataset.page === rec.filePath + rec.fileName)
         }
-        holder.replaceChildren(await this.filePreview(rec))
+        holder.replaceChildren(await this.filePreview(rec, { pageNav: true, hash }))
       }
+
+      // Full archive path of a record, normalized the way resolveRelative
+      // returns paths, so the two can be compared directly.
+      const fullPath = (r: BackupFileRecord): string =>
+        `${r.filePath}${r.fileName}`.replace(/^\/+/, '')
+
+      // A page of this site asks to navigate (ADR-0021). Every check below is
+      // load-bearing: the frame is hostile input.
+      const onMessage = (event: MessageEvent): void => {
+        const frame = holder.querySelector('iframe')
+        // Window identity, not event.origin: the frame is an opaque origin,
+        // so its origin is "null" and carries no authority at all.
+        if (!frame || event.source === null || event.source !== frame.contentWindow) return
+        const requested = parseNavigationRequest(event.data)
+        if (requested === undefined) return
+        const { hash } = splitRef(requested)
+        const target = resolveRelative(current.filePath, requested)
+        // Allowlist: only the HTML records of this very resource. A "../"
+        // payload cannot escape it, because the resolved path has to equal
+        // one of these entries exactly.
+        const rec = pages.find((p) => fullPath(p) === target)
+        if (!rec) return
+        if (rec === current && hash === '') return
+        // A page can post in a loop, and every render allocates blob URLs
+        // that only dispose() reclaims — so refuse to be driven faster than
+        // a reader could click.
+        const now = performance.now()
+        if (now - lastNavigation < 250) return
+        lastNavigation = now
+        void show(rec, hash)
+      }
+      window.addEventListener('message', onMessage)
+      this.cleanups.push(() => window.removeEventListener('message', onMessage))
+
       for (const rec of pages) {
         const button = document.createElement('button')
         button.type = 'button'
@@ -527,7 +572,10 @@ export class Renderer {
   }
 
   /** Builds a preview card: inline when safe/possible, download otherwise. */
-  async filePreview(rec: BackupFileRecord): Promise<HTMLElement> {
+  async filePreview(
+    rec: BackupFileRecord,
+    opts?: { pageNav?: boolean; hash?: string },
+  ): Promise<HTMLElement> {
     const card = document.createElement('div')
     card.className = 'file-card'
     const head = document.createElement('div')
@@ -580,7 +628,7 @@ export class Renderer {
       return card
     }
     if (mime === 'text/html' || /\.html?$/i.test(rec.fileName)) {
-      await this.renderSandboxedHtml(data, rec, card)
+      await this.renderSandboxedHtml(data, rec, card, opts)
       addDownload(card, this.blobUrl(data, mime), rec.fileName)
       return card
     }
@@ -646,15 +694,23 @@ export class Renderer {
     data: Uint8Array,
     rec: BackupFileRecord,
     card: HTMLElement,
+    opts?: { pageNav?: boolean; hash?: string },
   ): Promise<void> {
     let html = new TextDecoder().decode(data)
     const dir = rec.filePath.replace(/[^/]+$/, '')
     html = await this.rewriteRelativeRefs(html, dir, rec)
     html = retargetExternalLinks(html)
+    // injectHead prepends, so these apply in reverse document order: the CSP
+    // goes last precisely so it lands as the first head child, ahead of the
+    // script below — which would otherwise run before the policy did.
+    if (opts?.pageNav) html = injectHead(html, PAGE_NAV_SCRIPT)
+    html = injectHead(html, PAGE_LINK_STYLE)
     html = injectCsp(html, SANDBOX_CSP)
-    html = injectHead(html, DEFUSED_LINK_STYLE)
     const frame = document.createElement('iframe')
-    frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    const src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    // The browser applies the fragment on load, so the anchor survives
+    // without anyone reaching into the frame's document (ADR-0021).
+    frame.src = opts?.hash ? `${src}${opts.hash}` : src
     frame.title = rec.fileName
     frame.className = 'html-frame'
     // Opaque origin: never allow-same-origin, so the frame cannot reach the
@@ -1996,13 +2052,11 @@ export function isHtmlRecord(rec: BackupFileRecord): boolean {
 }
 
 /**
- * Marks the links MBZoo defused (see rewriteRelativeRefs) so a reader can
- * tell them from live ones. Authored by us, injected into the sandboxed
- * document's head; it styles nothing else.
+ * Page links used to be inert (ADR-0020) and were styled to say so. They
+ * navigate again through the parent (ADR-0021), so they are styled as the
+ * live links they now are; the attribute stays as the navigation hook.
  */
-const DEFUSED_LINK_STYLE =
-  '<style>[data-mbz-page]{cursor:not-allowed;opacity:.7;' +
-  'text-decoration:underline dotted}</style>'
+const PAGE_LINK_STYLE = '<style>[data-mbz-page]{cursor:pointer;text-decoration:underline}</style>'
 
 /**
  * Chooses the entry HTML of a multi-file website, if any: index/default at
