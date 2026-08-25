@@ -10,7 +10,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'bun run --filter @mbzoo/viewer preview -- --port 4173 --strictPort --host 127.0.0.1',
+    // Invoke Vite directly: `bun run --filter` does not forward CLI flags
+    // reliably in CI, which timed out the server startup probe.
+    command: 'bunx --cwd apps/viewer vite preview --port 4173 --strictPort --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 20_000,
