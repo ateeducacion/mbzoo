@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import { strToU8, zipSync } from 'fflate'
 import { unzipPackage } from '../src/lib/epub-reader.ts'
-import { classifyExe, exeSiteBook, isExeFileName, readExePackage } from '../src/lib/exe-package.ts'
+import {
+  classifyExe,
+  classifyZip,
+  exeSiteBook,
+  isExeFileName,
+  readExePackage,
+} from '../src/lib/exe-package.ts'
 
 const zip = (files: Record<string, string>): Uint8Array =>
   zipSync(Object.fromEntries(Object.entries(files).map(([k, v]) => [k, strToU8(v)])))
@@ -95,5 +101,36 @@ describe('exeSiteBook', () => {
     // landing page never links to are still reachable.
     expect(book.chapters.map((c) => c.path)).toEqual(['index.html', 'aside.html'])
     expect(book.chapters.map((c) => c.title)).toEqual(['Home', 'Aside'])
+  })
+})
+
+describe('classifyZip', () => {
+  const zip = (...paths: string[]) => new Map(paths.map((p) => [p, new Uint8Array()]))
+
+  // scorm.zip / scorm3.zip: imsmanifest.xml at the root.
+  test('a SCORM package is recognised by its manifest', () => {
+    expect(classifyZip(zip('imsmanifest.xml', 'shared/launchpage.html', 'index.html'))).toBe(
+      'scorm',
+    )
+  })
+
+  // atque.zip / galeria_2.9.zip / task.zip: eXe legacy site with contentv3.xml.
+  test('an eXe project/site is recognised by its content XML', () => {
+    expect(classifyZip(zip('contentv3.xml', 'index.html'))).toBe('exe')
+    expect(classifyZip(zip('content.xml'))).toBe('exe')
+  })
+
+  // contenido-antiguo-...zip: a .elp file nested inside the zip.
+  test('a .elp nested inside a zip is routed to the eXe renderer', () => {
+    expect(classifyZip(zip('contenido.elp', 'readme.txt'))).toBe('exe-nested-elp')
+  })
+
+  // A SCORM manifest wins even if the package also ships a stray .elp.
+  test('a manifest takes priority over a nested .elp', () => {
+    expect(classifyZip(zip('imsmanifest.xml', 'stray.elp'))).toBe('scorm')
+  })
+
+  test('a plain zip is left for the download path', () => {
+    expect(classifyZip(zip('notes.txt', 'photo.jpg'))).toBe('other')
   })
 })

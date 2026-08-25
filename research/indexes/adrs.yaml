@@ -132,3 +132,7 @@ adrs:
     title: Legacy .elp projects are rendered from their contentv3.xml mirror
     status: Accepted
     date: 2026-08-25
+  ADR-0034:
+    title: Classify package zips (SCORM, eXe) and render them from the resource path
+    status: Accepted
+    date: 2026-08-25

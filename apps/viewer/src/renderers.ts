@@ -25,6 +25,7 @@ import {
   parseActivityXml,
   parseBookXml,
   parseElpXml,
+  parseImsManifest,
   parseQuestionsXml,
   parseQuizQuestionIds,
   parseScormXml,
@@ -36,12 +37,13 @@ import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import {
   composeChapter,
   type EpubBook,
+  type EpubEntries,
   isEpubFileName,
   readEpub,
   unzipEpub,
   unzipPackage,
 } from './lib/epub-reader.ts'
-import { exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
+import { classifyZip, exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
 import { classifyProvider, nameRemoteEmbeds, scanExternalRefs } from './lib/external-refs.ts'
 import {
   buildPlayerHtml,
@@ -891,6 +893,38 @@ export class Renderer {
       }
       return card
     }
+    // A .zip resource is often a package Moodle would have unpacked: a SCORM
+    // (imsmanifest.xml), or an eXeLearning project/site — including a .elp
+    // nested inside. Peek and route it; a plain zip falls through to download.
+    if (/\.zip$/i.test(rec.fileName) || (data[0] === 0x50 && data[1] === 0x4b)) {
+      let entries: EpubEntries | undefined
+      try {
+        entries = unzipPackage(data)
+      } catch {
+        entries = undefined
+      }
+      if (entries) {
+        const kind = classifyZip(entries)
+        let routed = false
+        try {
+          if (kind === 'scorm') routed = await this.renderScormZip(entries, card)
+          else if (kind === 'exe-nested-elp') {
+            const elpKey = [...entries.keys()].find((k) => /\.elp$/i.test(k))
+            const elp = elpKey ? entries.get(elpKey) : undefined
+            if (elp) {
+              await this.renderExePackage(elp, card)
+              routed = true
+            }
+          } else if (kind === 'exe') {
+            await this.renderExePackage(data, card)
+            routed = true
+          }
+        } finally {
+          if (routed) addDownload(card, this.blobUrl(data, mime), rec.fileName)
+        }
+        if (routed) return card
+      }
+    }
     if (mime.startsWith('image/')) {
       const img = document.createElement('img')
       img.src = this.blobUrl(data, mime)
@@ -1527,6 +1561,69 @@ export class Renderer {
   }
 
   /**
+   * A raw SCORM package (imsmanifest.xml at the root, distinct from a Moodle
+   * mod_scorm), as delivered inside a .zip resource. Classifies it, then
+   * renders the manifest's launchable pages in the same opaque-origin sandbox
+   * as any other archive HTML, injecting the SCORM runtime + the package VFS
+   * shim so a SCO that probes for window.API does not crash. Playback stays
+   * experimental (ADR-0023). Returns false when the manifest carries nothing
+   * launchable, so the caller can fall back to a plain file listing.
+   */
+  private async renderScormZip(entries: EpubEntries, card: HTMLElement): Promise<boolean> {
+    const manifestKey = [...entries.keys()].find((k) => k.toLowerCase() === 'imsmanifest.xml')
+    if (manifestKey === undefined) return false
+    const manifestBytes = entries.get(manifestKey)
+    if (!manifestBytes) return false
+    let man: Awaited<ReturnType<typeof parseImsManifest>>
+    try {
+      man = await parseImsManifest(new TextDecoder().decode(manifestBytes))
+    } catch {
+      return false
+    }
+    const key = (href: string): string | undefined => {
+      const wanted = decodeRefPath(href.replace(/^\/+/, '')).toLowerCase()
+      for (const k of entries.keys()) if (k.toLowerCase() === wanted) return k
+      return undefined
+    }
+    const chapters = man.items.flatMap((it) => {
+      const k = key(it.href)
+      return k ? [{ path: k, title: it.title || it.href }] : []
+    })
+    if (chapters.length === 0) return false
+
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t('scorm.experimental')
+    card.appendChild(chip)
+
+    const runtime = await loadScormRuntime(man.scorm2004)
+    const vfs: H5pEntries = new Map()
+    let budget = MAX_SCO_VFS_BYTES
+    for (const [path, bytes] of entries) {
+      if (bytes.byteLength > budget) continue
+      budget -= bytes.byteLength
+      vfs.set(path, bytes)
+    }
+    const headScripts = [
+      ...vfsHeadScripts(vfs),
+      ...(runtime ? [runtimeScript(runtime), scormBootScript(man.scorm2004)] : []),
+    ]
+    const book: EpubBook = { title: chapters[0]?.title ?? '', chapters, entries }
+    this.renderZipPages(
+      book,
+      card,
+      {
+        list: t('scorm.contents'),
+        previous: t('epub.previous'),
+        next: t('epub.next'),
+        hint: t('scorm.contentsHint'),
+      },
+      { headScripts, csp: SCORM_CSP },
+    )
+    return true
+  }
+
+  /**
    * EPUB reading (ADR-0024): the spine becomes a chapter row, and each
    * chapter renders in the same opaque-origin sandbox with the same injected
    * CSP as any other archive HTML. Nothing is fetched; every asset the
@@ -1570,6 +1667,7 @@ export class Renderer {
     book: EpubBook,
     card: HTMLElement,
     labels: { list: string; previous: string; next: string; hint: string },
+    opts?: { headScripts?: readonly string[]; csp?: string },
   ): void {
     if (book.title !== '') {
       const title = document.createElement('p')
@@ -1606,8 +1704,14 @@ export class Renderer {
         open: t('embed.externalOpen'),
       })
       html = retargetExternalLinks(html)
+      // injectHead prepends, so head scripts are walked backwards to read in
+      // document order — a SCORM runtime before the SCO's own boot code — and
+      // the CSP goes last so it lands as the first head child (ADR-0023/0032).
+      for (const script of [...(opts?.headScripts ?? [])].reverse()) {
+        html = injectHead(html, script)
+      }
       html = injectHead(html, PAGE_LINK_STYLE)
-      html = injectCsp(html, SANDBOX_CSP)
+      html = injectCsp(html, opts?.csp ?? SANDBOX_CSP)
       const before = this.urls.length
       const frame = document.createElement('iframe')
       frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')

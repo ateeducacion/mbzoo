@@ -84,8 +84,11 @@ export {
 } from './moodle/questions-xml.ts'
 export {
   defaultLaunchSco,
+  type ImsItem,
+  type ImsManifest,
   isScorm2004,
   type MoodleScorm,
+  parseImsManifest,
   parseScormXml,
   type ScormSco,
 } from './moodle/scorm-xml.ts'

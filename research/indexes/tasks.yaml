@@ -60,3 +60,7 @@ tasks:
     title: H5P InteractiveVideo renders empty from mod_hvp
     status: open
     priority: low
+  TASK-016:
+    title: e2e fixture wrapping a package zip in a mod_resource
+    status: open
+    priority: low

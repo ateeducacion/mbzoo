@@ -79,6 +79,22 @@ export function classifyExe(entries: EpubEntries): ExeKind {
   return 'unknown'
 }
 
+/** What a peeked .zip resource actually is, so the viewer can route it. */
+export type ZipKind = 'scorm' | 'exe' | 'exe-nested-elp' | 'other'
+
+/**
+ * Classifies a .zip resource Moodle would have unpacked: a SCORM package
+ * (imsmanifest.xml at the root), an eXeLearning project/site, an eXe project
+ * nested as a .elp inside the zip, or something we do not special-case.
+ */
+export function classifyZip(entries: EpubEntries): ZipKind {
+  if (has(entries, 'imsmanifest.xml')) return 'scorm'
+  for (const key of entries.keys()) {
+    if (/\.elp$/i.test(key)) return 'exe-nested-elp'
+  }
+  return classifyExe(entries) === 'unknown' ? 'other' : 'exe'
+}
+
 /** Project title, read from whichever project XML the package carries. */
 function readTitle(entries: EpubEntries): string {
   for (const candidate of ['content.xml', 'contentv3.xml', 'contentv2.xml']) {

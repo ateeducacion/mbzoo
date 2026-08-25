@@ -181,3 +181,90 @@ export function defaultLaunchSco(scoes: readonly ScormSco[]): ScormSco | undefin
 export function isScorm2004(version: string): boolean {
   return version.trim().toUpperCase() === 'SCORM_1.3'
 }
+
+/** A launchable entry from a raw `imsmanifest.xml` (not Moodle's scorm.xml). */
+export interface ImsItem {
+  readonly title: string
+  /** Resource href, relative to the package root. */
+  readonly href: string
+}
+
+export interface ImsManifest {
+  /** Raw `<schemaversion>` text, e.g. "CAM 1.3" or "2004 4th Edition". */
+  readonly schemaVersion: string
+  readonly scorm2004: boolean
+  /** Default organization's items, in document order, that resolve to an href. */
+  readonly items: readonly ImsItem[]
+}
+
+interface MutableItem {
+  org: string
+  ref: string
+  title: string
+}
+
+/**
+ * Parses a Content Packaging `imsmanifest.xml` — the manifest a raw SCORM zip
+ * ships, distinct from Moodle's flattened `scorm.xml` (parseScormXml). Returns
+ * the default organization's launchable items resolved against `<resources>`.
+ * xml:base is not honoured yet — no observed package (REPO-004, Ejemplos) uses
+ * it; a package that does would get slightly wrong hrefs, never a crash.
+ */
+export async function parseImsManifest(xml: string): Promise<ImsManifest> {
+  let orgDefault = ''
+  let firstOrg = ''
+  let curOrg = ''
+  let schemaVersion = ''
+  const itemStack: MutableItem[] = []
+  const items: MutableItem[] = []
+  const resources = new Map<string, string>()
+
+  const path: string[] = []
+  let text = ''
+
+  await parseXmlEvents(xml, (ev) => {
+    if (ev.type === 'open') {
+      if (ev.name === 'organizations') orgDefault = ev.attributes.default ?? ''
+      else if (ev.name === 'organization') {
+        curOrg = ev.attributes.identifier ?? ''
+        if (firstOrg === '') firstOrg = curOrg
+      } else if (ev.name === 'item') {
+        itemStack.push({ org: curOrg, ref: ev.attributes.identifierref ?? '', title: '' })
+      } else if (ev.name === 'resource') {
+        const id = ev.attributes.identifier
+        const href = ev.attributes.href
+        if (id !== undefined && href !== undefined && href !== '') resources.set(id, href)
+      }
+      path.push(ev.name)
+      text = ''
+      return
+    }
+    if (ev.type === 'text') {
+      text += ev.data
+      return
+    }
+    const leaf = path[path.length - 1]
+    const parent = path[path.length - 2]
+    const value = text.trim()
+    text = ''
+    path.pop()
+
+    if (leaf === 'title' && parent === 'item') {
+      const top = itemStack[itemStack.length - 1]
+      if (top && top.title === '') top.title = value
+    } else if (leaf === 'schemaversion') schemaVersion = value
+    else if (leaf === 'item') {
+      const done = itemStack.pop()
+      if (done) items.push(done)
+    } else if (leaf === 'organization') curOrg = ''
+  })
+
+  const org = orgDefault !== '' && items.some((i) => i.org === orgDefault) ? orgDefault : firstOrg
+  const resolved: ImsItem[] = []
+  for (const it of items) {
+    if (it.org !== org) continue
+    const href = resources.get(it.ref)
+    if (href) resolved.push({ title: it.title, href })
+  }
+  return { schemaVersion, scorm2004: /2004/.test(schemaVersion), items: resolved }
+}

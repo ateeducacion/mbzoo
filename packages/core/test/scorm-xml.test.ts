@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { defaultLaunchSco, isScorm2004, parseScormXml } from '../src/moodle/scorm-xml.ts'
+import {
+  defaultLaunchSco,
+  isScorm2004,
+  parseImsManifest,
+  parseScormXml,
+} from '../src/moodle/scorm-xml.ts'
 
 /**
  * Shape taken from mod/scorm/backup/moodle2/backup_scorm_stepslib.php:39-61
@@ -121,5 +126,60 @@ describe('isScorm2004', () => {
     expect(isScorm2004('SCORM_1.2')).toBe(false)
     expect(isScorm2004('AICC')).toBe(false)
     expect(isScorm2004('')).toBe(false)
+  })
+})
+
+describe('parseImsManifest (raw SCORM package)', () => {
+  // Shape of scorm.zip (ADL golf sample): CAM 1.3 → SCORM 1.2.
+  test('resolves the default org item to its resource href', async () => {
+    const xml = `<manifest>
+      <metadata><schema>ADL SCORM</schema><schemaversion>CAM 1.3</schemaversion></metadata>
+      <organizations default="org1">
+        <organization identifier="org1">
+          <item identifier="i1" identifierref="r1"><title>Golf</title></item>
+        </organization>
+      </organizations>
+      <resources>
+        <resource identifier="r1" type="webcontent" href="shared/launchpage.html"><file href="a.html"/></resource>
+      </resources></manifest>`
+    const m = await parseImsManifest(xml)
+    expect(m.scorm2004).toBe(false)
+    expect(m.items).toHaveLength(1)
+    expect(m.items[0]).toEqual({ title: 'Golf', href: 'shared/launchpage.html' })
+  })
+
+  // scorm3.zip: 2004 4th Edition, attributes with spaces around '='.
+  test('detects SCORM 2004 and tolerates loose attribute spacing', async () => {
+    const xml = `<manifest identifier = "lc">
+      <metadata><schema>ADL SCORM</schema><schemaversion>2004 4th Edition</schemaversion></metadata>
+      <organizations default="Netex"><organization identifier="Netex">
+        <item identifier = "t_01" identifierref = "tema_01"><title>Inglés</title></item>
+      </organization></organizations>
+      <resources><resource identifier="tema_01" href="index_alu.html"/></resources></manifest>`
+    const m = await parseImsManifest(xml)
+    expect(m.scorm2004).toBe(true)
+    expect(m.items.map((i) => i.href)).toEqual(['index_alu.html'])
+  })
+
+  test('an item pointing at no resource is dropped, not launched blank', async () => {
+    const xml = `<manifest><organizations default="o"><organization identifier="o">
+      <item identifier="i1" identifierref="missing"><title>Dead</title></item>
+      <item identifier="i2" identifierref="r2"><title>Live</title></item>
+    </organization></organizations>
+    <resources><resource identifier="r2" href="p2.html"/></resources></manifest>`
+    const m = await parseImsManifest(xml)
+    expect(m.items.map((i) => i.title)).toEqual(['Live'])
+  })
+
+  test('nested items keep their own titles and order', async () => {
+    const xml = `<manifest><organizations default="o"><organization identifier="o">
+      <item identifier="a" identifierref="ra"><title>A</title>
+        <item identifier="b" identifierref="rb"><title>B</title></item>
+      </item>
+    </organization></organizations>
+    <resources><resource identifier="ra" href="a.html"/><resource identifier="rb" href="b.html"/></resources></manifest>`
+    const m = await parseImsManifest(xml)
+    // child closes first (document order of </item>), then parent
+    expect(m.items.map((i) => i.title)).toEqual(['B', 'A'])
   })
 })

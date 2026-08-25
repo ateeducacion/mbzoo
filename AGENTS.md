@@ -15,8 +15,9 @@ Implemented content support includes sanitized Page/Label HTML, URL activities,
 Resource/File/Folder previews (main file by Moodle's marker, ADR-0028),
 PDF/image/text/video previews, sandboxed HTML and multi-page sites with
 validated in-frame navigation (ADR-0022), EPUB chapters (ADR-0024),
-eXeLearning package inspection (ADR-0025), embedded and remote-embed
-content named rather than dropped, section hierarchy for flexsections and
+eXeLearning package inspection (ADR-0025) and SCORM/eXe package zips
+classified and rendered from a resource (ADR-0034), embedded and
+remote-embed content named rather than dropped (in sandboxed sites too), section hierarchy for flexsections and
 delegated sections (ADR-0030), and metadata fallback for unknown modules.
 H5P (ADR-0018) and SCORM (ADR-0023) playback are **experimental** inside the
 opaque-origin sandbox. ZIP backups are read lazily by central directory;
