@@ -22,6 +22,7 @@ decisions:
   ADR-0024: { title: EPUB reading — a spine reader of our own, not a reader library, status: Accepted, date: 2026-08-25 }
   ADR-0025: { title: eXeLearning packages are classified by what is inside them, not by their extension, status: Accepted, date: 2026-08-25 }
   ADR-0027: { title: Every browser runs on every change, and the worker stays one chunk, status: Accepted, date: 2026-08-25 }
+  ADR-0028: { title: A resource is the file Moodle marked, not the file whose name looks right, status: Accepted, date: 2026-08-25 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }
@@ -174,3 +175,35 @@ risks:
     mitigation: recorded in TECH-014/ADR-0018; playback stays experimental and is re-reviewed before any non-experimental release
     upstream: https://github.com/tunapanda/h5p-standalone/issues/188 (opened 2026-08-25, awaiting maintainer reply)
     status: monitored
+  RISK-005:
+    title: "e2e 'concurrent activity opens both finish' asserts which of two racing clicks wins"
+    severity: low
+    probability: observed
+    detail: >
+      The test clicks two activities in parallel and asserts a specific
+      winner, which the code does not guarantee. Observed failing once on
+      WebKit under full-suite load and passing 3/3 in isolation. Now that
+      ADR-0027 makes all three engines gate every push and pull request, an
+      intermittent red will land on unrelated changes.
+    mitigation: >
+      Rewritten to assert the invariant instead of the winner: whichever
+      click landed is fully rendered, and each activity still renders when
+      opened again. ADR-0027 recorded it as open because it was another
+      session's code; that session stopped, so it was fixed here.
+    status: mitigated
+  RISK-006:
+    title: Synthetic fixtures write <file> where real Moodle writes <file id="...">
+    severity: low
+    probability: certain
+    detail: >
+      Real backups emit an id attribute on every <file> element; the
+      generated fixture does not. The parser handles both, so nothing is
+      broken — but a regex or assertion written against the fixture's shape
+      matches nothing on real input and reads as absence of data rather than
+      as a shape mismatch. This cost a wrong conclusion once while
+      investigating ADR-0028.
+    mitigation: >
+      The generator now emits `<file id="...">` and every matcher in the e2e
+      suite was widened to `<file\b[^>]*>`, so fixtures carry the same shape
+      as a real backup rather than only the same fields.
+    status: mitigated

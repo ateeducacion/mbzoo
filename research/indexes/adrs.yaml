@@ -108,3 +108,7 @@ adrs:
     title: Every browser runs on every change, and the worker stays one chunk
     status: Accepted
     date: 2026-08-25
+  ADR-0028:
+    title: A resource is the file Moodle marked, not the file whose name looks right
+    status: Accepted
+    date: 2026-08-25
