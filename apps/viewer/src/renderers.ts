@@ -41,7 +41,15 @@ import {
 } from './lib/epub-reader.ts'
 import { exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
 import { classifyProvider, scanExternalRefs } from './lib/external-refs.ts'
-import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
+import {
+  buildPlayerHtml,
+  type H5pEntries,
+  isH5pFileName,
+  type PlayerAssets,
+  unzipH5p,
+  vfsHeadScripts,
+} from './lib/h5p-player.ts'
+import { composeHvpEntries, hvpFields } from './lib/hvp-package.ts'
 import { t } from './lib/i18n.ts'
 import {
   ALLOWED_URI_REGEXP,
@@ -58,9 +66,17 @@ import {
   placeholderizeEmbeds,
   resolveRelative,
   SANDBOX_CSP,
+  SCORM_CSP,
   splitRef,
 } from './lib/preview-utils.ts'
-import { runtimeScript, scormBootScript, scormToc, splitLaunch } from './lib/scorm-player.ts'
+import {
+  MAX_SCO_VFS_BYTES,
+  runtimeScript,
+  scormBootScript,
+  scormToc,
+  scoVfsKey,
+  splitLaunch,
+} from './lib/scorm-player.ts'
 
 // pdf.js renders PDFs onto canvas (ADR-0014): Chrome blocks blob-PDF iframes
 // inside sandboxed contexts.
@@ -78,6 +94,8 @@ export interface RenderContext {
 export interface ParsedActivity {
   readonly fields: Map<string, string>
   readonly contextId: string
+  /** Plugin instance id from `<activity id>`; '' when the XML is missing. */
+  readonly instanceId: string
   /** Raw XML source, or '' when the entry is missing or unreadable. */
   readonly xmlText: string
   readonly xmlPath: string
@@ -142,6 +160,7 @@ export class Renderer {
     return {
       fields: parsed?.fields ?? new Map<string, string>(),
       contextId: parsed?.contextId ?? '',
+      instanceId: parsed?.instanceId ?? '',
       xmlText,
       xmlPath,
     }
@@ -345,7 +364,13 @@ export class Renderer {
       return
     }
     if (mod === 'hvp' || mod === 'h5pactivity') {
-      await this.renderH5pActivity(activity, fields, contextId, container)
+      await this.renderH5pActivity(
+        activity,
+        fields,
+        contextId,
+        container,
+        parsedActivity.instanceId,
+      )
       return
     }
     if (mod === 'qbank' || mod === 'lti' || mod === 'bigbluebuttonbn') {
@@ -648,6 +673,7 @@ export class Renderer {
       buttonLabel: (rec: BackupFileRecord) => string
       buttonIndent?: (rec: BackupFileRecord) => number
       headScripts?: (rec: BackupFileRecord) => string[]
+      csp?: string
     },
   ): Promise<void> {
     const holder = document.createElement('div')
@@ -656,7 +682,10 @@ export class Renderer {
     if (pages.length <= 1) {
       container.appendChild(holder)
       holder.appendChild(
-        await this.filePreview(entry, { headScripts: opts.headScripts?.(entry) ?? [] }),
+        await this.filePreview(entry, {
+          headScripts: opts.headScripts?.(entry) ?? [],
+          ...(opts.csp ? { csp: opts.csp } : {}),
+        }),
       )
       return
     }
@@ -692,6 +721,7 @@ export class Renderer {
         token,
         pagePaths,
         headScripts: opts.headScripts?.(rec) ?? [],
+        ...(opts.csp ? { csp: opts.csp } : {}),
       })
       const minted = this.urls.slice(before)
       holder.replaceChildren(preview)
@@ -815,6 +845,8 @@ export class Renderer {
       token?: string
       pagePaths?: ReadonlySet<string>
       headScripts?: readonly string[]
+      /** Policy to inject; SANDBOX_CSP unless the document is a SCO (ADR-0032). */
+      csp?: string
     },
   ): Promise<HTMLElement> {
     const card = document.createElement('div')
@@ -953,6 +985,8 @@ export class Renderer {
       token?: string
       pagePaths?: ReadonlySet<string>
       headScripts?: readonly string[]
+      /** Policy to inject; SANDBOX_CSP unless the document is a SCO (ADR-0032). */
+      csp?: string
     },
   ): Promise<void> {
     let html = new TextDecoder().decode(data)
@@ -971,7 +1005,7 @@ export class Renderer {
       html = injectHead(html, script)
     }
     html = injectHead(html, PAGE_LINK_STYLE)
-    html = injectCsp(html, SANDBOX_CSP)
+    html = injectCsp(html, opts?.csp ?? SANDBOX_CSP)
     const frame = document.createElement('iframe')
     const src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
     // The browser applies the fragment on load, so the anchor survives
@@ -1123,7 +1157,23 @@ export class Renderer {
       note.textContent = t('scorm.runtimeUnavailable')
       container.appendChild(note)
     }
-    const headScripts = runtime ? [runtimeScript(runtime), scormBootScript(is2004)] : []
+    // A SCO may load its own runtime by injecting <script src> or by XHR —
+    // Captivate does both — and relative paths resolve to nothing inside a
+    // blob: document. The package travels with the SCO as a virtual
+    // filesystem, served by the same shim the H5P player uses (ADR-0032).
+    const vfs: H5pEntries = new Map()
+    let vfsBudget = MAX_SCO_VFS_BYTES
+    for (const f of contentFiles) {
+      if (f.fileSize > vfsBudget) continue
+      const bytes = await this.tryRead(contentHashPath(f.contentHash))
+      if (!bytes) continue
+      vfsBudget -= bytes.byteLength
+      vfs.set(scoVfsKey(f), bytes)
+    }
+    const headScripts = [
+      ...vfsHeadScripts(vfs),
+      ...(runtime ? [runtimeScript(runtime), scormBootScript(is2004)] : []),
+    ]
 
     const first = defaultLaunchSco(scorm.scoes)
     const entry =
@@ -1146,6 +1196,7 @@ export class Renderer {
         buttonLabel: (rec) => titleOf.get(rec) ?? rec.fileName,
         buttonIndent: (rec) => depthOf.get(rec) ?? 0,
         headScripts: () => headScripts,
+        csp: SCORM_CSP,
       },
     )
 
@@ -1188,6 +1239,7 @@ export class Renderer {
     fields: Map<string, string>,
     contextId: string,
     container: HTMLElement,
+    instanceId: string,
   ): Promise<void> {
     const mod = activity.moduleName
     const introHtml = await this.resolveHtml(fields.get('intro'), `mod_${mod}`, 'intro', contextId)
@@ -1208,7 +1260,32 @@ export class Renderer {
     const record =
       records.find((f) => f.component === `mod_${mod}` && f.contextId === contextId) ?? records[0]
     if (!record) {
-      notAvailable(container)
+      // mod_hvp keeps no package: the content lives in hvp.xml and the
+      // libraries and media in file areas, so one is composed (ADR-0031).
+      const hvp = mod === 'hvp' ? hvpFields(fields) : undefined
+      if (!hvp) {
+        notAvailable(container)
+        return
+      }
+      const card = document.createElement('div')
+      card.className = 'file-card'
+      container.appendChild(card)
+      let entries: H5pEntries
+      try {
+        // The media area is keyed by the hvp *instance* id, never by the
+        // course-module id the tree carries; the two differ in every real
+        // backup (esl001: instance 6, module 22504).
+        entries = await composeHvpEntries(hvp, instanceId, this.ctx.backup.files.values(), (r) =>
+          this.tryRead(contentHashPath(r.contentHash)),
+        )
+      } catch {
+        const note = document.createElement('p')
+        note.className = 'fallback-note'
+        note.textContent = t('h5p.invalid')
+        card.appendChild(note)
+        return
+      }
+      await this.renderH5pEntries(entries, card)
       return
     }
     const data = await this.tryRead(contentHashPath(record.contentHash))
@@ -1237,6 +1314,23 @@ export class Renderer {
    * ADR-0014 CSP; every package path is served by an in-frame shim.
    */
   private async renderH5p(data: Uint8Array, card: HTMLElement): Promise<void> {
+    // A package is hostile input: unzipping may reject malformed input, and
+    // that must not reach the caller as a raw error.
+    let entries: H5pEntries
+    try {
+      entries = unzipH5p(data)
+    } catch {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('h5p.invalid')
+      card.appendChild(note)
+      return
+    }
+    await this.renderH5pEntries(entries, card)
+  }
+
+  /** Plays an H5P package already unfolded into path → bytes (ADR-0018, ADR-0031). */
+  private async renderH5pEntries(entries: H5pEntries, card: HTMLElement): Promise<void> {
     const fallback = (key: 'h5p.invalid' | 'h5p.playerUnavailable'): void => {
       const note = document.createElement('p')
       note.className = 'fallback-note'
@@ -1248,11 +1342,9 @@ export class Renderer {
       fallback('h5p.playerUnavailable')
       return
     }
-    // A package is hostile input: unzipping and building the player page both
-    // reject malformed input, and neither may reach the caller as a raw error.
     let html: string
     try {
-      html = buildPlayerHtml(unzipH5p(data), assets)
+      html = buildPlayerHtml(entries, assets)
     } catch {
       fallback('h5p.invalid')
       return

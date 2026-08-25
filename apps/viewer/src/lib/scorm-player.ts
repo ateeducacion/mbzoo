@@ -12,7 +12,7 @@
  * Nothing about the sandbox changes: same opaque-origin iframe, same
  * injected CSP, no new iframe permission (ADR-0014, ADR-0022).
  */
-import type { ScormSco } from '@mbzoo/core'
+import type { BackupFileRecord, ScormSco } from '@mbzoo/core'
 
 /**
  * Runtime settings that keep the API offline.
@@ -116,4 +116,12 @@ export function splitLaunch(launch: string, parameters = ''): { path: string; qu
     parameters.startsWith('?') || parameters.startsWith('&') ? parameters : `?${parameters}`
   const joined = own === '' ? extra : `${own}${extra.replace(/^\?/, '&')}`
   return { path, query: joined }
+}
+
+/** Bytes of package files a SCO may carry into its virtual filesystem. */
+export const MAX_SCO_VFS_BYTES = 64 * 1024 * 1024
+
+/** Package-relative key of a content-area record, the way a SCO refers to it. */
+export function scoVfsKey(record: Pick<BackupFileRecord, 'filePath' | 'fileName'>): string {
+  return `${record.filePath}${record.fileName}`.replace(/^\/+/, '')
 }

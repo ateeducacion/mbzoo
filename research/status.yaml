@@ -25,6 +25,8 @@ decisions:
   ADR-0028: { title: A resource is the file Moodle marked, not the file whose name looks right, status: Accepted, date: 2026-08-25 }
   ADR-0029: { title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer, status: Accepted, date: 2026-08-25 }
   ADR-0030: { title: Sections form a tree when the course format says so, status: Accepted, date: 2026-08-25 }
+  ADR-0031: { title: H5P content stored by mod_hvp is composed into a package, status: Accepted, date: 2026-08-25 }
+  ADR-0032: { title: A SCO travels with its package as a virtual filesystem, XHR included, status: Accepted, date: 2026-08-25 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }

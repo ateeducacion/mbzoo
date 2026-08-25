@@ -216,3 +216,15 @@ describe('matchFileRecord itemid scoping', () => {
     expect(matchFileRecord(files, { fileName: 'pic.png' })?.contentHash).toBe('aaa')
   })
 })
+
+describe('instance id', () => {
+  test('the activity root id is the plugin instance id, distinct from the module id', async () => {
+    const { parseActivityXml } = await import('../src/moodle/activity-xml.ts')
+    // Real mod_hvp (esl001, REPO-004): <activity id="6" moduleid="22504" …><hvp id="6">.
+    const parsed = await parseActivityXml(
+      '<?xml version="1.0"?><activity id="6" moduleid="22504" modulename="hvp" contextid="1354363"><hvp id="6"><name>x</name></hvp></activity>',
+    )
+    expect(parsed.instanceId).toBe('6')
+    expect(parsed.contextId).toBe('1354363')
+  })
+})

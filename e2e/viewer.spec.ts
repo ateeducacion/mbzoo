@@ -237,7 +237,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('3 sections')
-  expect(meta).toContain('27 activities')
+  expect(meta).toContain('28 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -916,7 +916,15 @@ test('a SCORM package plays inside the opaque-origin sandbox (ADR-0023)', async 
 
   // Second item, through MBZoo's own chrome.
   await items.nth(1).click()
-  await expect(page.frameLocator('.html-frame').locator('#sco-title')).toHaveText('Second step')
+  const second = page.frameLocator('.html-frame')
+  await expect(second.locator('#sco-title')).toHaveText('Second step')
+  // This SCO fetches its own code the way real runtimes do — a script
+  // element created at run time and an XMLHttpRequest, both with paths
+  // relative to the package. The package travels as a virtual filesystem
+  // that answers both (ADR-0032); nothing reaches the network.
+  await expect(second.locator('#sco-dyn')).toHaveText('dyn-loaded')
+  await expect(second.locator('#sco-xhr')).toHaveText('xhr-served')
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
 })
 
 test('a link between SCOs navigates through MBZoo (ADR-0022 + ADR-0023)', async ({ page }) => {
@@ -1011,6 +1019,36 @@ test('a backup cannot forge an embed placeholder into a link', async ({ page }) 
   expect(await page.evaluate(() => (window as unknown as Record<string, unknown>).__mbzooXss)).toBe(
     undefined,
   )
+})
+
+test('a mod_hvp activity plays from hvp.xml plus the libraries area (ADR-0031)', async ({
+  page,
+}) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo H5P \(mod_hvp\)/ }).click()
+
+  // No .h5p exists for this activity: the package is composed from the
+  // main library named in hvp.xml, its dependency closure out of the
+  // libraries file area, and this instance's media. Every real H5P activity
+  // in the corpus has this shape (AN-008).
+  const frame = page.frameLocator('.h5p-frame')
+  await expect(frame.locator('.h5p-mbzoo-text')).toContainText('Synthetic mod_hvp')
+  await expect(frame.locator('.h5p-mbzoo-text')).toHaveAttribute('data-dependency', 'base-loaded')
+  // Content types that evaluate a string during attach (MultiChoice and the
+  // quiz family) render only if the player CSP allows eval (ADR-0031).
+  await expect(frame.locator('.h5p-mbzoo-text')).toHaveAttribute('data-eval', 'eval-ok')
+  const image = frame.locator('.h5p-mbzoo-image')
+  await expect(image).toBeVisible()
+  expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(1)
+
+  const sandbox = await page.locator('.h5p-frame').getAttribute('sandbox')
+  expect(sandbox).toContain('allow-scripts')
+  expect(sandbox).not.toContain('allow-same-origin')
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

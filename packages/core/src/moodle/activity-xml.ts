@@ -11,6 +11,12 @@ import { leafValue, parseXmlEvents } from './xml.ts'
 export interface ParsedActivity {
   readonly contextId: string
   readonly moduleName: string
+  /**
+   * The `<activity id>` root attribute: the plugin *instance* id, which is
+   * not the course-module id the tree uses. File areas keyed per instance
+   * (mod_hvp content) and delegated-section owners are addressed by it.
+   */
+  readonly instanceId: string
   readonly fields: Map<string, string>
 }
 
@@ -22,6 +28,7 @@ export async function parseActivityXml(xml: string): Promise<ParsedActivity> {
   }
   let contextId = ''
   let moduleName = ''
+  let instanceId = ''
   const fields = new Map<string, string>()
   const path: string[] = []
   let text = ''
@@ -31,6 +38,7 @@ export async function parseActivityXml(xml: string): Promise<ParsedActivity> {
       if (path.length === 0 && ev.name === 'activity') {
         contextId = ev.attributes.contextid ?? ''
         moduleName = ev.attributes.modulename ?? ''
+        instanceId = ev.attributes.id ?? ''
       }
       path.push(ev.name)
       return
@@ -49,7 +57,7 @@ export async function parseActivityXml(xml: string): Promise<ParsedActivity> {
     path.pop()
     text = ''
   })
-  return { contextId, moduleName, fields }
+  return { contextId, moduleName, instanceId, fields }
 }
 
 /**

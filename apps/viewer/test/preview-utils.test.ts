@@ -12,6 +12,7 @@ import {
   placeholderizeEmbeds,
   resolveRelative,
   SANDBOX_CSP,
+  SCORM_CSP,
   splitRef,
 } from '../src/lib/preview-utils.ts'
 
@@ -71,7 +72,7 @@ describe('sandbox CSP invariants', () => {
     })
   }
 
-  test('H5P_CSP is never wider than SANDBOX_CSP', () => {
+  test('H5P_CSP exceeds SANDBOX_CSP only by unsafe-eval in script-src', () => {
     const sources = (csp: string, directive: string): string[] =>
       csp
         .split(';')
@@ -79,14 +80,22 @@ describe('sandbox CSP invariants', () => {
         .find((part) => part.startsWith(`${directive} `))
         ?.slice(directive.length + 1)
         .split(/\s+/) ?? []
+    // The one permitted widening: real H5P content types (MultiChoice,
+    // QuestionSet, InteractiveVideo) evaluate strings during attach, and the
+    // player runs on an opaque origin with no network, storage or parent
+    // access — so eval grants no reach (ADR-0031, same argument as ADR-0032).
+    // Everything else must stay within SANDBOX_CSP.
     for (const directive of ['img-src', 'style-src', 'script-src', 'media-src', 'font-src']) {
       const wide = new Set(sources(SANDBOX_CSP, directive))
+      if (directive === 'script-src') wide.add("'unsafe-eval'")
       for (const source of sources(H5P_CSP, directive)) {
         expect(`${directive}:${source}`).toBe(
           `${directive}:${wide.has(source) ? source : '<not allowed by SANDBOX_CSP>'}`,
         )
       }
     }
+    expect(sources(H5P_CSP, 'script-src')).toContain("'unsafe-eval'")
+    expect(H5P_CSP).toContain("connect-src 'none'")
   })
 })
 
@@ -281,5 +290,28 @@ describe('placeholderizeEmbeds', () => {
     expect(placeholderizeEmbeds(html, register())).toBe(
       '<p>before</p><div data-mbz-embed="handle-1"></div><p>after</p>',
     )
+  })
+})
+
+describe('SCORM_CSP', () => {
+  test("differs from SANDBOX_CSP by 'unsafe-eval' in script-src and nothing else", () => {
+    const parts = (csp: string): Map<string, string[]> =>
+      new Map(
+        csp
+          .split(';')
+          .map((p) => p.trim().split(/\s+/))
+          .map(([name, ...sources]) => [name ?? '', sources]),
+      )
+    const base = parts(SANDBOX_CSP)
+    const scorm = parts(SCORM_CSP)
+    expect([...scorm.keys()]).toEqual([...base.keys()])
+    for (const [name, sources] of base) {
+      const got = scorm.get(name) ?? []
+      if (name === 'script-src') expect(got).toEqual([...sources, "'unsafe-eval'"])
+      else expect(got).toEqual(sources)
+    }
+    // The network stays shut: eval changes how package code may run, never what it may reach.
+    expect(SCORM_CSP).toContain("connect-src 'none'")
+    expect(SCORM_CSP).toContain("frame-src 'none'")
   })
 })

@@ -38,7 +38,7 @@ tasks:
     priority: high
   TASK-010:
     title: Verify H5P and SCORM playback against real packages
-    status: open
+    status: mostly-done
     priority: high
   TASK-011:
     title: Say when stored content cannot play anywhere
@@ -52,3 +52,11 @@ tasks:
     title: Record a users=1 backup specimen
     status: open
     priority: medium
+  TASK-014:
+    title: Drive Cordova-wrapped SCORM exports by simulating deviceready
+    status: open
+    priority: low
+  TASK-015:
+    title: H5P InteractiveVideo renders empty from mod_hvp
+    status: open
+    priority: low

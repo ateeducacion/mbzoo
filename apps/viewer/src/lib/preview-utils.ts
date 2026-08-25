@@ -30,9 +30,27 @@ export const SANDBOX_CSP =
  * what backup-provided H5P code may load. `preview-utils.test.ts` locks the
  * invariants both must keep.
  */
+/**
+ * CSP for a composed SCO document (ADR-0032): SANDBOX_CSP plus 'unsafe-eval'
+ * in script-src, and nothing else.
+ *
+ * Runtimes such as Captivate fetch their own code by XHR and execute it with
+ * eval; without this the package's runtime never runs. It adds no reach: the
+ * frame already executes arbitrary inline script from the same package, on
+ * an opaque origin with no network, storage or parent access, so code that
+ * arrives as a string has exactly the privileges of code that arrived as a
+ * <script>. It is scoped to SCO documents rather than added to SANDBOX_CSP
+ * so ordinary archive HTML keeps the narrower policy. `preview-utils.test.ts`
+ * locks that the only difference is this one source.
+ */
+export const SCORM_CSP = SANDBOX_CSP.replace(
+  "script-src blob: data: 'unsafe-inline'",
+  "script-src blob: data: 'unsafe-inline' 'unsafe-eval'",
+)
+
 export const H5P_CSP =
   "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +
-  "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
+  "script-src blob: 'unsafe-inline' 'unsafe-eval'; media-src blob:; font-src blob: data:; " +
   "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
 /**

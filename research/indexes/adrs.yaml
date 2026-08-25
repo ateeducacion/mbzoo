@@ -120,3 +120,11 @@ adrs:
     title: Sections form a tree when the course format says so
     status: Accepted
     date: 2026-08-25
+  ADR-0031:
+    title: H5P content stored by mod_hvp is composed into a package, not looked for as one
+    status: Accepted
+    date: 2026-08-25
+  ADR-0032:
+    title: A SCO travels with its package as a virtual filesystem, XHR included
+    status: Accepted
+    date: 2026-08-25

@@ -185,8 +185,78 @@ const SHIM_SOURCE = `
     }
     return origSetAttrNS.call(this, ns, name, value);
   };
+  // XMLHttpRequest: a request for a package path is answered from the VFS,
+  // synchronously or not as the caller asked; anything else reaches the
+  // real XHR, where the injected CSP refuses it. Old runtimes (Captivate's
+  // CPXHRLoader among them) load their own code this way.
+  var XHR = window.XMLHttpRequest;
+  if (XHR && XHR.prototype) {
+    var realOpen = XHR.prototype.open;
+    var realSend = XHR.prototype.send;
+    XHR.prototype.open = function (method, url, async) {
+      var key = null;
+      try { key = lookup(url); } catch (e) {}
+      this.__mbzooKey = key;
+      this.__mbzooAsync = async !== false;
+      if (key) return;
+      return realOpen.apply(this, arguments);
+    };
+    XHR.prototype.send = function () {
+      var key = this.__mbzooKey;
+      if (!key) return realSend.apply(this, arguments);
+      var xhr = this;
+      var bytes = bytesFor(key);
+      var mime = mimeFor(key);
+      function deliver() {
+        var text = null;
+        var body;
+        var type = xhr.responseType || '';
+        if (type === 'arraybuffer') body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        else if (type === 'blob') body = new Blob([bytes], { type: mime });
+        else {
+          text = new TextDecoder('utf-8').decode(bytes);
+          body = type === 'json' ? JSON.parse(text) : text;
+        }
+        var props = {
+          readyState: 4, status: 200, statusText: 'OK', response: body,
+          responseText: type === '' || type === 'text' ? text : undefined,
+          responseURL: key
+        };
+        Object.keys(props).forEach(function (name) {
+          try { Object.defineProperty(xhr, name, { value: props[name], configurable: true }); } catch (e) {}
+        });
+        xhr.getResponseHeader = function (h) { return String(h).toLowerCase() === 'content-type' ? mime : null; };
+        xhr.getAllResponseHeaders = function () { return 'content-type: ' + mime + '\\r\\n'; };
+        ['readystatechange', 'load', 'loadend'].forEach(function (name) {
+          try { xhr.dispatchEvent(new Event(name)); } catch (e) {}
+        });
+      }
+      if (this.__mbzooAsync) setTimeout(deliver, 0); else deliver();
+    };
+  }
 })();
 `
+
+/**
+ * The VFS bootstrap as head markup: the package bytes as base64 JSON plus the
+ * shim that serves them. Any sandboxed page may prepend these (ADR-0032:
+ * a SCO whose runtime injects its own scripts). `exclude` skips paths the
+ * page inlines directly, which would otherwise ride along twice.
+ */
+export function vfsHeadScripts(
+  entries: H5pEntries,
+  exclude: ReadonlySet<string> = new Set(),
+): string[] {
+  const vfs: Record<string, string> = {}
+  for (const [path, bytes] of entries) {
+    if (!exclude.has(path)) vfs[path] = toBase64(bytes)
+  }
+  return [
+    `<script id="mbzoo-vfs" type="application/json">${inlineJson(vfs)}</script>`,
+    `<script>window.__MBZOO_VFS__ = JSON.parse(document.getElementById('mbzoo-vfs').textContent);</script>`,
+    `<script>${SHIM_SOURCE}</script>`,
+  ]
+}
 
 export interface PlayerAssets {
   /** Raw asset texts, inlined into the player page (ADR-0018 rule 3). */

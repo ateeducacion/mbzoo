@@ -300,6 +300,13 @@ function moodleBackupXml(): string {
           <directory>activities/page_3026</directory>
         </activity>
         <activity>
+          <moduleid>3028</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>hvp</modulename>
+          <title>Demo H5P (mod_hvp)</title>
+          <directory>activities/hvp_3028</directory>
+        </activity>
+        <activity>
           <moduleid>3027</moduleid>
           <sectionid>2002</sectionid>
           <modulename>scorm</modulename>
@@ -554,7 +561,25 @@ function scormScoHtml(index: number, title: string): string {
 <h1 id="sco-title">${title}</h1>
 <p id="sco-api">api-missing</p>
 <p id="sco-value">no-value</p>
+<p id="sco-dyn">dyn-missing</p>
+<p id="sco-xhr">xhr-missing</p>
 <a id="sco-next" href="sco${index === 1 ? 2 : 1}.html">other step</a>
+<script>
+// Real runtimes (Captivate) fetch their own code this way: a script element
+// created at run time, and an XMLHttpRequest for data — both with paths
+// relative to the package, which only a virtual filesystem can answer.
+(function () {
+  var s = document.createElement('script')
+  s.src = 'dyn.js'
+  document.head.appendChild(s)
+  var x = new XMLHttpRequest()
+  x.open('GET', 'data.json')
+  x.onload = function () {
+    document.getElementById('sco-xhr').textContent = JSON.parse(x.responseText).marker
+  }
+  x.send()
+})()
+</script>
 <script>
 (function () {
   function findAPI(win) {
@@ -585,28 +610,23 @@ function scormScoHtml(index: number, title: string): string {
 `
 }
 
+const SCORM_DYN_JS = "document.getElementById('sco-dyn').textContent = 'dyn-loaded'\n"
+const SCORM_DATA_JSON = '{"marker":"xhr-served"}\n'
+
 /** The uploaded archive, as stored in the `package` file area. */
 function scormPackageBytes(): Uint8Array {
   const files: Zippable = {
     'imsmanifest.xml': strToU8(scormManifest()),
     'sco1.html': strToU8(scormScoHtml(1, 'First step')),
     'sco2.html': strToU8(scormScoHtml(2, 'Second step')),
+    'dyn.js': strToU8(SCORM_DYN_JS),
+    'data.json': strToU8(SCORM_DATA_JSON),
   }
   return zipSync(files, { level: 6, mtime: FIXED_MTIME })
 }
 
-function h5pPackageBytes(): Uint8Array {
-  const h5pJson = {
-    title: 'MBZoo demo text',
-    language: 'en',
-    mainLibrary: 'H5P.MBZooText',
-    embedTypes: ['div', 'iframe'],
-    license: 'CC BY',
-    licenseVersion: '4.0',
-    defaultLanguage: 'en',
-    // Strings on purpose: real packages ship versions this way.
-    preloadedDependencies: [{ machineName: 'H5P.MBZooText', majorVersion: '1', minorVersion: '8' }],
-  }
+/** Sources of the two synthetic H5P libraries, shared by the .h5p and mod_hvp fixtures. */
+function h5pLibrarySources() {
   const baseLibraryJson = {
     title: 'MBZoo Base',
     description: 'Synthetic dependency, loaded before the content type that needs it.',
@@ -657,6 +677,14 @@ H5P.MBZooText.prototype.attach = function ($container) {
   var host = $container && $container[0] ? $container[0] : $container;
   var div = document.createElement('div');
   div.className = 'h5p-mbzoo-text';
+  // Real content types (MultiChoice, QuestionSet, InteractiveVideo) evaluate
+  // strings during attach; exercising one here proves the player CSP allows
+  // it (ADR-0031). A blocked eval would throw and leave the container empty.
+  try {
+    div.setAttribute('data-eval', new Function('return "eval-ok"')());
+  } catch (e) {
+    div.setAttribute('data-eval', 'eval-blocked');
+  }
   if (H5P.MBZooBase && H5P.MBZooBase.marker) {
     div.setAttribute('data-dependency', H5P.MBZooBase.marker);
   }
@@ -673,6 +701,23 @@ H5P.MBZooText.prototype.attach = function ($container) {
   host.appendChild(div);
 };
 `
+  return { baseLibraryJson, baseLibraryJs, baseLibraryCss, libraryJson, libraryJs }
+}
+
+function h5pPackageBytes(): Uint8Array {
+  const h5pJson = {
+    title: 'MBZoo demo text',
+    language: 'en',
+    mainLibrary: 'H5P.MBZooText',
+    embedTypes: ['div', 'iframe'],
+    license: 'CC BY',
+    licenseVersion: '4.0',
+    defaultLanguage: 'en',
+    // Strings on purpose: real packages ship versions this way.
+    preloadedDependencies: [{ machineName: 'H5P.MBZooText', majorVersion: '1', minorVersion: '8' }],
+  }
+  const { baseLibraryJson, baseLibraryJs, baseLibraryCss, libraryJson, libraryJs } =
+    h5pLibrarySources()
   const contentJson = {
     text: '<p><strong>Synthetic H5P</strong>: if you can read this inside MBZoo, H5P playback works.</p>',
     image: { path: 'images/demo.png', mime: 'image/png', width: 16, height: 16 },
@@ -681,6 +726,17 @@ H5P.MBZooText.prototype.attach = function ($container) {
     'h5p.json': strToU8(`${JSON.stringify(h5pJson, null, 2)}\n`),
     'content/content.json': strToU8(`${JSON.stringify(contentJson, null, 2)}\n`),
     'content/images/demo.png': demoPngBytes(),
+    ...h5pLibraryEntries(),
+  }
+  // Fixed mtime keeps the nested package byte-stable across regenerations.
+  return zipSync(entries, { level: 6, mtime: FIXED_MTIME })
+}
+
+/** The two synthetic libraries, keyed the way both a .h5p and mod_hvp lay them out. */
+function h5pLibraryEntries(): Record<string, Uint8Array> {
+  const { baseLibraryJson, baseLibraryJs, baseLibraryCss, libraryJson, libraryJs } =
+    h5pLibrarySources()
+  return {
     'H5P.MBZooBase-1.0/library.json': strToU8(`${JSON.stringify(baseLibraryJson, null, 2)}\n`),
     'H5P.MBZooBase-1.0/mbzoo-base.js': strToU8(baseLibraryJs),
     'H5P.MBZooBase-1.0/mbzoo-base.css': strToU8(baseLibraryCss),
@@ -690,8 +746,32 @@ H5P.MBZooText.prototype.attach = function ($container) {
     ),
     'H5P.MBZooText-1.8/mbzoo-text.js': strToU8(libraryJs),
   }
-  // Fixed mtime keeps the nested package byte-stable across regenerations.
-  return zipSync(entries, { level: 6, mtime: FIXED_MTIME })
+}
+
+function escapeXml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/** The synthetic libraries as mod_hvp stores them: one record per file, course-wide. */
+function hvpLibraryFiles(): SpecFile[] {
+  const out: SpecFile[] = []
+  for (const [path, bytes] of Object.entries(h5pLibraryEntries())) {
+    const slash = path.lastIndexOf('/')
+    out.push({
+      filepath: `${path.slice(0, slash)}/`,
+      filename: path.slice(slash + 1),
+      content: bytes,
+      component: 'mod_hvp',
+      contextId: '1',
+      filearea: 'libraries',
+      mimetype: path.endsWith('.json')
+        ? 'application/json'
+        : path.endsWith('.js')
+          ? 'text/javascript'
+          : 'text/css',
+    })
+  }
+  return out
 }
 
 /**
@@ -1093,6 +1173,18 @@ async function main(): Promise<void> {
       filearea: 'package',
       mimetype: 'application/zip',
     },
+    // mod_hvp file areas: libraries course-wide at itemid 0, media per instance.
+    ...hvpLibraryFiles(),
+    {
+      filepath: 'images/',
+      filename: 'dot.png',
+      content: onePixelPng(),
+      component: 'mod_hvp',
+      contextId: '128',
+      filearea: 'content',
+      mimetype: 'image/png',
+      itemId: '28',
+    },
     {
       filepath: '',
       filename: 'demo-project.elpx',
@@ -1151,6 +1243,24 @@ async function main(): Promise<void> {
     },
     {
       filepath: '',
+      filename: 'dyn.js',
+      content: SCORM_DYN_JS,
+      component: 'mod_scorm',
+      contextId: '127',
+      filearea: 'content',
+      mimetype: 'text/javascript',
+    },
+    {
+      filepath: '',
+      filename: 'data.json',
+      content: SCORM_DATA_JSON,
+      component: 'mod_scorm',
+      contextId: '127',
+      filearea: 'content',
+      mimetype: 'application/json',
+    },
+    {
+      filepath: '',
       filename: 'demo-scorm.zip',
       content: scormPackageBytes(),
       component: 'mod_scorm',
@@ -1182,7 +1292,7 @@ ${specFiles.map(fileRecord).join('\n')}
       2001,
       1,
       'Introduction',
-      '3001,3002,3004,3006,3007,3012,3013,3014,3015,3019,3021,3022,3025',
+      '3001,3002,3004,3006,3007,3012,3013,3014,3015,3019,3021,3022,3025,3028',
     ),
   )
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
@@ -1719,6 +1829,33 @@ ${specFiles.map(fileRecord).join('\n')}
       </sco>
     </scoes>
   </scorm>
+</activity>
+`,
+  )
+  // mod_hvp keeps no .h5p: the main library and parameters live here and the
+  // libraries/media in file areas — the shape every real H5P backup in the
+  // corpus has (AN-008, ADR-0031).
+  add(
+    'activities/hvp_3028/hvp.xml',
+    `${XML_HEADER}<activity id="28" moduleid="28" modulename="hvp" contextid="128">
+  <hvp id="28">
+    <name>Demo H5P (mod_hvp)</name>
+    <machine_name>H5P.MBZooText</machine_name>
+    <major_version>1</major_version>
+    <minor_version>8</minor_version>
+    <intro>&lt;p&gt;Composed from hvp.xml plus the libraries file area.&lt;/p&gt;</intro>
+    <introformat>1</introformat>
+    <json_content>${escapeXml(
+      JSON.stringify({
+        text: '<p><strong>Synthetic mod_hvp</strong>: composed, not unzipped.</p>',
+        image: { path: 'images/dot.png', mime: 'image/png', width: 1, height: 1 },
+      }),
+    )}</json_content>
+    <embed_type>div</embed_type>
+    <disable>0</disable>
+    <slug>demo-h5p-mod-hvp</slug>
+    <license>U</license>
+  </hvp>
 </activity>
 `,
   )
