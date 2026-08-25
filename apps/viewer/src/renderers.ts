@@ -42,7 +42,7 @@ import {
   unzipPackage,
 } from './lib/epub-reader.ts'
 import { exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
-import { classifyProvider, scanExternalRefs } from './lib/external-refs.ts'
+import { classifyProvider, nameRemoteEmbeds, scanExternalRefs } from './lib/external-refs.ts'
 import {
   buildPlayerHtml,
   type H5pEntries,
@@ -994,6 +994,9 @@ export class Renderer {
     let html = new TextDecoder().decode(data)
     const dir = rec.filePath.replace(/[^/]+$/, '')
     html = await this.rewriteRelativeRefs(html, dir, rec, opts?.pagePaths)
+    // A remote iframe/video the CSP would block renders blank; name it as
+    // external content instead, with a link (ADR-0009: nothing fetched).
+    html = nameRemoteEmbeds(html, { external: t('embed.external'), open: t('embed.externalOpen') })
     html = retargetExternalLinks(html)
     // injectHead prepends, so these apply in reverse document order: the CSP
     // goes last precisely so it lands as the first head child, ahead of the
@@ -1598,6 +1601,10 @@ export class Renderer {
       } catch {
         return
       }
+      html = nameRemoteEmbeds(html, {
+        external: t('embed.external'),
+        open: t('embed.externalOpen'),
+      })
       html = retargetExternalLinks(html)
       html = injectHead(html, PAGE_LINK_STYLE)
       html = injectCsp(html, SANDBOX_CSP)
