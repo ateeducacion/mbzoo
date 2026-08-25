@@ -7,7 +7,7 @@ const FIXTURE = join(here, '..', 'fixtures', 'files', 'demo-course-zip.mbz')
 
 test('opens the synthetic .mbz and renders the course structure', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'MBZoo' })).toBeVisible()
+  await expect(page.locator('#landing .wordmark')).toHaveText(/mbzoo/)
 
   await page.setInputFiles('#file-input', FIXTURE)
 

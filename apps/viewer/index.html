@@ -10,29 +10,93 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <header>
-      <h1><img src="/logo.png" alt="MBZoo logo" class="logo" /></h1>
-      <p class="privacy-note">Backups are processed entirely in your browser — nothing is uploaded. You can also open one via <code>?url=…</code>.</p>
-    </header>
+    <!-- Landing (1a: polished brand) -->
+    <section id="landing">
+      <header class="topbar">
+        <div class="brand">
+          <img src="/favicon.png" alt="" class="brand-icon" />
+          <span class="wordmark">mb<em>zoo</em></span>
+        </div>
+        <nav class="topnav">
+          <a href="https://github.com/ateeducacion/mbzoo#readme">Docs</a>
+          <a href="https://github.com/ateeducacion/mbzoo">GitHub ↗</a>
+        </nav>
+      </header>
+      <div class="hero">
+        <h1>See what's inside your <em>MBZ</em></h1>
+        <p class="hero-sub">Open Moodle course backups right in your browser. Nothing to install, nothing uploaded.</p>
+
+        <section id="dropzone" aria-labelledby="dz-label">
+          <h2 id="dz-label" class="visually-hidden">Open a Moodle backup</h2>
+          <img src="/favicon.png" alt="" class="dz-icon" />
+          <div class="dz-title">Drop your <code>.mbz</code> file here</div>
+          <div class="dz-hint" id="dz-hint">ZIP and TAR.GZ · processed on your device</div>
+          <div class="dz-actions">
+            <label class="btn-primary" for="file-input">Choose file</label>
+            <input type="file" id="file-input" accept=".mbz,.gz,.zip" aria-describedby="dz-hint" />
+          </div>
+        </section>
+
+        <p class="privacy-pill"><span class="dot"></span>100% local — your file never leaves your device. You can also open one via <code>?url=…</code></p>
+
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-t">Open</div><div class="step-d">Drop the backup file</div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-t">Explore</div><div class="step-d">Sections and activities</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-t">Inspect</div><div class="step-d">Content and files</div></div>
+        </div>
+      </div>
+    </section>
 
     <main>
-      <section id="dropzone" aria-labelledby="dz-label">
-        <h2 id="dz-label" class="visually-hidden">Open a Moodle backup</h2>
-        <input type="file" id="file-input" accept=".mbz,.gz,.zip" aria-describedby="dz-hint" />
-        <label for="file-input" id="drop-label">
-          <strong>Drop a <code>.mbz</code> file here</strong>
-          <span id="dz-hint">or choose a file — it never leaves your device</span>
-        </label>
+      <!-- Loading state (1d) -->
+      <section id="loading" class="card state-card" hidden>
+        <div class="loading-head">
+          <img src="/favicon.png" alt="" class="brand-icon" />
+          <div>
+            <div class="loading-title" id="loading-title">Reading backup…</div>
+            <div class="loading-sub" id="loading-sub"></div>
+          </div>
+        </div>
+        <div class="progress"><div class="progress-bar"></div></div>
+        <div class="skeleton" style="width:70%"></div>
+        <div class="skeleton" style="width:90%"></div>
+        <div class="skeleton" style="width:55%"></div>
+        <p class="state-note">Parsing happens on your device — large courses may take a few seconds.</p>
       </section>
 
-      <section id="status" role="status" aria-live="polite"></section>
+      <!-- Error state (1d) -->
+      <section id="error" class="card state-card" hidden>
+        <div class="error-badge">!</div>
+        <div class="error-title">Could not open this file</div>
+        <p class="error-msg" id="error-msg"></p>
+        <div class="error-actions">
+          <button type="button" class="btn-primary btn-choose">Try another file</button>
+        </div>
+      </section>
 
+      <!-- Explorer (1a) -->
       <section id="course" hidden aria-labelledby="course-title">
-        <!-- biome-ignore lint/a11y/useHeadingContent: populated from parsed backup at runtime -->
-        <h2 id="course-title"></h2>
-        <p id="course-meta"></p>
+        <div class="explorer-topbar">
+          <div class="brand">
+            <img src="/favicon.png" alt="" class="brand-icon small" />
+            <span class="wordmark small">mb<em>zoo</em></span>
+            <span class="file-chip"><span id="file-name"></span><span class="file-size" id="file-size"></span></span>
+          </div>
+          <div class="explorer-topbar-right">
+            <span class="course-stats" id="course-meta"></span>
+            <button type="button" class="btn-outline btn-choose">Open another</button>
+          </div>
+        </div>
+
         <div class="explorer">
           <aside id="tree" aria-label="Course structure">
+            <div class="course-head">
+              <!-- biome-ignore lint/a11y/useHeadingContent: populated from parsed backup at runtime -->
+              <h2 id="course-title"></h2>
+              <div class="course-sub" id="course-sub"></div>
+            </div>
+            <input type="search" id="activity-search" placeholder="Search activity…" aria-label="Search activities" />
+            <div id="warnings" class="warnings" hidden></div>
             <ol id="sections"></ol>
           </aside>
           <section id="detail" hidden aria-labelledby="detail-title">
@@ -43,7 +107,7 @@
     </main>
 
     <footer>
-      <p>MBZoo is experimental bootstrap software. Current capability: archive detection, metadata parsing and course structure display for ZIP and TAR.GZ backups. See the repository README for what is implemented vs planned.</p>
+      <p>MBZoo is experimental software — see the <a href="https://github.com/ateeducacion/mbzoo#readme">README</a> for what is implemented vs planned. Status messages: <span id="status" role="status" aria-live="polite"></span></p>
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
