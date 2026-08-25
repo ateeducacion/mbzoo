@@ -35,7 +35,8 @@ jobs:
         with:
           files: coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          # A silent coverage gap is worse than a red CI run.
+          fail_ci_if_error: true
       - run: bun run build
       - run: bun run research:validate
 

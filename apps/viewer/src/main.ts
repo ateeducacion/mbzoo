@@ -1,5 +1,19 @@
 import type { ParsedBackup } from '@mbzoo/core'
+import { type StringKey, t } from './lib/i18n.ts'
 import { formatBytes } from './lib/preview-utils.ts'
+
+/** Applies data-i18n / data-i18n-ph attributes after DOM is ready. */
+function applyI18nDom(): void {
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
+    const key = el.getAttribute('data-i18n') as StringKey
+    if (key) el.textContent = t(key)
+  }
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-ph]')) {
+    const key = el.getAttribute('data-i18n-ph') as StringKey
+    if (key && el instanceof HTMLInputElement) el.placeholder = t(key)
+  }
+}
+
 import { Renderer } from './renderers.ts'
 import './style.css'
 
@@ -105,18 +119,18 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   detail.replaceChildren()
   const empty = document.createElement('p')
   empty.className = 'fallback-note'
-  empty.textContent = 'Select an activity on the left to view its content.'
+  empty.textContent = t('detail.empty')
   detail.appendChild(empty)
 
   courseTitle.textContent = backup.course.fullname || backup.course.shortname || '(untitled course)'
   courseSub.textContent = [
     backup.format === 'targz' ? 'TAR.GZ' : 'ZIP',
-    `parsed in ${elapsedMs} ms`,
+    `${t('parsedIn')} ${elapsedMs} ms`,
   ].join(' · ')
   courseMeta.textContent = [
-    `${backup.sections.length} sections`,
-    `${backup.activities.length} activities`,
-    `${backup.files.size} files`,
+    `${backup.sections.length} ${t('sections')}`,
+    `${backup.activities.length} ${t('activities')}`,
+    `${backup.files.size} ${t('files')}`,
   ].join(' · ')
   fileNameEl.textContent = fileName
   fileSizeEl.textContent = `· ${formatBytes(fileSize)}`
@@ -127,7 +141,7 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   if (backup.warnings.length > 0) {
     const title = document.createElement('div')
     title.className = 'warnings-title'
-    title.textContent = `⚠ ${backup.warnings.length} warning(s)`
+    title.textContent = `⚠ ${backup.warnings.length} ${t('warnings')}`
     warningsBox.appendChild(title)
     for (const w of backup.warnings.slice(0, 8)) {
       const item = document.createElement('div')
@@ -205,7 +219,7 @@ async function openActivity(activityId: number, sectionName: string): Promise<vo
   const body = document.createElement('div')
   body.className = 'detail-body'
   detail.appendChild(body)
-  setStatus(`Loading “${head.textContent}”…`)
+  setStatus(`${t('loading.activity')} “${head.textContent}”…`)
   try {
     await renderer.renderActivity(activity, body)
     setStatus('')
@@ -216,17 +230,14 @@ async function openActivity(activityId: number, sectionName: string): Promise<vo
 
 async function handleBlob(blob: Blob, name: string): Promise<void> {
   show('loading')
-  loadingTitle.textContent = `Reading ${name}`
-  loadingSub.textContent = `${formatBytes(blob.size)} · detecting format…`
+  loadingTitle.textContent = `${t('loading.reading')} ${name}`
+  loadingSub.textContent = `${formatBytes(blob.size)} · ${t('loading.detecting')}`
   try {
     const result = await parseInWorker(new File([blob], name))
     render(result.backup, name, blob.size, result.elapsedMs)
     setStatus('')
   } catch (e) {
-    errorMsg.textContent =
-      e instanceof Error
-        ? `“${name}” could not be opened as a Moodle backup: ${e.message}`
-        : `“${name}” could not be opened.`
+    errorMsg.textContent = e instanceof Error ? `${name}: ${e.message}` : name
     show('error')
   }
 }
@@ -278,17 +289,18 @@ async function openFromUrlParam(): Promise<void> {
   const target = new URLSearchParams(location.search).get('url')
   if (!target) return
   show('loading')
-  loadingTitle.textContent = `Fetching ${target}`
+  loadingTitle.textContent = `${t('loading.reading')} ${target}`
   try {
     const res = await fetch(target)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     await handleBlob(await res.blob(), target.split('/').pop() ?? 'backup.mbz')
   } catch (e) {
-    errorMsg.textContent = `Could not fetch that URL (${
+    errorMsg.textContent = `${t('error.urlPrefix')} (${
       e instanceof Error ? e.message : 'unknown'
-    }). The server must allow cross-origin downloads (CORS).`
+    }). ${t('error.urlSuffix')}`
     show('error')
   }
 }
 
+applyI18nDom()
 void openFromUrlParam()

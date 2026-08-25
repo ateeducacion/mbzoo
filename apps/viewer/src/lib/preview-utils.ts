@@ -70,3 +70,23 @@ export function resolveRelative(dir: string, ref: string): string {
   }
   return out.join('/')
 }
+
+/** Human label for a stored file: what kind of content is it? */
+export function contentKind(mime: string, fileName: string): string {
+  const m = mime.toLowerCase()
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
+  if (m === 'text/html' || ext === 'html' || ext === 'htm') return 'Website'
+  if (m === 'application/pdf' || ext === 'pdf') return 'PDF'
+  if (m.startsWith('image/')) return 'Image'
+  if (m.startsWith('video/')) return 'Video'
+  if (m.startsWith('audio/')) return 'Audio'
+  if (ext === 'h5p') return 'H5P package'
+  if (ext === 'elpx') return 'eXeLearning 4.x'
+  if (ext === 'elp') return 'eXeLearning 2.x'
+  if (m === 'application/zip' || ext === 'zip' || ext === 'scorm') return 'Archive'
+  if (/\bword|document\b/.test(m) || ['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'Document'
+  if (/\bpowerpoint|presentation\b/.test(m) || ['ppt', 'pptx', 'odp'].includes(ext)) return 'Slides'
+  if (/\bexcel|sheet\b/.test(m) || ['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return 'Spreadsheet'
+  if (m.startsWith('text/') || ext === 'json' || ext === 'xml' || ext === 'md') return 'Text'
+  return 'File'
+}

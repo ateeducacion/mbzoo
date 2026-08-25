@@ -21,4 +21,3 @@ ignore:
   - "fixtures"     # generator scripts, not shipped code
   - "research"     # documentation/tooling
   - "docs"
-EOF

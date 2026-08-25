@@ -23,26 +23,26 @@
         </nav>
       </header>
       <div class="hero">
-        <h1>See what's inside your <em>MBZ</em></h1>
+        <h1 data-i18n="landing.title">See what's inside your <em>MBZ</em></h1>
         <p class="hero-sub">Open Moodle course backups right in your browser. Nothing to install, nothing uploaded.</p>
 
         <section id="dropzone" aria-labelledby="dz-label">
           <h2 id="dz-label" class="visually-hidden">Open a Moodle backup</h2>
           <img src="/favicon.png" alt="" class="dz-icon" />
-          <div class="dz-title">Drop your <code>.mbz</code> file here</div>
-          <div class="dz-hint" id="dz-hint">ZIP and TAR.GZ · processed on your device</div>
+          <div class="dz-title"><span data-i18n="drop.title">Drop your</span> <code>.mbz</code> <span data-i18n="drop.file">file here</span></div>
+          <div class="dz-hint" id="dz-hint" data-i18n="drop.hint">ZIP and TAR.GZ · processed on your device</div>
           <div class="dz-actions">
-            <label class="btn-primary" for="file-input">Choose file</label>
+            <label class="btn-primary" for="file-input" data-i18n="drop.choose">Choose file</label>
             <input type="file" id="file-input" accept=".mbz,.gz,.zip" aria-describedby="dz-hint" />
           </div>
         </section>
 
-        <p class="privacy-pill"><span class="dot"></span>100% local — your file never leaves your device. You can also open one via <code>?url=…</code></p>
+        <p class="privacy-pill"><span class="dot"></span><span data-i18n="privacy">100% local — your file never leaves your device. You can also open one via <code>?url=…</code></p>
 
         <div class="steps">
-          <div class="step"><div class="step-n">1</div><div class="step-t">Open</div><div class="step-d">Drop the backup file</div></div>
-          <div class="step"><div class="step-n">2</div><div class="step-t">Explore</div><div class="step-d">Sections and activities</div></div>
-          <div class="step"><div class="step-n">3</div><div class="step-t">Inspect</div><div class="step-d">Content and files</div></div>
+          <div class="step"><div class="step-n">1</div><div class="step-t" data-i18n="step1.t">Open</div><div class="step-d" data-i18n="step1.d">Drop the backup file</div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-t" data-i18n="step2.t">Explore</div><div class="step-d" data-i18n="step2.d">Sections and activities</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-t" data-i18n="step3.t">Inspect</div><div class="step-d" data-i18n="step3.d">Content and files</div></div>
         </div>
       </div>
     </section>
@@ -61,16 +61,16 @@
         <div class="skeleton" style="width:70%"></div>
         <div class="skeleton" style="width:90%"></div>
         <div class="skeleton" style="width:55%"></div>
-        <p class="state-note">Parsing happens on your device — large courses may take a few seconds.</p>
+        <p class="state-note" data-i18n="loading.note">Parsing happens on your device — large courses may take a few seconds.</p>
       </section>
 
       <!-- Error state (1d) -->
       <section id="error" class="card state-card" hidden>
         <div class="error-badge">!</div>
-        <div class="error-title">Could not open this file</div>
+        <div class="error-title" data-i18n="error.title">Could not open this file</div>
         <p class="error-msg" id="error-msg"></p>
         <div class="error-actions">
-          <button type="button" class="btn-primary btn-choose">Try another file</button>
+          <button type="button" class="btn-primary btn-choose" data-i18n="error.tryAnother">Try another file</button>
         </div>
       </section>
 
@@ -84,7 +84,7 @@
           </div>
           <div class="explorer-topbar-right">
             <span class="course-stats" id="course-meta"></span>
-            <button type="button" class="btn-outline btn-choose">Open another</button>
+            <button type="button" class="btn-outline btn-choose" data-i18n="openAnother">Open another</button>
           </div>
         </div>
 
@@ -95,19 +95,19 @@
               <h2 id="course-title"></h2>
               <div class="course-sub" id="course-sub"></div>
             </div>
-            <input type="search" id="activity-search" placeholder="Search activity…" aria-label="Search activities" />
+            <input type="search" id="activity-search" data-i18n-ph="search" placeholder="Search activity…" aria-label="Search activities" />
             <div id="warnings" class="warnings" hidden></div>
             <ol id="sections"></ol>
           </aside>
           <section id="detail" hidden aria-labelledby="detail-title">
-            <p class="fallback-note">Select an activity on the left to view its content.</p>
+            <p class="fallback-note" data-i18n="detail.empty">Select an activity on the left to view its content.</p>
           </section>
         </div>
       </section>
     </main>
 
     <footer>
-      <p>MBZoo is experimental software — see the <a href="https://github.com/ateeducacion/mbzoo#readme">README</a> for what is implemented vs planned. Status messages: <span id="status" role="status" aria-live="polite"></span></p>
+      <p><span data-i18n="footer.note">MBZoo is experimental software — see the</span> <a href="https://github.com/ateeducacion/mbzoo#readme">README</a> · <span id="status" role="status" aria-live="polite"></span> <span id="status" role="status" aria-live="polite"></span></p>
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
