@@ -6,13 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/coverage",
-      "!**/research/indexes"
-    ]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/coverage", "!**/research/indexes"]
   },
   "formatter": {
     "enabled": true,
@@ -29,9 +23,7 @@
     }
   },
   "javascript": {
-    "globals": [
-      "Bun"
-    ],
+    "globals": ["Bun"],
     "formatter": {
       "quoteStyle": "single",
       "semicolons": "asNeeded"
@@ -46,9 +38,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "**/*.css"
-      ],
+      "includes": ["**/*.css"],
       "linter": {
         "rules": {
           "style": {
