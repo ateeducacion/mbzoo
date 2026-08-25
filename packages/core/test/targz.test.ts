@@ -57,3 +57,46 @@ describe('TarGzReader', () => {
     expect(sanitizeTarName('/abs')).toBeUndefined()
   })
 })
+
+async function gzip(bytes: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+  const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(new CompressionStream('gzip'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+
+describe('TarGzReader memory shape (ADR-0029)', () => {
+  test('readEntry returns a view into one shared buffer, not a copy', async () => {
+    const a = new TextEncoder().encode('first entry')
+    const b = new TextEncoder().encode('second entry, longer than the first')
+    const gz = await gzip(
+      tar([
+        { name: 'a.txt', data: a },
+        { name: 'b.txt', data: b },
+      ]),
+    )
+    const r = await TarGzReader.open(new Blob([gz.buffer]))
+    const ra = await r.readEntry('a.txt')
+    const rb = await r.readEntry('b.txt')
+    expect(new TextDecoder().decode(ra)).toBe('first entry')
+    expect(new TextDecoder().decode(rb)).toBe('second entry, longer than the first')
+    // Same backing buffer, and it is bigger than either entry.
+    expect(ra.buffer).toBe(rb.buffer)
+    expect(ra.buffer.byteLength).toBeGreaterThan(ra.byteLength + rb.byteLength)
+    await r.close()
+    await expect(r.readEntry('a.txt')).rejects.toThrow(/not found/i)
+  })
+
+  test('the buffer is sized from the trailer, so a small stream stays small', async () => {
+    const data = new TextEncoder().encode('y'.repeat(3000))
+    const gz = await gzip(tar([{ name: 'y.txt', data }]))
+    const r = await TarGzReader.open(new Blob([gz.buffer]))
+    const entry = await r.readEntry('y.txt')
+    // ISIZE was exact, so the backing buffer is the tar's size — not a
+    // doubled growth allocation, and not the compressed input either.
+    expect(entry.buffer.byteLength).toBe(512 + 3072 + 1024)
+  })
+
+  test('a corrupt gzip stream fails as a parse error, not a raw exception', async () => {
+    const bytes = new Uint8Array([0x1f, 0x8b, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    await expect(TarGzReader.open(new Blob([bytes.buffer]))).rejects.toThrow(/gzip|decompress/i)
+  })
+})

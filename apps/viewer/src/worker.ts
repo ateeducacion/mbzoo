@@ -7,7 +7,7 @@
 import type { ParsedBackup } from '@mbzoo/core'
 import { contentHashPath, openBackupSession } from '@mbzoo/core'
 
-export type ParseRequest = { kind: 'parse'; id: number; buffer: ArrayBuffer }
+export type ParseRequest = { kind: 'parse'; id: number; file: File }
 export type ReadRequest = { kind: 'read'; id: number; path: string }
 export type CloseRequest = { kind: 'close' }
 export type WorkerRequest = ParseRequest | ReadRequest | CloseRequest
@@ -38,8 +38,7 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>): Promise<void> => {
     try {
       await session?.close()
       const start = performance.now()
-      // Re-wrap so the session keeps its own readable copy of the payload.
-      currentFile = new File([msg.buffer], `backup-${msg.id}`)
+      currentFile = msg.file
       const s = await openBackupSession(currentFile)
       const backup = await s.backup
       session = s

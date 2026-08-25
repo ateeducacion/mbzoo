@@ -1,7 +1,7 @@
-export { FflateZipReader } from './archive/fflate-zip-reader.ts'
+export { LazyZipReader, MAX_ZIP_ENTRY_BYTES } from './archive/lazy-zip-reader.ts'
 export type { ArchiveEntryInfo, ArchiveReader } from './archive/reader.ts'
 export { detectFormat } from './archive/reader.ts'
-export { sanitizeTarName, TarGzReader } from './archive/targz-reader.ts'
+export { MAX_TAR_BYTES, sanitizeTarName, TarGzReader } from './archive/targz-reader.ts'
 export * from './model/backup.ts'
 export {
   contentHashPath,

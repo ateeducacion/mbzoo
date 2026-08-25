@@ -108,8 +108,11 @@ function workerCall<T extends { id: number }>(
 }
 
 async function parseInWorker(file: File): Promise<Extract<ParseResponse, { ok: true }>> {
-  const buffer = await file.arrayBuffer()
-  return workerCall<Extract<ParseResponse, { ok: true }>>({ kind: 'parse', buffer }, [buffer])
+  // The File crosses by reference — structured clone of a File shares the
+  // underlying bytes rather than copying them — so the archive is never read
+  // into memory whole. The lazy ZIP reader slices only what it needs from
+  // it, and the TAR.GZ reader streams it (ADR-0029).
+  return workerCall<Extract<ParseResponse, { ok: true }>>({ kind: 'parse', file })
 }
 
 function readEntry(path: string): Promise<Uint8Array> {

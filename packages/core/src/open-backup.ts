@@ -7,7 +7,7 @@
  * assets are never extracted unless explicitly requested via readEntry.
  */
 
-import { FflateZipReader } from './archive/fflate-zip-reader.ts'
+import { LazyZipReader } from './archive/lazy-zip-reader.ts'
 import { type ArchiveReader, detectFormat } from './archive/reader.ts'
 import { TarGzReader } from './archive/targz-reader.ts'
 import { MbzParseError, type ParsedBackup, type SectionInfo } from './model/backup.ts'
@@ -42,7 +42,8 @@ export async function openBackupSession(blob: Blob): Promise<BackupSession> {
   let reader: ArchiveReader
   switch (format) {
     case 'zip':
-      reader = FflateZipReader.open(new Uint8Array(await blob.arrayBuffer()))
+      // The Blob is handed over, not read: the reader slices what it needs.
+      reader = await LazyZipReader.open(blob)
       break
     case 'targz':
       reader = await TarGzReader.open(blob)
@@ -141,7 +142,7 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
     }
   }
 
-  const sections = assembleSections(sectionRefs, sectionDetails, activities, owners)
+  const sections = assembleSections(sectionRefs, sectionDetails, activities, owners, warnings)
   return {
     format: reader.format,
     includesUserData,
@@ -185,8 +186,16 @@ function assembleSections(
   details: Map<number, Awaited<ReturnType<typeof parseSectionXml>>>,
   activities: ParsedBackup['activities'],
   owners: ReadonlyMap<string, number>,
+  warnings: ParsedBackup['warnings'],
 ): SectionInfo[] {
   const byId = new Map(activities.map((a) => [a.id, a]))
+  // flexsections names a parent by section *number*, so numbers must resolve
+  // to ids across the whole list before any single section is assembled.
+  const idByNumber = new Map<number, number>()
+  for (const ref of refs) {
+    const n = details.get(ref.id)?.number ?? ref.number
+    if (Number.isFinite(n) && !idByNumber.has(n)) idByNumber.set(n, ref.id)
+  }
   const out: SectionInfo[] = []
   for (const ref of refs) {
     const d = details.get(ref.id)
@@ -212,18 +221,72 @@ function assembleSections(
       d && d.component !== '' && Number.isFinite(d.itemId)
         ? owners.get(`${d.component}:${d.itemId}`)
         : undefined
+
+    // Hierarchy (ADR-0030). A delegated section nests under the section that
+    // holds its owning activity; a flexsections section under the section
+    // whose number its `parent` option names. Section 0 has no parent.
+    let parentId: number | undefined
+    if (owner !== undefined) {
+      parentId = byId.get(owner)?.sectionId
+    } else {
+      const parentOption = d?.formatOptions.get('parent')
+      if (parentOption !== undefined && parentOption !== '') {
+        const parentNumber = Number(parentOption)
+        const resolved = idByNumber.get(parentNumber)
+        if (resolved === undefined || resolved === ref.id) {
+          warnings.push({
+            code: 'section-parent-unresolved',
+            message: `Section ${number} names parent section ${parentOption}, which does not exist`,
+            detail: 'The section is shown at the top level instead',
+          })
+        } else {
+          parentId = resolved
+        }
+      }
+    }
+    if (parentId !== undefined && !Number.isFinite(parentId)) parentId = undefined
+
     out.push({
       ...ref,
       number,
       name: detailName !== '' ? detailName : refName,
       summary: '',
       activityIds: ordered,
+      formatOptions: d?.formatOptions ?? new Map<string, string>(),
+      ...(parentId !== undefined ? { parentId } : {}),
       ...(d && d.component !== ''
         ? { delegatedTo: { component: d.component, activityId: owner ?? Number.NaN } }
         : {}),
     })
   }
-  return out
+  return dropCycles(out, warnings)
+}
+
+/**
+ * A backup can declare parents that form a loop (A under B under A). The
+ * viewer walks parent links to render, so a cycle must be broken here: the
+ * link that closes one is dropped and reported.
+ */
+function dropCycles(sections: SectionInfo[], warnings: ParsedBackup['warnings']): SectionInfo[] {
+  const parentOf = new Map(sections.map((s) => [s.id, s.parentId]))
+  for (const s of sections) {
+    const seen = new Set<number>([s.id])
+    let cur = parentOf.get(s.id)
+    while (cur !== undefined) {
+      if (seen.has(cur)) {
+        warnings.push({
+          code: 'section-parent-cycle',
+          message: `Section ${s.number} is its own ancestor; its parent link was dropped`,
+        })
+        s.parentId = undefined
+        parentOf.set(s.id, undefined)
+        break
+      }
+      seen.add(cur)
+      cur = parentOf.get(cur)
+    }
+  }
+  return sections
 }
 
 /** Reads one entry defensively; returns undefined instead of failing hard. */
