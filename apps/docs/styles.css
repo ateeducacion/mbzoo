@@ -1,19 +1,212 @@
-:root {
-  --rp-c-brand: #f58220;
-  --rp-c-brand-dark: #b34700;
-  --rp-c-brand-light: rgba(245, 130, 32, 0.12);
-  --rp-c-bg: #efece6;
-  --rp-c-bg-soft: #fdfcfa;
-  --rp-c-text: #233047;
-  --rp-c-text-2: #4a5568;
-  --rp-c-divider: #e8e2d8;
+/* Docs chrome: white + orange, Material / Zensical-like (ADR-0015).
+   Fonts are self-hosted — no Google Fonts (ADR-0009). */
+
+@font-face {
+  font-family: "Public Sans";
+  src: url("../../docs/public/fonts/PublicSans-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
 }
-.rp-hero__title,
+
+:root {
+  color-scheme: light;
+  --md-orange: #f58220;
+  --md-orange-dark: #e65100;
+  --md-orange-soft: rgba(245, 130, 32, 0.12);
+  --md-ink: rgba(0, 0, 0, 0.87);
+  --md-ink-light: rgba(0, 0, 0, 0.54);
+  --md-rule: rgba(0, 0, 0, 0.07);
+  --md-elev: 0 0 0.2rem rgba(0, 0, 0, 0.1), 0 0.2rem 0.4rem rgba(0, 0, 0, 0.2);
+
+  --rp-c-brand: var(--md-orange);
+  --rp-c-brand-dark: var(--md-orange-dark);
+  --rp-c-brand-darker: #bf360c;
+  --rp-c-brand-light: #ffb74d;
+  --rp-c-brand-lighter: #ffe0b2;
+  --rp-c-brand-tint: var(--md-orange-soft);
+  --rp-c-link: var(--md-orange-dark);
+  --rp-c-bg: #ffffff;
+  --rp-c-bg-soft: #fafafa;
+  --rp-c-bg-mute: #f5f5f5;
+  --rp-c-bg-alt: #ffffff;
+  --rp-c-text: var(--md-ink);
+  --rp-c-text-0: var(--md-ink);
+  --rp-c-text-1: var(--md-ink);
+  --rp-c-text-2: var(--md-ink-light);
+  --rp-c-text-3: rgba(0, 0, 0, 0.38);
+  --rp-c-text-4: rgba(0, 0, 0, 0.26);
+  --rp-c-divider: var(--md-rule);
+  --rp-c-divider-light: var(--md-rule);
+  --rp-code-block-bg: #f5f5f5;
+  --rp-code-title-bg: #eeeeee;
+  --rp-c-text-code-bg: #f5f5f5;
+  --rp-home-hero-title-color: var(--md-orange);
+  --rp-home-hero-title-bg: var(--md-orange);
+  --rp-home-hero-secondary-color: var(--md-orange);
+  --rp-home-background-bg: #ffffff;
+  --rp-home-feature-bg: #ffffff;
+  --rp-font-family-base: "Public Sans", Roboto, system-ui, sans-serif;
+  --rp-radius: 4px;
+  --rp-radius-small: 2px;
+  --rp-radius-large: 4px;
+  --rp-shadow-1: none;
+  --rp-shadow-2: var(--md-elev);
+}
+
+html,
+body {
+  background: #ffffff;
+  color: var(--md-ink);
+  font-family: var(--rp-font-family-base);
+}
+
 h1,
 h2,
-h3 {
-  font-family: "Nunito", system-ui, sans-serif;
+h3,
+h4,
+.rp-home-hero__title {
+  font-family: var(--rp-font-family-base);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
-body {
-  font-family: "Public Sans", system-ui, sans-serif;
+
+/* Header: solid white bar with Material elevation (overrides home transparency). */
+.rp-nav,
+body:not(.notTopArrived) .rp-nav,
+body.notTopArrived .rp-nav {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: var(--md-elev);
+}
+
+.rp-nav__title,
+.rp-nav__title a,
+.rp-nav-menu__item__container {
+  color: var(--md-ink);
+  font-weight: 700;
+}
+
+.rp-nav__title a:hover,
+.rp-nav-menu__item__container:hover,
+.rp-nav-menu__item--active .rp-nav-menu__item__container {
+  color: var(--md-orange);
+}
+
+.rp-nav-menu__item--active .rp-nav-menu__item__container {
+  box-shadow: inset 0 -2px 0 var(--md-orange);
+}
+
+.rp-search-button__content {
+  background: #f5f5f5;
+  border: 1px solid var(--md-rule);
+  border-radius: 4px;
+  color: var(--md-ink-light);
+}
+
+.rp-switch-appearance,
+.rp-social-links__item {
+  color: var(--md-ink-light);
+}
+
+/* Sidebar: white, orange current page. */
+.rp-doc-layout__sidebar {
+  background: #ffffff;
+  border-right: 1px solid var(--md-rule);
+}
+
+.rp-sidebar-item {
+  border-radius: 4px;
+  color: var(--md-ink) !important;
+}
+
+.rp-sidebar-item:hover {
+  background: var(--md-orange-soft);
+  color: var(--md-orange-dark) !important;
+}
+
+.rp-sidebar-item--active {
+  background: var(--md-orange-soft);
+  color: var(--md-orange-dark) !important;
+  font-weight: 700;
+}
+
+/* Content + home. Beat Rspress gradient tokens (purple secondary). */
+html:not(.rp-dark),
+html.rp-dark {
+  --rp-home-hero-title-bg: var(--md-orange);
+  --rp-home-hero-title-color: var(--md-orange);
+  --rp-home-hero-secondary-color: var(--md-orange);
+  --rp-home-background-bg: #ffffff;
+}
+
+.rp-home-background {
+  background: #ffffff !important;
+}
+
+.rp-home-hero__title-brand {
+  background: none !important;
+  color: var(--md-orange) !important;
+  -webkit-text-fill-color: var(--md-orange) !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+}
+
+.rp-home-hero__tagline {
+  color: var(--md-ink);
+  font-weight: 500;
+}
+
+.rp-home-hero__subtitle {
+  color: var(--md-ink-light);
+}
+
+.rp-button--brand {
+  background: var(--md-orange) !important;
+  border-color: var(--md-orange) !important;
+  color: #ffffff !important;
+  border-radius: 4px;
+}
+
+.rp-button--brand:hover {
+  background: var(--md-orange-dark) !important;
+  border-color: var(--md-orange-dark) !important;
+  opacity: 1;
+}
+
+.rp-button--alt {
+  background: #ffffff;
+  border: 1px solid var(--md-rule);
+  color: var(--md-ink);
+  border-radius: 4px;
+}
+
+.rp-home-feature__card {
+  background: #ffffff;
+  border: 1px solid var(--md-rule);
+  border-radius: 4px !important;
+  box-shadow: none;
+}
+
+.rp-home-feature__item__shine {
+  display: none;
+}
+
+.rp-home-feature__title {
+  color: var(--md-ink);
+}
+
+a.rp-link:not(.rp-button):not(.rp-nav-menu__item__container):not(.rp-nav__title__link):not(
+  .rp-sidebar-item
+) {
+  color: var(--md-orange-dark);
+}
+
+.rp-doc table th {
+  background: #fafafa;
+}
+
+.rp-doc code {
+  background: #f5f5f5;
+  border-radius: 2px;
 }

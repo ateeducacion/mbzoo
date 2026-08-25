@@ -14,10 +14,11 @@ export default defineConfig({
   lang: 'en',
   // AI-friendly markdown output (llms.txt + per-page .md), Rspress v2.
   llms: true,
-  // MBZoo brand: cream/orange to match the viewer landing.
+  // White + orange docs chrome (Material / Zensical-like). Fonts self-hosted.
   globalStyles: path.resolve(fileURLToPath(new URL('./styles.css', import.meta.url))),
   themeConfig: {
-    logo: '/logo.png',
+    logo: '/favicon.png',
+    darkMode: 'force-light',
     socialLinks: [
       { icon: 'github', mode: 'link', content: 'https://github.com/ateeducacion/mbzoo' },
     ],

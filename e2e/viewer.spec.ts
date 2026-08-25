@@ -88,6 +88,15 @@ function sandboxHtmlFixture(): { name: string; mimeType: string; buffer: Buffer 
   }, 'sandbox-html.mbz')
 }
 
+test('Docs nav points at the documentation site, not the GitHub README', async ({ page }) => {
+  await page.goto('/')
+  const docs = page.getByRole('link', { name: 'Docs' })
+  await expect(docs).toHaveAttribute('href', './docs/')
+  await docs.click()
+  await expect(page).toHaveURL(/\/docs\/?$/)
+  await expect(page.locator('.rp-home-hero__title-brand')).toHaveText('MBZoo')
+})
+
 test('opens the synthetic .mbz and renders the course structure', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('#landing .brand-logo')).toBeVisible()
