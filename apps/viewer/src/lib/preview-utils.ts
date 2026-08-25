@@ -64,13 +64,18 @@ export function guessMime(name: string): string {
 /** Injects a CSP <meta> as the first head child (or wraps fragment HTML). */
 export function injectCsp(html: string, csp: string): string {
   const meta = `<meta http-equiv="Content-Security-Policy" content="${csp.replace(/"/g, '&quot;')}">`
+  return injectHead(html, meta)
+}
+
+/** Injects markup we author as the first head child (or wraps fragment HTML). */
+export function injectHead(html: string, markup: string): string {
   if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
+    return html.replace(/<head([^>]*)>/i, `<head$1>${markup}`)
   }
   if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html([^>]*)>/i, `<html$1><head>${meta}</head>`)
+    return html.replace(/<html([^>]*)>/i, `<html$1><head>${markup}</head>`)
   }
-  return `${meta}${html}`
+  return `${markup}${html}`
 }
 
 /** Joins an archive directory with a possibly-relative reference. */

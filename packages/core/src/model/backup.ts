@@ -87,6 +87,12 @@ export interface BackupParseWarning {
  */
 export interface ParsedBackup {
   readonly format: BackupFormat
+  /**
+   * Whether the backup was taken with user data (`users` root setting).
+   * Glossary entries, forum discussions and submissions are user-generated,
+   * so their absence is expected — not a gap — when this is false.
+   */
+  readonly includesUserData: boolean
   readonly course: CourseInfo
   readonly sections: SectionInfo[]
   readonly activities: ActivityInfo[]

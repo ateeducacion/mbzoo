@@ -50,6 +50,14 @@ added:
       attempt actually asks (SMR_SEGI 10-of-30, SMR_SOR 20-of-30). Moodle's
       $@CODE*arg@$ link tokens are decoded against <original_wwwroot> —
       ADR-0019; $@NULL@$ is normalized away at the activity parse boundary.
+  - date: 2026-08-25
+    note: >-
+      Multi-page HTML resources fixed against SMR_SOR's eXeLearning export —
+      ADR-0020. Sibling pages were inlined as raw data: documents, so following
+      a link stranded the page without its stylesheet and outside the injected
+      CSP; those links are now defused and the site is navigated from a page row
+      in MBZoo's own chrome. An empty glossary in a backup taken without user
+      data (users=0) now says so instead of reading like a parse gap.
 
 risks:
   RISK-001:

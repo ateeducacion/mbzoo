@@ -23,6 +23,8 @@ export interface BackupXmlResult {
   readonly course: CourseInfo
   readonly sections: SectionInfo[]
   readonly activities: ActivityInfo[]
+  /** `users` root setting: was the backup taken with user data? */
+  readonly includesUserData: boolean
 }
 
 /**
@@ -37,6 +39,10 @@ export async function parseMoodleBackupXml(
   let course: { -readonly [K in keyof CourseInfo]: CourseInfo[K] } | undefined
   // Recorded before <contents>, i.e. before `course` exists; applied at the end.
   let originalWwwroot = ''
+  // <settings><setting><level>root</level><name>users</name><value>0|1</value>.
+  let includesUserData = false
+  let settingName = ''
+  let settingLevel = ''
   const sections: Array<{ -readonly [K in keyof SectionInfo]: SectionInfo[K] }> = []
   const activities: Array<{ -readonly [K in keyof ActivityInfo]: ActivityInfo[K] }> = []
   let warnedClose = false
@@ -92,6 +98,14 @@ export async function parseMoodleBackupXml(
     }
 
     if (p === 'moodle_backup/information/original_wwwroot') originalWwwroot = value
+    if (p === 'moodle_backup/information/settings/setting/level') settingLevel = value
+    else if (p === 'moodle_backup/information/settings/setting/name') settingName = value
+    else if (p === 'moodle_backup/information/settings/setting/value') {
+      if (settingLevel === 'root' && settingName === 'users') includesUserData = value === '1'
+    } else if (p === 'moodle_backup/information/settings/setting') {
+      settingName = ''
+      settingLevel = ''
+    }
 
     switch (true) {
       case /^moodle_backup\/information\/contents\/course\//.test(p):
@@ -123,7 +137,7 @@ export async function parseMoodleBackupXml(
     )
   }
   course.originalWwwroot = originalWwwroot
-  return { course, sections, activities }
+  return { course, sections, activities, includesUserData }
 }
 
 function leaf(path: string): string {

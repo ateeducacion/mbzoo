@@ -10,10 +10,10 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | URL | ✅ | ✅ external link | never fetched automatically |
 | Resource / File | ✅ | ✅ inline preview | PDF via pdf.js canvas, images, text, sandboxed HTML (ADR-0014) |
 | Folder | ✅ | ✅ file cards | |
-| HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014) |
+| HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014). A multi-page site (e.g. an eXeLearning export) is paged from MBZoo's own list, not by following links inside the frame (ADR-0020) |
 | Book | ✅ metadata | 🔜 planned | chapters renderable from activity XML |
 | Forum | ✅ metadata | 🔜 planned (read-only) | discussions only exist if backup included user data |
-| Glossary | ✅ metadata | 🔜 planned (read-only) | |
+| Glossary | ✅ | ✅ entries rendered | entries are user-generated, so a backup taken without user data has none — the viewer says so |
 | Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
 | Quiz | ✅ metadata + question bank | ✅ read-only question navigation | random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
 | SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |

@@ -76,3 +76,7 @@ adrs:
     title: Decode Moodle's $@…@$ link tokens instead of letting them resolve against MBZoo
     status: Accepted
     date: 2026-08-25
+  ADR-0020:
+    title: Multi-page sites are navigated from MBZoo, not by following links inside the sandbox
+    status: Accepted
+    date: 2026-08-25

@@ -71,6 +71,7 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
     course: courseRef,
     sections: sectionRefs,
     activities,
+    includesUserData,
   } = await parseMoodleBackupXml(backupXml, warnings)
 
   // Richer course metadata lives in course/course.xml (verified on REPO-004).
@@ -120,6 +121,7 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
   const sections = assembleSections(sectionRefs, sectionDetails, activities)
   return {
     format: reader.format,
+    includesUserData,
     course,
     sections,
     activities,

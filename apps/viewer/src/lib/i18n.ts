@@ -62,6 +62,9 @@ const STRINGS = {
     'link.internal': 'Course link — opens this activity in MBZoo',
     'link.original': 'Course link, rewritten by the backup. On the original site: {url}',
     'link.unresolved': 'Course link — this backup does not record where it pointed.',
+    'site.pages': 'Pages in this site',
+    'site.pagesHint':
+      'Links between the pages of this site are inactive inside the preview — each page is opened from the list above so its stylesheet and images load.',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -76,6 +79,8 @@ const STRINGS = {
     hide: 'Hide answers',
     entries: 'entries',
     glossaryEmpty: 'This glossary has no entries in the backup.',
+    glossaryNoUserData:
+      'No entries: glossary entries are written by users, and this backup was made without user data.',
     minutes: 'min',
     'tab.preview': 'Preview',
     'tab.info': 'Info',
@@ -172,6 +177,9 @@ const STRINGS = {
     'link.internal': 'Enlace del curso: abre esta actividad en MBZoo',
     'link.original': 'Enlace del curso, reescrito por la copia. En el sitio original: {url}',
     'link.unresolved': 'Enlace del curso: esta copia no registra a dónde apuntaba.',
+    'site.pages': 'Páginas de este sitio',
+    'site.pagesHint':
+      'Los enlaces entre las páginas de este sitio no navegan dentro de la vista previa: cada página se abre desde la lista de arriba para que carguen sus estilos e imágenes.',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',
@@ -186,6 +194,8 @@ const STRINGS = {
     hide: 'Ocultar respuestas',
     entries: 'entradas',
     glossaryEmpty: 'Este glosario no tiene entradas en la copia.',
+    glossaryNoUserData:
+      'Sin entradas: las entradas de un glosario las escriben los usuarios, y esta copia se hizo sin datos de usuario.',
     minutes: 'min',
     'tab.preview': 'Vista previa',
     'tab.info': 'Info',

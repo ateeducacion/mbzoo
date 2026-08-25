@@ -6,6 +6,14 @@ import { MbzParseError } from '../src/model/backup.ts'
 const FIXTURE = join(import.meta.dir, '../../../fixtures/files/demo-course-zip.mbz')
 
 describe('openBackup (synthetic ZIP fixture)', () => {
+  // Glossary entries, forum posts and submissions only travel when the
+  // backup was taken with user data (SMR_SOR has users=0, hence its empty
+  // "Glosario para SOR." — an expected absence, not a parse gap).
+  test('records whether the backup carries user data', async () => {
+    const b = await openBackup(Bun.file(FIXTURE))
+    expect(b.includesUserData).toBe(false)
+  })
+
   test('parses course metadata', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
     expect(b.format).toBe('zip')
@@ -49,5 +57,39 @@ describe('format detection and error handling', () => {
 
   test('rejects empty input', async () => {
     expect(openBackup(new Blob([]))).rejects.toBeInstanceOf(MbzParseError)
+  })
+})
+
+describe('user-data flag', () => {
+  test('reads users=1 as a backup that carries user-generated content', async () => {
+    const bytes = new Uint8Array(await Bun.file(FIXTURE).arrayBuffer())
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import('fflate')
+    const entries = unzipSync(bytes)
+    const xml = entries['moodle_backup.xml']
+    if (!xml) throw new Error('fixture has no moodle_backup.xml')
+    entries['moodle_backup.xml'] = strToU8(
+      strFromU8(xml).replace(
+        '<setting><level>root</level><name>users</name><value>0</value></setting>',
+        '<setting><level>root</level><name>users</name><value>1</value></setting>',
+      ),
+    )
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.includesUserData).toBe(true)
+  })
+
+  test('an activity-level setting named users does not flip the flag', async () => {
+    const bytes = new Uint8Array(await Bun.file(FIXTURE).arrayBuffer())
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import('fflate')
+    const entries = unzipSync(bytes)
+    const xml = entries['moodle_backup.xml']
+    if (!xml) throw new Error('fixture has no moodle_backup.xml')
+    entries['moodle_backup.xml'] = strToU8(
+      strFromU8(xml).replace(
+        '</settings>',
+        '<setting><level>activity</level><name>users</name><value>1</value></setting></settings>',
+      ),
+    )
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.includesUserData).toBe(false)
   })
 })

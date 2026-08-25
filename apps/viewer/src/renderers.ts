@@ -36,6 +36,7 @@ import {
   formatDate,
   guessMime,
   injectCsp,
+  injectHead,
   MAX_PDF_PAGES,
   resolveRelative,
   SANDBOX_CSP,
@@ -409,8 +410,47 @@ export class Renderer {
     note.className = 'website-note'
     note.textContent = `${contentKind('text/html', entry.fileName)} · ${records.length} files`
     container.appendChild(note)
-    const preview = await this.filePreview(entry)
-    container.appendChild(preview)
+
+    const holder = document.createElement('div')
+    const pages = sortRecords(records.filter(isHtmlRecord))
+    // Entry first: it is the page the author meant you to land on.
+    pages.sort((a, b) => Number(b === entry) - Number(a === entry))
+
+    // Links between pages of the site are defused inside the frame
+    // (rewriteRelativeRefs), so the site is navigated from here instead.
+    if (pages.length > 1) {
+      const bar = document.createElement('div')
+      bar.className = 'site-pages'
+      const label = document.createElement('span')
+      label.className = 'site-pages-label'
+      label.textContent = `${t('site.pages')} (${pages.length})`
+      bar.appendChild(label)
+      const show = async (rec: BackupFileRecord): Promise<void> => {
+        for (const b of bar.querySelectorAll('button')) {
+          b.classList.toggle('selected', b.dataset.page === rec.filePath + rec.fileName)
+        }
+        holder.replaceChildren(await this.filePreview(rec))
+      }
+      for (const rec of pages) {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'btn-outline'
+        button.dataset.page = rec.filePath + rec.fileName
+        button.textContent = rec.fileName
+        button.addEventListener('click', () => void show(rec))
+        bar.appendChild(button)
+      }
+      container.appendChild(bar)
+      const hint = document.createElement('p')
+      hint.className = 'fallback-note site-pages-hint'
+      hint.textContent = t('site.pagesHint')
+      container.appendChild(hint)
+      container.appendChild(holder)
+      await show(entry)
+    } else {
+      container.appendChild(holder)
+      holder.appendChild(await this.filePreview(entry))
+    }
 
     const details = document.createElement('details')
     details.className = 'advanced'
@@ -550,6 +590,7 @@ export class Renderer {
     html = await this.rewriteRelativeRefs(html, dir, rec)
     html = retargetExternalLinks(html)
     html = injectCsp(html, SANDBOX_CSP)
+    html = injectHead(html, DEFUSED_LINK_STYLE)
     const frame = document.createElement('iframe')
     frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
     frame.title = rec.fileName
@@ -685,6 +726,16 @@ export class Renderer {
           componentName: owner.component,
         }) ?? (await this.findByPathSuffix(target))
       if (!rec) continue
+      const quote = raw.includes('"') ? '"' : "'"
+      if (isHtmlRecord(rec)) {
+        // Another page of the same site. Inlining it as a data: document
+        // strands it: its own relative stylesheet cannot resolve against a
+        // data: base, and the CSP we inject never reaches it. MBZoo offers
+        // these pages in its own chrome instead (ADR-0020), so the link is
+        // marked and defused rather than pointed at a broken document.
+        html = html.replace(raw, ` data-mbz-page=${quote}${ref}${quote}`)
+        continue
+      }
       const bytes = await this.tryRead(contentHashPath(rec.contentHash))
       if (!bytes) continue
       let payload: Uint8Array = bytes
@@ -697,7 +748,6 @@ export class Renderer {
       }
       if (payload.byteLength > MAX_SANDBOX_ASSET_BYTES) continue
       const url = dataUrl(payload, mime)
-      const quote = raw.includes('"') ? '"' : "'"
       const attr = /src=/i.test(raw) ? 'src' : 'href'
       html = html.replace(raw, ` ${attr}=${quote}${url}${quote}`)
     }
@@ -877,7 +927,11 @@ export class Renderer {
     if (entries.length === 0) {
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      note.textContent = t('glossaryEmpty')
+      // Entries are user-generated, so a backup taken without user data has
+      // none by construction. Saying only "no entries" reads like a gap.
+      note.textContent = this.ctx.backup.includesUserData
+        ? t('glossaryEmpty')
+        : t('glossaryNoUserData')
       container.appendChild(note)
       return
     }
@@ -1303,6 +1357,20 @@ export class Renderer {
     return el
   }
 }
+
+/** Is this stored file an HTML document, i.e. a page rather than an asset? */
+export function isHtmlRecord(rec: BackupFileRecord): boolean {
+  return rec.mimeType === 'text/html' || /\.(html?|xhtml)$/i.test(rec.fileName)
+}
+
+/**
+ * Marks the links MBZoo defused (see rewriteRelativeRefs) so a reader can
+ * tell them from live ones. Authored by us, injected into the sandboxed
+ * document's head; it styles nothing else.
+ */
+const DEFUSED_LINK_STYLE =
+  '<style>[data-mbz-page]{cursor:not-allowed;opacity:.7;' +
+  'text-decoration:underline dotted}</style>'
 
 /**
  * Chooses the entry HTML of a multi-file website, if any: index/default at

@@ -476,13 +476,20 @@ function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
   const html = `<!doctype html>
 <html><head><link rel="stylesheet" href="site.css"></head>
 <body><p id="site-marker">site</p><img id="rel-img" src="pic.png" alt="">
-<a id="ext-link" href="https://example.com/docs">external</a></body></html>`
+<a id="ext-link" href="https://example.com/docs">external</a>
+<a id="to-page2" href="page2.html">page two</a></body></html>`
+  // A second page of the same site, styled by the same relative stylesheet —
+  // the shape every eXeLearning export has (SMR_SOR "Solución a la tarea").
+  const page2 = `<!doctype html>
+<html><head><link rel="stylesheet" href="site.css"></head>
+<body><p id="page2-marker">page two</p>
+<a id="back-home" href="index.html">home</a></body></html>`
   // 1x1 red PNG.
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
     'base64',
   )
-  const css = strToU8('#site-marker{color:rgb(0,128,0)}')
+  const css = strToU8('#site-marker,#page2-marker{color:rgb(0,128,0)}')
   const htmlBytes = strToU8(html)
 
   return mutatedFixture((entries) => {
@@ -507,6 +514,7 @@ function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
 
     const replacement = [
       make(htmlBytes, 'index.html', 'text/html'),
+      make(strToU8(page2), 'page2.html', 'text/html'),
       make(new Uint8Array(png), 'pic.png', 'image/png'),
       make(css, 'site.css', 'text/css'),
     ].join('\n')
@@ -536,6 +544,35 @@ test('a sandboxed site loads its relative image and stylesheet', async ({ page }
   await expect(frame.locator('#site-marker')).toHaveCSS('color', 'rgb(0, 128, 0)')
 })
 
+test('a multi-page site is navigated from MBZoo, not by breaking out of the frame', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', websiteFixture())
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#site-marker')).toBeVisible()
+
+  // Inlining a sibling page as a raw data: document strands it: its own
+  // relative stylesheet cannot resolve against a data: base, and the
+  // injected CSP never reaches it. So the in-frame link must not navigate.
+  await expect(frame.locator('#to-page2')).not.toHaveAttribute('href', /./)
+  await expect(frame.locator('#to-page2')).toHaveAttribute('data-mbz-page', 'page2.html')
+  // The author's external link is untouched by that rule.
+  await expect(frame.locator('#ext-link')).toHaveAttribute('href', 'https://example.com/docs')
+
+  // MBZoo offers the pages instead, and each renders through the full
+  // pipeline — stylesheet included.
+  const pages = page.locator('.site-pages button')
+  await expect(pages).toHaveCount(2)
+  await pages.filter({ hasText: 'page2.html' }).click()
+
+  const second = page.frameLocator('.html-frame')
+  await expect(second.locator('#page2-marker')).toBeVisible()
+  await expect(second.locator('#page2-marker')).toHaveCSS('color', 'rgb(0, 128, 0)')
+})
+
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
@@ -557,6 +594,26 @@ test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({
   expect(rel).toContain('nofollow')
   // The href is left alone: it is the author's link, not ours to rewrite.
   await expect(link).toHaveAttribute('href', 'https://example.com/docs')
+})
+
+/**
+ * Glossary entries are user-generated, so a backup taken without user data
+ * has none by construction — SMR_SOR's "Glosario para SOR." is empty for
+ * exactly that reason, and "no entries" alone reads like a parse gap.
+ */
+test('an empty glossary says why when the backup carries no user data', async ({ page }) => {
+  const fixture = mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/glossary_3007/glossary.xml', (xml) =>
+      xml.replace(/<entries>[\s\S]*?<\/entries>/, '<entries>\n    </entries>'),
+    )
+  }, 'no-user-data-glossary.mbz')
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', fixture)
+  await page.getByRole('button', { name: /Demo glossary/ }).click()
+
+  const note = page.locator('#detail .fallback-note')
+  await expect(note).toContainText('without user data')
 })
 
 /** Turns the quiz's first slot into a random draw from the bank category. */

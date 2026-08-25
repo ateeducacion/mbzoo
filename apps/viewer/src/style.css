@@ -1401,3 +1401,25 @@ footer a {
   text-decoration: line-through;
   cursor: help;
 }
+
+/* Multi-page sites: navigated from MBZoo because in-frame links to sibling
+   pages are defused — a raw data: page loses its stylesheet (ADR-0020). */
+.site-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0.5rem 0;
+}
+.site-pages-label {
+  font: 700 12.5px var(--font-head);
+  color: var(--ink);
+}
+.site-pages button.selected {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
+.site-pages-hint {
+  margin-top: 0;
+}
