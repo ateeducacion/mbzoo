@@ -717,8 +717,8 @@ footer a {
 
 @media (prefers-reduced-motion: reduce) {
   * {
-    transition: none !important;
-    animation: none !important;
+    transition: none;
+    animation: none;
   }
 }
 
@@ -833,4 +833,17 @@ footer a {
   color: #2a5fa8;
   padding: 2px 8px;
   border-radius: 999px;
+}
+
+.website-note {
+  margin: 0 0 0.4rem;
+  font: 600 12px var(--font-body);
+  color: #2a5fa8;
+}
+.resource-files {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  word-break: break-all;
 }

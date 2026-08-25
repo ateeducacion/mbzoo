@@ -11,15 +11,15 @@ function tar(entries: Array<{ name: string; data: Uint8Array }>): Uint8Array {
     h.set(enc.encode('0000644\0'), 100) // mode
     h.set(enc.encode('0000000\0'), 108) // uid
     h.set(enc.encode('0000000\0'), 116) // gid
-    const sizeOctal = e.data.length.toString(8).padStart(11, '0') + '\0'
+    const sizeOctal = `${e.data.length.toString(8).padStart(11, '0')}\0`
     h.set(enc.encode(sizeOctal), 124)
-    h.set(enc.encode('0' + '\0'.repeat(7)), 156) // typeflag: regular file
+    h.set(enc.encode(`0${'\0'.repeat(7)}`), 156) // typeflag: regular file
     h.set(enc.encode('ustar\0' + '00'), 257)
     // checksum: spaces while computing
     h.set(enc.encode('        '), 148)
     let sum = 0
     for (const b of h) sum += b
-    h.set(enc.encode(sum.toString(8).padStart(6, '0') + '\0 '), 148)
+    h.set(enc.encode(`${sum.toString(8).padStart(6, '0')}\0 `), 148)
     blocks.push(h, e.data)
     const pad = (512 - (e.data.length % 512)) % 512
     if (pad > 0) blocks.push(new Uint8Array(pad))

@@ -238,9 +238,59 @@ export class Renderer {
       if (!introHtml) notAvailable(container)
       return
     }
+
+    // Website detection: a resource whose content is an HTML entry point
+    // plus assets (e.g. exported eXeLearning sites) renders as one page.
+    const entry = pickWebsiteEntry(records)
+    if (entry) {
+      await this.renderWebsite(records, entry, container)
+      return
+    }
+
     for (const rec of sortRecords(records)) {
       container.appendChild(await this.filePreview(rec))
     }
+  }
+
+  /**
+   * Renders a multi-file website as a single sandboxed page; every file
+   * stays reachable through the collapsed file list (ADR-0014).
+   */
+  private async renderWebsite(
+    records: BackupFileRecord[],
+    entry: BackupFileRecord,
+    container: HTMLElement,
+  ): Promise<void> {
+    const note = document.createElement('p')
+    note.className = 'website-note'
+    note.textContent = `${contentKind('text/html', entry.fileName)} · ${records.length} files`
+    container.appendChild(note)
+    const preview = await this.filePreview(entry)
+    container.appendChild(preview)
+
+    const details = document.createElement('details')
+    details.className = 'advanced'
+    const summary = document.createElement('summary')
+    summary.textContent = `Files in this resource (${records.length})`
+    details.appendChild(summary)
+    const list = document.createElement('ul')
+    list.className = 'resource-files'
+    for (const rec of sortRecords(records)) {
+      const li = document.createElement('li')
+      const name = document.createElement('span')
+      name.textContent = `${rec.filePath}${rec.fileName} `
+      const a = document.createElement('a')
+      const bytes = await this.tryRead(contentHashPath(rec.contentHash)).catch(() => undefined)
+      if (bytes) {
+        a.href = this.blobUrl(bytes, rec.mimeType || guessMime(rec.fileName))
+        a.download = rec.fileName
+        a.textContent = t('download')
+      }
+      li.append(name, a)
+      list.appendChild(li)
+    }
+    details.appendChild(list)
+    container.appendChild(details)
   }
 
   /** Builds a preview card: inline when safe/possible, download otherwise. */
@@ -577,6 +627,25 @@ export class Renderer {
     el.appendChild(this.buildAdvanced(new Map()))
     return el
   }
+}
+
+/**
+ * Chooses the entry HTML of a multi-file website, if any: index/default at
+ * the shallowest path wins, otherwise the shallowest .html file.
+ */
+export function pickWebsiteEntry(records: BackupFileRecord[]): BackupFileRecord | undefined {
+  const htmls = records.filter((r) => /\.(html?|xhtml)$/i.test(r.fileName))
+  if (htmls.length === 0) return undefined
+  const depth = (r: BackupFileRecord): number => r.filePath.split('/').filter(Boolean).length
+  const byPreference = (pred: (r: BackupFileRecord) => boolean): BackupFileRecord | undefined =>
+    htmls
+      .filter(pred)
+      .sort((a, b) => depth(a) - depth(b) || a.fileName.localeCompare(b.fileName))[0]
+  return (
+    byPreference((r) => /^index\.html?$/i.test(r.fileName)) ??
+    byPreference((r) => /^default\.html?$/i.test(r.fileName)) ??
+    byPreference(() => true)
+  )
 }
 
 function sortRecords(records: BackupFileRecord[]): BackupFileRecord[] {

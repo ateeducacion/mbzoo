@@ -52,7 +52,7 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
         (leafOf() === 'questions' || leafOf() === 'question_category')
       ) {
         current = { id: Number.NaN, qtype: '', name: '', questionText: '', answers: [] }
-        const idAttr = ev.attributes['id']
+        const idAttr = ev.attributes.id
         if (current && idAttr !== undefined) current.id = Number(idAttr)
       }
       if (current && ev.name === 'answer' && leafOf() === 'answers') {
