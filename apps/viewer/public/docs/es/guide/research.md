@@ -18,4 +18,10 @@ genera los índices (CI detecta desviaciones).
 Ver [research/](https://github.com/ateeducacion/mbzoo/tree/main/research) en
 el repositorio y `research/AGENTS.md` para las reglas operativas.
 
+Copias legibles por máquinas de este sitio:
+[llms.txt](https://ateeducacion.github.io/mbzoo/docs/llms.txt) (índice) y
+[llms-full.txt](https://ateeducacion.github.io/mbzoo/docs/llms-full.txt)
+(todas las páginas). Cada página HTML tiene un `.md` hermano y un control
+**Copy Markdown**.
+
 [Versión en inglés](/mbzoo/docs/es/guide/research.md)

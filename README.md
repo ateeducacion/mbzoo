@@ -19,13 +19,17 @@ content and files locally.
 metadata parsing, course tree, and content previews for pages, labels, URLs,
 resources (PDF via pdf.js, images, text, sandboxed HTML websites), quizzes
 (read-only question navigation), glossaries, books, assignment summaries and
-unknown-plugin fallbacks. Everything else is planned — see the
+unknown-plugin fallbacks. Each activity can also be exported on its own —
+its module XML, its rendered content as a standalone HTML file, or its
+attached files as a ZIP. Whole-backup re-packaging and everything else is
+planned — see the
 [activity support guide](https://ateeducacion.github.io/mbzoo/docs/guide/activity-support.html).
 
 ## Try it
 
 - **Viewer**: https://ateeducacion.github.io/mbzoo/ (example backups included)
 - **Documentation**: https://ateeducacion.github.io/mbzoo/docs/
+- **For AI agents**: [llms.txt](https://ateeducacion.github.io/mbzoo/llms.txt) · [full markdown](https://ateeducacion.github.io/mbzoo/llms-full.txt)
 - **CLI**: `bun run cli -- <file.mbz>`
 
 ## Privacy

@@ -210,3 +210,20 @@ a.rp-link:not(.rp-button):not(.rp-nav-menu__item__container):not(.rp-nav__title_
   background: #f5f5f5;
   border-radius: 2px;
 }
+
+/* Copy Markdown / View as Markdown (llmsUI). */
+.rp-llms-container {
+  margin: 0.35rem 0 1.25rem;
+}
+
+.rp-llms-button {
+  border: 1px solid var(--md-rule);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--md-ink);
+}
+
+.rp-llms-button:hover {
+  border-color: var(--md-orange);
+  color: var(--md-orange-dark);
+}

@@ -12,13 +12,18 @@ export default defineConfig({
   icon: '/favicon.png',
   outDir: './doc_build',
   lang: 'en',
-  // AI-friendly markdown output (llms.txt + per-page .md), Rspress v2.
+  // Per-page .md + llms.txt / llms-full.txt (ADR-0015).
   llms: true,
   // White + orange docs chrome (Material / Zensical-like). Fonts self-hosted.
   globalStyles: path.resolve(fileURLToPath(new URL('./styles.css', import.meta.url))),
   themeConfig: {
     logo: '/favicon.png',
     darkMode: 'force-light',
+    llmsUI: {
+      injectLlmsHint: true,
+      viewOptions: ['markdownLink', 'chatgpt', 'claude'],
+      placement: 'title',
+    },
     socialLinks: [
       { icon: 'github', mode: 'link', content: 'https://github.com/ateeducacion/mbzoo' },
     ],

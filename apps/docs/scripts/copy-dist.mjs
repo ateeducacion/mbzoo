@@ -2,12 +2,12 @@
 // artifact serves viewer + docs (AN-007).
 import { cp, rm } from 'node:fs/promises'
 
-await rm(new URL('../../viewer/public/docs', import.meta.url), { recursive: true, force: true })
-await cp(
-  new URL('../doc_build', import.meta.url),
-  new URL('../../viewer/public/docs', import.meta.url),
-  {
-    recursive: true,
-  },
-)
-console.log('docs copied to apps/viewer/public/docs')
+const viewerPublic = new URL('../../viewer/public/', import.meta.url)
+const docBuild = new URL('../doc_build/', import.meta.url)
+
+await rm(new URL('docs', viewerPublic), { recursive: true, force: true })
+await cp(docBuild, new URL('docs', viewerPublic), { recursive: true })
+// llmstxt.org looks at the site root as well as the docs base.
+await cp(new URL('llms.txt', docBuild), new URL('llms.txt', viewerPublic))
+await cp(new URL('llms-full.txt', docBuild), new URL('llms-full.txt', viewerPublic))
+console.log('docs copied to apps/viewer/public/docs; llms.txt at viewer public root')

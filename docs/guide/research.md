@@ -15,3 +15,9 @@ the indexes (drift-checked in CI).
 
 See [research/](https://github.com/ateeducacion/mbzoo/tree/main/research) in
 the repository, and `research/AGENTS.md` for the operational rules.
+
+Machine-readable copies of this site (for agents):
+[llms.txt](https://ateeducacion.github.io/mbzoo/docs/llms.txt) (index) and
+[llms-full.txt](https://ateeducacion.github.io/mbzoo/docs/llms-full.txt)
+(every page). Each HTML page also has a sibling `.md` file and a **Copy
+Markdown** control.
