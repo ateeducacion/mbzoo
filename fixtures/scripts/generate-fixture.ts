@@ -36,9 +36,17 @@ interface SpecFile {
   mimetype: string
 }
 
+/**
+ * Real Moodle writes `<file id="...">`; emitting it here keeps the synthetic
+ * fixture the same *shape* as a real backup, not just the same fields. A
+ * matcher written against a bare `<file>` silently finds nothing in a real
+ * file, which reads as missing data rather than as a shape mismatch.
+ */
+let fileRecordId = 7000000
+
 function fileRecord(f: SpecFile): string {
   const size = typeof f.content === 'string' ? f.content.length : f.content.byteLength
-  return `  <file>
+  return `  <file id="${++fileRecordId}">
     <contenthash>${sha1(f.content)}</contenthash>
     <contextid>${f.contextId}</contextid>
     <component>${f.component}</component>

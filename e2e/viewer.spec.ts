@@ -78,7 +78,7 @@ function pagePdfFixture(): { name: string; mimeType: string; buffer: Buffer } {
     entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
 
     replaceTextEntry(entries, 'files.xml', (xml) => {
-      const record = `  <file>
+      const record = `  <file id="7900001">
     <contenthash>${hash}</contenthash>
     <contextid>104</contextid>
     <component>mod_page</component>
@@ -126,7 +126,7 @@ function pageImageFixture(): { name: string; mimeType: string; buffer: Buffer } 
     entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
 
     replaceTextEntry(entries, 'files.xml', (xml) => {
-      const record = `  <file>
+      const record = `  <file id="7900001">
     <contenthash>${hash}</contenthash>
     <contextid>104</contextid>
     <component>mod_page</component>
@@ -200,7 +200,7 @@ function sandboxHtmlFixture(): { name: string; mimeType: string; buffer: Buffer 
     const filesData = entries['files.xml']
     if (!filesData) throw new Error('Missing fixture entry: files.xml')
     const filesXml = strFromU8(filesData)
-    const records = filesXml.match(/<file>[\s\S]*?<\/file>/g) ?? []
+    const records = filesXml.match(/<file\b[^>]*>[\s\S]*?<\/file>/g) ?? []
     const oldRecord = records.find((record) => record.includes('<filename>guide.txt</filename>'))
     if (!oldRecord) throw new Error('Missing guide.txt record in fixture')
 
@@ -623,7 +623,7 @@ function sharedFolderFixture(): { name: string; mimeType: string; buffer: Buffer
     const filesData = entries['files.xml']
     if (!filesData) throw new Error('Missing fixture entry: files.xml')
     const filesXml = strFromU8(filesData)
-    const records = filesXml.match(/<file>[\s\S]*?<\/file>/g) ?? []
+    const records = filesXml.match(/<file\b[^>]*>[\s\S]*?<\/file>/g) ?? []
     const base = records.find((r) => r.includes('<filename>guide.txt</filename>'))
     if (!base) throw new Error('Missing guide.txt record in fixture')
     const oldHash = base.match(/<contenthash>([^<]+)<\/contenthash>/)?.[1]
@@ -696,7 +696,7 @@ function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
     const filesData = entries['files.xml']
     if (!filesData) throw new Error('Missing fixture entry: files.xml')
     const filesXml = strFromU8(filesData)
-    const records = filesXml.match(/<file>[\s\S]*?<\/file>/g) ?? []
+    const records = filesXml.match(/<file\b[^>]*>[\s\S]*?<\/file>/g) ?? []
     const base = records.find((r) => r.includes('<filename>guide.txt</filename>'))
     if (!base) throw new Error('Missing guide.txt record in fixture')
     const oldHash = base.match(/<contenthash>([^<]+)<\/contenthash>/)?.[1]
@@ -1134,11 +1134,21 @@ test('concurrent activity opens both finish', async ({ page }) => {
     page.getByRole('button', { name: /Demo lesson/ }).click(),
     page.getByRole('button', { name: /Demo book/ }).click(),
   ])
+
+  // Which click wins is a race the code does not decide, so asserting a
+  // winner asserts the scheduler. What must hold is that neither read
+  // orphans the other: whichever landed is fully rendered, and the other
+  // still renders when asked again. Two reads in flight used to clobber one
+  // another's handler, and the symptom was a pane that stopped half-way.
+  await expect(page.locator('#detail-title')).toHaveText(/Demo book|Demo lesson/)
+  await expect(page.locator('.book-chapter, .quiz-counter').first()).toBeVisible()
+
+  await page.getByRole('button', { name: /Demo book/ }).click()
   await expect(page.locator('#detail-title')).toHaveText('Demo book')
   await expect(page.locator('.book-chapter')).toBeVisible()
 
-  // And the one that lost the race still renders when reopened.
   await page.getByRole('button', { name: /Demo lesson/ }).click()
+  await expect(page.locator('#detail-title')).toHaveText('Demo lesson')
   await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
 })
 
