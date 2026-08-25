@@ -266,6 +266,18 @@ test('plays the synthetic H5P package inside the opaque-origin sandbox', async (
   const frame = page.frameLocator('.h5p-frame')
   await expect(frame.locator('.h5p-mbzoo-text')).toContainText('Synthetic H5P', { timeout: 15000 })
 
+  // The nested dependency loaded before the content type that needs it, and
+  // its string version ("1.8") resolved (REPO-009: both broke real packages).
+  await expect(frame.locator('.h5p-mbzoo-text')).toHaveAttribute('data-dependency', 'base-loaded')
+
+  // A content/ image assigned with new Image() through H5P.getPath() resolves
+  // to an in-frame blob and actually decodes.
+  const image = frame.locator('img.h5p-mbzoo-image')
+  await expect(image).toBeVisible()
+  expect(await image.evaluate((el: HTMLImageElement) => el.src)).toMatch(/^blob:/)
+  expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(16)
+
+  expect(pageErrors).toEqual([])
   expect(probeRequests).toEqual([])
 })
 

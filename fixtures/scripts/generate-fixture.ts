@@ -226,9 +226,31 @@ function activityXml(modname: string, title: string): string {
 }
 
 /**
- * Minimal synthetic .h5p package (ADR-0018): a self-contained "text"
- * content type so playback is verifiable without vendoring real
- * third-party content-type libraries. Deterministic by construction.
+ * Deterministic 16x16 PNG, embedded as a literal so the package stays
+ * byte-stable without a build-time image dependency.
+ */
+const DEMO_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR42mN4UShFEmIY1TCqYfhqAAAKZ3MQfMz19gAAAABJRU5ErkJggg=='
+
+function demoPngBytes(): Uint8Array {
+  const binary = atob(DEMO_PNG_BASE64)
+  const out = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
+  return out
+}
+
+/**
+ * Synthetic .h5p package (ADR-0018). Self-contained content types, so
+ * playback is verifiable without vendoring real third-party libraries
+ * (REPO-009 explains why those stay un-vendored).
+ *
+ * It deliberately reproduces the shapes that a naive fixture misses and that
+ * real packages exposed:
+ *
+ * 1. String library versions ("majorVersion": "1"), as H5P.DragText 1.8 ships.
+ * 2. A nested dependency chain, so load order actually has to be resolved.
+ * 3. An image under content/, addressed through H5P.getPath() and assigned
+ *    with new Image() — the path that bypasses document.createElement.
  */
 function h5pPackageBytes(): Uint8Array {
   const h5pJson = {
@@ -239,49 +261,91 @@ function h5pPackageBytes(): Uint8Array {
     license: 'CC BY',
     licenseVersion: '4.0',
     defaultLanguage: 'en',
-    preloadedDependencies: [{ machineName: 'H5P.MBZooText', majorVersion: 1, minorVersion: 0 }],
+    // Strings on purpose: real packages ship versions this way.
+    preloadedDependencies: [{ machineName: 'H5P.MBZooText', majorVersion: '1', minorVersion: '8' }],
   }
-  const libraryJson = {
-    title: 'MBZoo Text',
-    description: 'Synthetic text display content type for the MBZoo fixture.',
-    machineName: 'H5P.MBZooText',
+  const baseLibraryJson = {
+    title: 'MBZoo Base',
+    description: 'Synthetic dependency, loaded before the content type that needs it.',
+    machineName: 'H5P.MBZooBase',
     majorVersion: 1,
     minorVersion: 0,
+    patchVersion: 0,
+    runnable: 0,
+    author: 'MBZoo',
+    license: 'MIT',
+    preloadedJs: [{ path: 'mbzoo-base.js' }],
+    preloadedCss: [{ path: 'mbzoo-base.css' }],
+  }
+  const baseLibraryJs = `var H5P = window.H5P || {};
+H5P.MBZooBase = { marker: 'base-loaded' };
+`
+  const baseLibraryCss = `.h5p-mbzoo-text { font-family: system-ui, sans-serif; padding: 1rem; }
+.h5p-mbzoo-image { display: block; width: 64px; height: 64px; image-rendering: pixelated; }
+`
+  const libraryJson = {
+    title: 'MBZoo Text',
+    description: 'Synthetic text + image content type for the MBZoo fixture.',
+    machineName: 'H5P.MBZooText',
+    // Strings on purpose, matching the h5p.json dependency above.
+    majorVersion: '1',
+    minorVersion: '8',
     patchVersion: 0,
     runnable: 1,
     author: 'MBZoo',
     license: 'MIT',
     embedTypes: ['div', 'iframe'],
+    preloadedDependencies: [{ machineName: 'H5P.MBZooBase', majorVersion: 1, minorVersion: 0 }],
     preloadedJs: [{ path: 'mbzoo-text.js' }],
     semantics: [
       { name: 'text', type: 'text', label: 'Text', default: '<p>MBZoo synthetic H5P text.</p>' },
+      { name: 'image', type: 'image', label: 'Image' },
     ],
   }
+  // The image is attached with new Image() and H5P.getPath() precisely because
+  // that pair is what broke against real packages: getPath() injects the
+  // content id, and new Image() never reaches document.createElement.
   const libraryJs = `var H5P = window.H5P || {};
-H5P.MBZooText = function (params) {
+H5P.MBZooText = function (params, contentId) {
   this.params = params || {};
+  this.contentId = contentId;
 };
 H5P.MBZooText.prototype.attach = function ($container) {
   var host = $container && $container[0] ? $container[0] : $container;
   var div = document.createElement('div');
   div.className = 'h5p-mbzoo-text';
+  if (H5P.MBZooBase && H5P.MBZooBase.marker) {
+    div.setAttribute('data-dependency', H5P.MBZooBase.marker);
+  }
   if (typeof this.params.text === 'string') {
     div.innerHTML = this.params.text;
+  }
+  if (this.params.image && this.params.image.path) {
+    var img = new Image();
+    img.className = 'h5p-mbzoo-image';
+    img.alt = 'Synthetic H5P image';
+    img.src = H5P.getPath(this.params.image.path, this.contentId);
+    div.appendChild(img);
   }
   host.appendChild(div);
 };
 `
   const contentJson = {
     text: '<p><strong>Synthetic H5P</strong>: if you can read this inside MBZoo, H5P playback works.</p>',
+    image: { path: 'images/demo.png', mime: 'image/png', width: 16, height: 16 },
   }
   const entries: Zippable = {
     'h5p.json': strToU8(`${JSON.stringify(h5pJson, null, 2)}\n`),
     'content/content.json': strToU8(`${JSON.stringify(contentJson, null, 2)}\n`),
-    'H5P.MBZooText-1.0/library.json': strToU8(`${JSON.stringify(libraryJson, null, 2)}\n`),
-    'H5P.MBZooText-1.0/semantics.json': strToU8(
+    'content/images/demo.png': demoPngBytes(),
+    'H5P.MBZooBase-1.0/library.json': strToU8(`${JSON.stringify(baseLibraryJson, null, 2)}\n`),
+    'H5P.MBZooBase-1.0/mbzoo-base.js': strToU8(baseLibraryJs),
+    'H5P.MBZooBase-1.0/mbzoo-base.css': strToU8(baseLibraryCss),
+    'H5P.MBZooText-1.8/library.json': strToU8(`${JSON.stringify(libraryJson, null, 2)}\n`),
+    'H5P.MBZooText-1.8/semantics.json': strToU8(
       `${JSON.stringify(libraryJson.semantics, null, 2)}\n`,
     ),
-    'H5P.MBZooText-1.0/mbzoo-text.js': strToU8(libraryJs),
+    'H5P.MBZooText-1.8/mbzoo-text.js': strToU8(libraryJs),
   }
   // Fixed mtime keeps the nested package byte-stable across regenerations.
   return zipSync(entries, { level: 6, mtime: FIXED_MTIME })
