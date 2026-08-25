@@ -29,6 +29,7 @@ interface SpecFile {
   filename: string
   content: string
   component: string
+  contextId: string
   filearea: string
   mimetype: string
 }

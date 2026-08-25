@@ -1,9 +1,92 @@
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const FIXTURE = join(here, '..', 'fixtures', 'files', 'demo-course-zip.mbz')
+
+function replaceTextEntry(
+  entries: ReturnType<typeof unzipSync>,
+  path: string,
+  transform: (text: string) => string,
+): void {
+  const data = entries[path]
+  if (!data) throw new Error(`Missing fixture entry: ${path}`)
+  entries[path] = strToU8(transform(strFromU8(data)))
+}
+
+function mutatedFixture(
+  mutate: (entries: ReturnType<typeof unzipSync>) => void,
+  name: string,
+): { name: string; mimeType: string; buffer: Buffer } {
+  const entries = unzipSync(new Uint8Array(readFileSync(FIXTURE)))
+  mutate(entries)
+  return {
+    name,
+    mimeType: 'application/zip',
+    buffer: Buffer.from(zipSync(entries, { level: 6 })),
+  }
+}
+
+function hostilePageFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="safe-marker"&gt;Safe content remains.&lt;/p&gt;' +
+          '&lt;script&gt;window.__mbzooXss=true&lt;/script&gt;' +
+          '&lt;img id="hostile-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" onerror="window.__mbzooXss=true"&gt;</content>',
+      ),
+    )
+  }, 'hostile-page.mbz')
+}
+
+function sandboxHtmlFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  const html = `<!doctype html>
+<html>
+<body>
+  <p id="sandbox-marker">Sandbox script executed.</p>
+  <script>
+    try {
+      parent.document.body.dataset.mbzooSandboxEscape = '1'
+      document.body.dataset.parentBlocked = 'false'
+    } catch {
+      document.body.dataset.parentBlocked = 'true'
+    }
+    fetch('https://example.invalid/mbzoo-probe')
+      .then(() => { document.body.dataset.networkBlocked = 'false' })
+      .catch(() => { document.body.dataset.networkBlocked = 'true' })
+  </script>
+</body>
+</html>`
+  const htmlBytes = strToU8(html)
+  const newHash = createHash('sha1').update(htmlBytes).digest('hex')
+
+  return mutatedFixture((entries) => {
+    const filesData = entries['files.xml']
+    if (!filesData) throw new Error('Missing fixture entry: files.xml')
+    const filesXml = strFromU8(filesData)
+    const records = filesXml.match(/<file>[\s\S]*?<\/file>/g) ?? []
+    const oldRecord = records.find((record) => record.includes('<filename>guide.txt</filename>'))
+    if (!oldRecord) throw new Error('Missing guide.txt record in fixture')
+
+    const oldHash = oldRecord.match(/<contenthash>([^<]+)<\/contenthash>/)?.[1]
+    if (!oldHash) throw new Error('Missing guide.txt content hash in fixture')
+
+    const newRecord = oldRecord
+      .replace(`<contenthash>${oldHash}</contenthash>`, `<contenthash>${newHash}</contenthash>`)
+      .replace('<filename>guide.txt</filename>', '<filename>guide.html</filename>')
+      .replace(/<filesize>\d+<\/filesize>/, `<filesize>${htmlBytes.byteLength}</filesize>`)
+      .replace('<mimetype>text/plain</mimetype>', '<mimetype>text/html</mimetype>')
+
+    entries['files.xml'] = strToU8(filesXml.replace(oldRecord, newRecord))
+    delete entries[`files/${oldHash.slice(0, 2)}/${oldHash}`]
+    entries[`files/${newHash.slice(0, 2)}/${newHash}`] = htmlBytes
+  }, 'sandbox-html.mbz')
+}
 
 test('opens the synthetic .mbz and renders the course structure', async ({ page }) => {
   await page.goto('/')
@@ -31,4 +114,45 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
   await expect(page.locator('.file-head')).toContainText('guide.txt')
   await expect(page.locator('.text-preview')).toContainText('synthetic guide')
+})
+
+test('sanitizes hostile Page HTML before insertion', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', hostilePageFixture())
+  await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
+
+  await page.getByRole('button', { name: /About this demo/ }).click()
+  await expect(page.locator('#safe-marker')).toBeVisible()
+  await expect(page.locator('.activity-content script')).toHaveCount(0)
+  await expect(page.locator('#hostile-img')).not.toHaveAttribute('onerror', /.+/)
+  expect(await page.evaluate(() => Reflect.get(window, '__mbzooXss') === true)).toBe(false)
+  expect(pageErrors).toEqual([])
+})
+
+test('isolates executable HTML resources and blocks network access', async ({ page }) => {
+  const probeRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().startsWith('https://example.invalid/mbzoo-probe')) {
+      probeRequests.push(request.url())
+    }
+  })
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', sandboxHtmlFixture())
+  await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
+
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+  await expect(page.locator('.file-head')).toContainText('guide.html')
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#sandbox-marker')).toBeVisible()
+  await expect(frame.locator('body')).toHaveAttribute('data-parent-blocked', 'true')
+  await expect(frame.locator('body')).toHaveAttribute('data-network-blocked', 'true')
+
+  await expect(page.locator('body')).not.toHaveAttribute('data-mbzoo-sandbox-escape', '1')
+  await expect(page.locator('.html-frame')).toHaveAttribute('sandbox', 'allow-scripts')
+  expect(probeRequests).toEqual([])
 })

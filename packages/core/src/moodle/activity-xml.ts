@@ -6,6 +6,8 @@
  * under the module element (bounded depth). Module-specific renderers pick
  * the fields they understand; unknown plugins degrade gracefully.
  */
+import { parseXmlEvents } from './xml.ts'
+
 export interface ParsedActivity {
   readonly contextId: string
   readonly moduleName: string
@@ -18,7 +20,6 @@ export async function parseActivityXml(xml: string): Promise<ParsedActivity> {
   if (xml.length > MAX_ACTIVITY_XML_BYTES) {
     throw new Error(`activity XML exceeds ${MAX_ACTIVITY_XML_BYTES} byte limit`)
   }
-  const { parseXmlEvents } = await import('./xml.ts')
   let contextId = ''
   let moduleName = ''
   const fields = new Map<string, string>()

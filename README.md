@@ -15,14 +15,14 @@ MBZoo opens **Moodle course backups** (`.mbz` files) directly in your browser �
 no Moodle installation required. Drop a backup and inspect its structure
 locally: your file never leaves your device.
 
-**Status: bootstrap / experimental.** The architecture works end-to-end, but
-feature coverage is deliberately small. Everything below is labeled honestly.
+**Status: experimental.** The architecture works end-to-end, but feature
+coverage is deliberately small. Everything below is labeled honestly.
 
 ## What works today (Implemented)
 
-- Drag & drop a `.mbz` onto [the web viewer](#deployment) — parsed locally in
-  your browser via a Web Worker; nothing is uploaded. Also via `?url=…`
-  (server must allow CORS).
+- Drag & drop a `.mbz` onto [the web viewer](https://ateeducacion.github.io/mbzoo/) —
+  parsed locally in your browser via a Web Worker; nothing is uploaded. Also via
+  `?url=…` (server must allow CORS).
 - Archive format detection: both **ZIP** and **TAR.GZ** containers (real-world
   `.mbz` files are frequently tar.gz, not ZIP).
 - Metadata parsing of `moodle_backup.xml`, `course/course.xml`,
@@ -63,7 +63,7 @@ Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016)
 
 Do not expect these yet:
 
-- Activity content rendering (Page, Book, Folder…)
+- Dedicated renderers for Book, Forum, Glossary, Assignment and other modules
 - SCORM / H5P launching in sandboxed frames
 - Quiz preview or practice mode
 - Static HTML export / re-packaging
@@ -75,6 +75,9 @@ Local-first by construction: the deployed viewer is static files with no
 backend; parsing happens on your device. See `docs/PRIVACY.md`.
 
 ## Development
+
+Bun 1.4.0 is pinned through the root `packageManager` field so local and CI
+execution use the same runtime family.
 
 ```bash
 bun install

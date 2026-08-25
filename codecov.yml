@@ -1,5 +1,5 @@
-# Codecov configuration. Public repository; token required only because
-# `main` is a protected branch (set CODECOV_TOKEN repo secret).
+# Codecov configuration for the public repository.
+# CI treats Codecov upload and configuration errors as failures.
 codecov:
   require_ci_to_pass: true
 
@@ -13,11 +13,11 @@ coverage:
         target: 90%
 
 comment:
-  layout: reach, diff, flags, files
+  layout: "reach, diff, flags, files"
   behavior: default
 
 ignore:
-  - "e2e"          # test harness itself
-  - "fixtures"     # generator scripts, not shipped code
-  - "research"     # documentation/tooling
-  - "docs"
+  - e2e
+  - fixtures
+  - research
+  - docs
