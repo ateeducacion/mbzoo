@@ -21,6 +21,7 @@ decisions:
   ADR-0023: { title: Experimental SCORM playback — scorm-again in the same document as the SCO, status: Accepted, date: 2026-08-25 }
   ADR-0024: { title: EPUB reading — a spine reader of our own, not a reader library, status: Accepted, date: 2026-08-25 }
   ADR-0025: { title: eXeLearning packages are classified by what is inside them, not by their extension, status: Accepted, date: 2026-08-25 }
+  ADR-0027: { title: Every browser runs on every change, and the worker stays one chunk, status: Accepted, date: 2026-08-25 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }

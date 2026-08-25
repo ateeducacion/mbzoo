@@ -3,8 +3,7 @@
 ## Requirements
 
 - [Bun](https://bun.sh) ≥ 1.4 (package manager, test runner, CLI runtime)
-- Node 20+ (Playwright runner)
-- `npx playwright install` for E2E browsers
+- `bunx --bun playwright install` for E2E browsers
 
 ## Commands
 

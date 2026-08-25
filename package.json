@@ -25,7 +25,7 @@
     "docs:build": "bun run --filter '@mbzoo/docs' build",
     "preview:viewer": "bun run --filter '@mbzoo/viewer' preview",
     "cli": "bun run --filter '@mbzoo/cli' start --",
-    "test:e2e": "playwright test",
+    "test:e2e": "bunx --bun playwright test",
     "research:indexes": "bun run research/tools/generate-indexes.ts",
     "research:validate": "bun run research/tools/validate-research.ts && bun run research:indexes -- --check"
   },

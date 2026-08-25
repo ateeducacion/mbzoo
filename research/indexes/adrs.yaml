@@ -104,3 +104,7 @@ adrs:
     title: Resolve embedded files by row, and return nothing rather than another row's file
     status: Accepted
     date: 2026-08-25
+  ADR-0027:
+    title: Every browser runs on every change, and the worker stays one chunk
+    status: Accepted
+    date: 2026-08-25
