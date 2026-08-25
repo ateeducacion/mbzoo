@@ -16,22 +16,18 @@ import {
 import DOMPurify from 'dompurify'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import {
+  formatBytes,
+  guessMime,
+  injectCsp,
+  MAX_PDF_PAGES,
+  resolveRelative,
+  SANDBOX_CSP,
+} from './lib/preview-utils.ts'
 
 // pdf.js renders PDFs onto canvas (ADR-0014): Chrome blocks blob-PDF iframes
 // inside sandboxed contexts.
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
-
-/** Max PDF pages rendered inline; the rest are available via download. */
-const MAX_PDF_PAGES = 8
-
-/**
- * CSP injected into sandboxed HTML previews (ADR-0014): opaque-origin iframe
- * plus no network access; sub-resources must come from rewritten blob URLs.
- */
-const SANDBOX_CSP =
-  "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +
-  "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
-  "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
 /** Reads an archive entry (by path or 40-char sha1) through the worker. */
 export type EntryReader = (path: string) => Promise<Uint8Array>
@@ -322,7 +318,7 @@ export class Renderer {
   ): Promise<void> {
     let html = new TextDecoder().decode(data)
     const dir = rec.filePath.replace(/[^/]+$/, '')
-    html = await this.rewriteRelativeRefs(html, dir)
+    html = await this.rewriteRelativeRefs(html, dir, rec)
     html = injectCsp(html, SANDBOX_CSP)
     const frame = document.createElement('iframe')
     frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
@@ -334,7 +330,11 @@ export class Renderer {
   }
 
   /** Rewrites relative src/href references to blob URLs of archive files. */
-  private async rewriteRelativeRefs(html: string, dir: string): Promise<string> {
+  private async rewriteRelativeRefs(
+    html: string,
+    dir: string,
+    owner: BackupFileRecord,
+  ): Promise<string> {
     const re = /\s(src|href)=("([^"]*)"|'([^']*)')/gi
     const refs: Array<{ raw: string; ref: string }> = []
     for (const m of html.matchAll(re)) {
@@ -346,10 +346,15 @@ export class Renderer {
     }
     for (const { raw, ref } of refs) {
       const target = resolveRelative(dir, ref)
+      // Prefer assets scoped to the same activity context; fall back to a
+      // path-suffix search for shared folders.
       const fileName = target.split('/').pop() ?? ''
       const rec =
-        matchFileRecord(this.ctx.backup.files, { fileName }) ??
-        (await this.findByPathSuffix(target))
+        matchFileRecord(this.ctx.backup.files, {
+          fileName,
+          contextId: owner.contextId,
+          componentName: owner.component,
+        }) ?? (await this.findByPathSuffix(target))
       if (!rec) continue
       const bytes = await this.tryRead(contentHashPath(rec.contentHash))
       if (!bytes) continue
@@ -431,60 +436,4 @@ export function sanitizeHtml(html: string): string {
 function moduleNameDir(a: ActivityInfo): string {
   // Directory convention from moodle_backup.xml <directory>: activities/<mod>_<id>.
   return `activities/${a.moduleName}_${a.id}/${a.moduleName}`
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function guessMime(name: string): string {
-  const ext = name.split('.').pop()?.toLowerCase() ?? ''
-  const map: Record<string, string> = {
-    txt: 'text/plain',
-    md: 'text/plain',
-    html: 'text/html',
-    json: 'application/json',
-    pdf: 'application/pdf',
-    png: 'image/png',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    gif: 'image/gif',
-    svg: 'image/svg+xml',
-    webp: 'image/webp',
-    mp4: 'video/mp4',
-    mp3: 'audio/mpeg',
-  }
-  return map[ext] ?? 'application/octet-stream'
-}
-
-/** Injects a CSP <meta> as the first head child (or wraps fragment HTML). */
-function injectCsp(html: string, csp: string): string {
-  const meta = `<meta http-equiv="Content-Security-Policy" content="${csp.replace(/"/g, '&quot;')}">`
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
-  }
-  if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html([^>]*)>/i, `<html$1><head>${meta}</head>`)
-  }
-  return `${meta}${html}`
-}
-
-/** Joins an archive directory with a possibly-relative reference. */
-function resolveRelative(dir: string, ref: string): string {
-  const base = dir.replace(/^\//, '').replace(/\/$/, '')
-  const parts: string[] = []
-  if (ref.startsWith('/')) {
-    parts.push(...ref.split('/'))
-  } else {
-    parts.push(...base.split('/').filter(Boolean), ...ref.split('/'))
-  }
-  const out: string[] = []
-  for (const part of parts) {
-    if (part === '' || part === '.') continue
-    if (part === '..') out.pop()
-    else out.push(part)
-  }
-  return out.join('/')
 }

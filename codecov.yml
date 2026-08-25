@@ -1,4 +1,5 @@
-# Codecov configuration. Public repository: uploads work without a token.
+# Codecov configuration. Public repository; token required only because
+# `main` is a protected branch (set CODECOV_TOKEN repo secret).
 codecov:
   require_ci_to_pass: true
 
@@ -16,7 +17,8 @@ comment:
   behavior: default
 
 ignore:
-  - "apps/viewer/src"     # covered by Playwright E2E, not bun coverage
-  - "e2e"
-  - "fixtures"
-  - "research"
+  - "e2e"          # test harness itself
+  - "fixtures"     # generator scripts, not shipped code
+  - "research"     # documentation/tooling
+  - "docs"
+EOF

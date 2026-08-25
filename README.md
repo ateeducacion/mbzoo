@@ -21,14 +21,36 @@ feature coverage is deliberately small. Everything below is labeled honestly.
 ## What works today (Implemented)
 
 - Drag & drop a `.mbz` onto [the web viewer](#deployment) — parsed locally in
-  your browser via a Web Worker; nothing is uploaded.
+  your browser via a Web Worker; nothing is uploaded. Also via `?url=…`
+  (server must allow CORS).
 - Archive format detection: both **ZIP** and **TAR.GZ** containers (real-world
   `.mbz` files are frequently tar.gz, not ZIP).
 - Metadata parsing of `moodle_backup.xml`, `course/course.xml`,
   `sections/section_*/section.xml` and `files.xml`.
-- Course title + section/activity tree display, including unknown third-party
-  plugins (exposed safely instead of breaking the course).
+- Course title + section/activity tree in a two-column explorer.
 - CLI inspection from the terminal (`bun run cli -- <file.mbz>`).
+
+## Activity & content support
+
+| Moodle module | Inspect | Render / preview | Notes |
+|---|---|---|---|
+| Page | ✅ | ✅ sanitized HTML | ADR-0012/0013 |
+| Label | ✅ | ✅ sanitized HTML | |
+| URL | ✅ | ✅ external link | never fetched automatically |
+| Resource / File | ✅ | ✅ inline preview | PDF via pdf.js canvas, images, text, sandboxed HTML (ADR-0014) |
+| Folder | ✅ | ✅ file cards | |
+| HTML page w/ CSS+JS | ✅ | ✅ sandboxed iframe | opaque origin + CSP; scripts isolated from the app (ADR-0014) |
+| Book | ✅ metadata | 🔜 planned | chapters renderable from activity XML |
+| Forum | ✅ metadata | 🔜 planned (read-only) | discussions only exist if backup included user data |
+| Glossary | ✅ metadata | 🔜 planned (read-only) | |
+| Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
+| Quiz | ✅ metadata + question bank | 🔜 inspection-first | faithful execution requires Moodle's Question Engine — not a goal; practice mode is a separate idea (prompt §6) |
+| SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
+| H5P | ✅ metadata + package file | ⏳ research | h5p-standalone candidate (Q-013) |
+| eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |
+| Unknown third-party plugins | ✅ | ✅ metadata fallback | never break the course view |
+
+Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
 
 ## Experimental
 
