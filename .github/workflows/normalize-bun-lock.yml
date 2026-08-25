@@ -1,0 +1,66 @@
+name: Normalize Bun lockfile for Dependabot
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Normalize Bun lockfile and restore Dependabot
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sed -i 's/"lockfileVersion": 2/"lockfileVersion": 1/' bun.lock
+
+          cat > .github/dependabot.yml <<'EOF'
+          version: 2
+          updates:
+            - package-ecosystem: bun
+              directory: /
+              schedule:
+                interval: weekly
+                day: monday
+                time: "06:00"
+                timezone: Europe/Madrid
+              open-pull-requests-limit: 10
+              groups:
+                bun-non-breaking:
+                  patterns:
+                    - "*"
+                  update-types:
+                    - minor
+                    - patch
+
+            - package-ecosystem: github-actions
+              directory: /
+              schedule:
+                interval: weekly
+                day: monday
+                time: "06:00"
+                timezone: Europe/Madrid
+              open-pull-requests-limit: 10
+              groups:
+                actions-non-breaking:
+                  patterns:
+                    - "*"
+                  update-types:
+                    - minor
+                    - patch
+          EOF
+
+          rm .github/workflows/normalize-bun-lock.yml
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bun.lock .github/dependabot.yml .github/workflows/normalize-bun-lock.yml
+          git commit -m 'Restore Bun Dependabot compatibility'
+          git push origin HEAD:main
