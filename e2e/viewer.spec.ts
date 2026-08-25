@@ -477,12 +477,20 @@ function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
 <html><head><link rel="stylesheet" href="site.css"></head>
 <body><p id="site-marker">site</p><img id="rel-img" src="pic.png" alt="">
 <a id="ext-link" href="https://example.com/docs">external</a>
-<a id="to-page2" href="page2.html">page two</a></body></html>`
+<a id="to-page2" href="page2.html">page two</a>
+<a id="to-page2-deep" href="page2.html#deep">page two, deep</a>
+<button id="forge" onclick="parent.postMessage({source:'mbzoo',type:'navigate',page:'../../../secret.html'},'*')">forge</button>
+<button id="forge-known" onclick="parent.postMessage({source:'evil',type:'navigate',page:'page2.html'},'*')">forge known</button>
+<button id="forge-notoken" onclick="parent.postMessage({source:'mbzoo',type:'navigate',page:'page2.html'},'*')">forge no token</button>
+<button id="forge-badtoken" onclick="parent.postMessage({source:'mbzoo',type:'navigate',token:'guessed',page:'page2.html'},'*')">forge bad token</button>
+</body></html>`
   // A second page of the same site, styled by the same relative stylesheet —
   // the shape every eXeLearning export has (SMR_SOR "Solución a la tarea").
   const page2 = `<!doctype html>
 <html><head><link rel="stylesheet" href="site.css"></head>
 <body><p id="page2-marker">page two</p>
+<div style="height:200vh"></div>
+<p id="deep">deep anchor</p>
 <a id="back-home" href="index.html">home</a></body></html>`
   // 1x1 red PNG.
   const png = Buffer.from(
@@ -544,9 +552,7 @@ test('a sandboxed site loads its relative image and stylesheet', async ({ page }
   await expect(frame.locator('#site-marker')).toHaveCSS('color', 'rgb(0, 128, 0)')
 })
 
-test('a multi-page site is navigated from MBZoo, not by breaking out of the frame', async ({
-  page,
-}) => {
+test('a link inside a multi-page site navigates through MBZoo (ADR-0022)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())
   await page.getByRole('button', { name: /Synthetic guide/ }).click()
@@ -554,23 +560,58 @@ test('a multi-page site is navigated from MBZoo, not by breaking out of the fram
   const frame = page.frameLocator('.html-frame')
   await expect(frame.locator('#site-marker')).toBeVisible()
 
-  // Inlining a sibling page as a raw data: document strands it: its own
-  // relative stylesheet cannot resolve against a data: base, and the
-  // injected CSP never reaches it. So the in-frame link must not navigate.
+  // The href stays defused: a document must never reach a sibling page
+  // outside the render pipeline. That rule of ADR-0020 is carried forward.
   await expect(frame.locator('#to-page2')).not.toHaveAttribute('href', /./)
   await expect(frame.locator('#to-page2')).toHaveAttribute('data-mbz-page', 'page2.html')
   // The author's external link is untouched by that rule.
   await expect(frame.locator('#ext-link')).toHaveAttribute('href', 'https://example.com/docs')
 
-  // MBZoo offers the pages instead, and each renders through the full
-  // pipeline — stylesheet included.
-  const pages = page.locator('.site-pages button')
-  await expect(pages).toHaveCount(2)
-  await pages.filter({ hasText: 'page2.html' }).click()
-
+  // Clicking it navigates, and the target arrives through the full pipeline —
+  // stylesheet applied, which is exactly what inlining a data: document lost.
+  await frame.locator('#to-page2').click()
   const second = page.frameLocator('.html-frame')
   await expect(second.locator('#page2-marker')).toBeVisible()
   await expect(second.locator('#page2-marker')).toHaveCSS('color', 'rgb(0, 128, 0)')
+
+  // The page row follows the frame.
+  await expect(page.locator('.site-pages button.selected')).toHaveText('page2.html')
+})
+
+test('a link fragment survives the navigation (ADR-0022)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', websiteFixture())
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  await page.frameLocator('.html-frame').locator('#to-page2-deep').click()
+  await expect(page.frameLocator('.html-frame').locator('#deep')).toBeVisible()
+  // MBZoo's half of the contract is putting the fragment on the document
+  // URL; the browser does the scrolling. Asserting the URL is what makes
+  // this deterministic — a scroll-position assertion races the frame reload.
+  await expect(page.locator('.html-frame')).toHaveAttribute('src', /^blob:.*#deep$/)
+})
+
+test('a forged navigation request cannot leave the resource (ADR-0022)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', websiteFixture())
+  await page.getByRole('button', { name: /Synthetic guide/ }).click()
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#site-marker')).toBeVisible()
+
+  // A path climbing out of the resource resolves to nothing in the allowlist.
+  await frame.locator('#forge').click()
+  // A message wearing the wrong source is refused even though the page it
+  // names is a legitimate one.
+  await frame.locator('#forge-known').click()
+  // And a well-formed message that cannot echo this document's token is
+  // refused too — that is what stops a document the frame navigated itself
+  // to from driving the preview (ADR-0022).
+  await frame.locator('#forge-notoken').click()
+  await frame.locator('#forge-badtoken').click()
+
+  await expect(page.frameLocator('.html-frame').locator('#site-marker')).toBeVisible()
+  await expect(page.locator('.site-pages button.selected')).toHaveText('index.html')
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

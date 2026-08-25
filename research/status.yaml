@@ -17,6 +17,7 @@ decisions:
   ADR-0009: { title: Untrusted-content security model, status: Accepted, date: 2026-08-24 }
   ADR-0010: { title: Research, evidence and documentation workflow, status: Accepted, date: 2026-08-24 }
   ADR-0011: { title: Monorepo package layout, status: Accepted, date: 2026-08-24 }
+  ADR-0022: { title: Multi-page sites navigate in-frame through a validated request to MBZoo, status: Accepted, date: 2026-08-25 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }

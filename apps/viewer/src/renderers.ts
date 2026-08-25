@@ -33,14 +33,18 @@ import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './l
 import { t } from './lib/i18n.ts'
 import {
   contentKind,
+  decodeRefPath,
   formatBytes,
   formatDate,
   guessMime,
   injectCsp,
   injectHead,
   MAX_PDF_PAGES,
+  pageNavScript,
+  parseNavigationRequest,
   resolveRelative,
   SANDBOX_CSP,
+  splitRef,
 } from './lib/preview-utils.ts'
 
 // pdf.js renders PDFs onto canvas (ADR-0014): Chrome blocks blob-PDF iframes
@@ -66,6 +70,8 @@ export interface ParsedActivity {
 
 export class Renderer {
   private readonly urls: string[] = []
+  /** Listeners registered by a render, torn down on the next one. */
+  private readonly cleanups: Array<() => void> = []
   /** Bytes behind each managed blob: URL, so exports can re-inline them. */
   private readonly blobSources = new Map<string, { data: Uint8Array; mime: string }>()
 
@@ -80,7 +86,17 @@ export class Renderer {
     return url
   }
 
+  /** Revokes managed object URLs early, before the next full dispose(). */
+  private revoke(urls: readonly string[]): void {
+    for (const u of urls) {
+      URL.revokeObjectURL(u)
+      this.blobSources.delete(u)
+    }
+  }
+
   dispose(): void {
+    for (const fn of this.cleanups) fn()
+    this.cleanups.length = 0
     for (const u of this.urls) URL.revokeObjectURL(u)
     this.urls.length = 0
     this.blobSources.clear()
@@ -461,9 +477,18 @@ export class Renderer {
     container.appendChild(note)
 
     const holder = document.createElement('div')
-    const pages = sortRecords(records.filter(isHtmlRecord))
+    // renderFileList drops the context predicate when the activity XML omits
+    // contextid, which a crafted backup controls — records can then span the
+    // whole archive. The navigable set is narrowed back to the entry's own
+    // context and component so a page cannot drive the preview into another
+    // activity's files (ADR-0022).
+    const owned = records.filter(
+      (r) => r.contextId === entry.contextId && r.component === entry.component,
+    )
+    const pages = sortRecords((owned.length > 0 ? owned : records).filter(isHtmlRecord))
     // Entry first: it is the page the author meant you to land on.
     pages.sort((a, b) => Number(b === entry) - Number(a === entry))
+    const pagePaths = new Set(pages.map(recordFullPath))
 
     // Links between pages of the site are defused inside the frame
     // (rewriteRelativeRefs), so the site is navigated from here instead.
@@ -474,12 +499,62 @@ export class Renderer {
       label.className = 'site-pages-label'
       label.textContent = `${t('site.pages')} (${pages.length})`
       bar.appendChild(label)
-      const show = async (rec: BackupFileRecord): Promise<void> => {
+
+      let current = entry
+      // Negative infinity, not 0: performance.now() counts from page load, so
+      // a 0 baseline would silently refuse a click made in the first 250 ms.
+      let lastNavigation = Number.NEGATIVE_INFINITY
+      // One token per rendered document, so a document the frame navigated
+      // itself to cannot pass the check by inheriting the WindowProxy.
+      let token = ''
+      // Object URLs minted by the page on display, revoked when it is
+      // replaced: only dispose() reclaims the rest, and it does not run
+      // while the reader stays on this activity (ADR-0022).
+      let pageUrls: string[] = []
+      const show = async (rec: BackupFileRecord, hash = ''): Promise<void> => {
+        current = rec
+        token = crypto.randomUUID()
         for (const b of bar.querySelectorAll('button')) {
           b.classList.toggle('selected', b.dataset.page === rec.filePath + rec.fileName)
         }
-        holder.replaceChildren(await this.filePreview(rec))
+        const before = this.urls.length
+        const preview = await this.filePreview(rec, { pageNav: true, hash, token, pagePaths })
+        const minted = this.urls.slice(before)
+        holder.replaceChildren(preview)
+        this.revoke(pageUrls)
+        pageUrls = minted
       }
+
+      // A page of this site asks to navigate (ADR-0022). Every check below is
+      // load-bearing: the frame is hostile input.
+      const onMessage = (event: MessageEvent): void => {
+        const frame = holder.querySelector('iframe')
+        // Window identity, not event.origin: the frame is an opaque origin,
+        // so its origin is "null" and carries no authority at all. Identity
+        // alone is not enough either — see the token below.
+        if (!frame || event.source === null || event.source !== frame.contentWindow) return
+        // Rate first, so a frame posting in a loop cannot make us do the
+        // parsing and lookup work at its chosen frequency.
+        const now = performance.now()
+        if (now - lastNavigation < 250) return
+        const requested = parseNavigationRequest(event.data, token)
+        if (requested === undefined) return
+        const { hash } = splitRef(requested)
+        const target = decodeRefPath(resolveRelative(current.filePath, requested))
+        // Allowlist: only the HTML records of this very resource. A "../"
+        // payload cannot escape it, because the resolved path has to equal
+        // one of these entries exactly.
+        const rec = pages.find((p) => recordFullPath(p) === target)
+        if (!rec) return
+        // Re-rendering the page already shown buys nothing and is the one
+        // request a hostile page can repeat with a fresh fragment each time.
+        if (rec === current) return
+        lastNavigation = now
+        void show(rec, hash)
+      }
+      window.addEventListener('message', onMessage)
+      this.cleanups.push(() => window.removeEventListener('message', onMessage))
+
       for (const rec of pages) {
         const button = document.createElement('button')
         button.type = 'button'
@@ -527,7 +602,10 @@ export class Renderer {
   }
 
   /** Builds a preview card: inline when safe/possible, download otherwise. */
-  async filePreview(rec: BackupFileRecord): Promise<HTMLElement> {
+  async filePreview(
+    rec: BackupFileRecord,
+    opts?: { pageNav?: boolean; hash?: string; token?: string; pagePaths?: ReadonlySet<string> },
+  ): Promise<HTMLElement> {
     const card = document.createElement('div')
     card.className = 'file-card'
     const head = document.createElement('div')
@@ -580,7 +658,7 @@ export class Renderer {
       return card
     }
     if (mime === 'text/html' || /\.html?$/i.test(rec.fileName)) {
-      await this.renderSandboxedHtml(data, rec, card)
+      await this.renderSandboxedHtml(data, rec, card, opts)
       addDownload(card, this.blobUrl(data, mime), rec.fileName)
       return card
     }
@@ -646,15 +724,23 @@ export class Renderer {
     data: Uint8Array,
     rec: BackupFileRecord,
     card: HTMLElement,
+    opts?: { pageNav?: boolean; hash?: string; token?: string; pagePaths?: ReadonlySet<string> },
   ): Promise<void> {
     let html = new TextDecoder().decode(data)
     const dir = rec.filePath.replace(/[^/]+$/, '')
-    html = await this.rewriteRelativeRefs(html, dir, rec)
+    html = await this.rewriteRelativeRefs(html, dir, rec, opts?.pagePaths)
     html = retargetExternalLinks(html)
+    // injectHead prepends, so these apply in reverse document order: the CSP
+    // goes last precisely so it lands as the first head child, ahead of the
+    // script below — which would otherwise run before the policy did.
+    if (opts?.pageNav && opts.token) html = injectHead(html, pageNavScript(opts.token))
+    html = injectHead(html, PAGE_LINK_STYLE)
     html = injectCsp(html, SANDBOX_CSP)
-    html = injectHead(html, DEFUSED_LINK_STYLE)
     const frame = document.createElement('iframe')
-    frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    const src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    // The browser applies the fragment on load, so the anchor survives
+    // without anyone reaching into the frame's document (ADR-0022).
+    frame.src = opts?.hash ? `${src}${opts.hash}` : src
     frame.title = rec.fileName
     frame.className = 'html-frame'
     // Opaque origin: never allow-same-origin, so the frame cannot reach the
@@ -766,6 +852,7 @@ export class Renderer {
     html: string,
     dir: string,
     owner: BackupFileRecord,
+    pagePaths?: ReadonlySet<string>,
   ): Promise<string> {
     const re = /\s(src|href)=("([^"]*)"|'([^']*)')/gi
     const refs: Array<{ raw: string; ref: string }> = []
@@ -790,12 +877,19 @@ export class Renderer {
       if (!rec) continue
       const quote = raw.includes('"') ? '"' : "'"
       if (isHtmlRecord(rec)) {
-        // Another page of the same site. Inlining it as a data: document
-        // strands it: its own relative stylesheet cannot resolve against a
-        // data: base, and the CSP we inject never reaches it. MBZoo offers
-        // these pages in its own chrome instead (ADR-0020), so the link is
-        // marked and defused rather than pointed at a broken document.
-        html = html.replace(raw, ` data-mbz-page=${quote}${ref}${quote}`)
+        // Another HTML document. Inlining it as a data: document strands it:
+        // its own relative stylesheet cannot resolve against a data: base,
+        // and the CSP we inject never reaches it. MBZoo offers these pages in
+        // its own chrome instead (ADR-0020).
+        //
+        // Only a document the parent will actually accept is marked as a live
+        // page link. matchFileRecord falls back across contexts and
+        // findByPathSuffix searches the whole archive, so without this test
+        // MBZoo would style links as live and then refuse them in silence —
+        // which is the ADR-0020 failure mode with its mitigations removed.
+        const navigable = pagePaths?.has(decodeRefPath(target)) ?? false
+        const attr = navigable ? 'data-mbz-page' : 'data-mbz-page-inert'
+        html = replaceOnce(html, raw, ` ${attr}=${quote}${ref}${quote}`)
         continue
       }
       const bytes = await this.tryRead(contentHashPath(rec.contentHash))
@@ -811,7 +905,7 @@ export class Renderer {
       if (payload.byteLength > MAX_SANDBOX_ASSET_BYTES) continue
       const url = dataUrl(payload, mime)
       const attr = /src=/i.test(raw) ? 'src' : 'href'
-      html = html.replace(raw, ` ${attr}=${quote}${url}${quote}`)
+      html = replaceOnce(html, raw, ` ${attr}=${quote}${url}${quote}`)
     }
     return html
   }
@@ -1996,13 +2090,36 @@ export function isHtmlRecord(rec: BackupFileRecord): boolean {
 }
 
 /**
- * Marks the links MBZoo defused (see rewriteRelativeRefs) so a reader can
- * tell them from live ones. Authored by us, injected into the sandboxed
- * document's head; it styles nothing else.
+ * Page links used to be inert (ADR-0020) and were styled to say so. They
+ * navigate again through the parent (ADR-0022), so they are styled as the
+ * live links they now are; the attribute stays as the navigation hook.
  */
-const DEFUSED_LINK_STYLE =
-  '<style>[data-mbz-page]{cursor:not-allowed;opacity:.7;' +
+const PAGE_LINK_STYLE =
+  '<style>[data-mbz-page]{cursor:pointer;text-decoration:underline}' +
+  '[data-mbz-page-inert]{cursor:not-allowed;opacity:.7;' +
   'text-decoration:underline dotted}</style>'
+
+/**
+ * Full archive path of a record, normalized the way resolveRelative returns
+ * paths so the two can be compared directly. Record paths are stored
+ * decoded, so the reference side is decoded too (ADR-0022).
+ */
+/**
+ * Replaces the first occurrence of a literal, treating the replacement as
+ * literal too. String.replace expands $&, $`, $' and $1 in the replacement,
+ * and these replacements are built from backup-controlled references — a ref
+ * containing $' would otherwise splice the rest of the document into the
+ * attribute (ADR-0022).
+ */
+function replaceOnce(haystack: string, needle: string, replacement: string): string {
+  const at = haystack.indexOf(needle)
+  if (at < 0) return haystack
+  return haystack.slice(0, at) + replacement + haystack.slice(at + needle.length)
+}
+
+export function recordFullPath(r: BackupFileRecord): string {
+  return decodeRefPath(`${r.filePath}${r.fileName}`.replace(/^\/+/, ''))
+}
 
 /**
  * Chooses the entry HTML of a multi-file website, if any: index/default at

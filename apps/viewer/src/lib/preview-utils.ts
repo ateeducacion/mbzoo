@@ -78,14 +78,91 @@ export function injectHead(html: string, markup: string): string {
   return `${markup}${html}`
 }
 
+/** Longest page reference a navigation message may carry. */
+const MAX_NAV_REF_LENGTH = 512
+
+/** Splits a reference into the part that addresses a file and its fragment. */
+export function splitRef(ref: string): { path: string; hash: string } {
+  const hashAt = ref.indexOf('#')
+  const hash = hashAt < 0 ? '' : ref.slice(hashAt)
+  const head = hashAt < 0 ? ref : ref.slice(0, hashAt)
+  const queryAt = head.indexOf('?')
+  return { path: queryAt < 0 ? head : head.slice(0, queryAt), hash }
+}
+
+/**
+ * Validates a navigation message posted by a sandboxed preview (ADR-0022).
+ * The frame is hostile input: nothing here trusts the message beyond its
+ * shape, and the reference it returns is only ever used as a lookup key
+ * against records the backup cannot extend.
+ *
+ * The token is what makes this authenticate a *document* rather than a
+ * browsing context. `event.source` identifies a WindowProxy, and that
+ * identity survives the frame navigating itself elsewhere — a sandboxed
+ * frame may replace its own document, and the replacement does not carry
+ * the CSP we injected. Only the document MBZoo composed saw this token.
+ */
+export function parseNavigationRequest(data: unknown, expectedToken: string): string | undefined {
+  if (expectedToken === '') return undefined
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return undefined
+  const message = data as Record<string, unknown>
+  // Own properties only: a payload can reach us with a polluted prototype.
+  if (!Object.hasOwn(message, 'page') || !Object.hasOwn(message, 'token')) return undefined
+  if (message.source !== 'mbzoo' || message.type !== 'navigate') return undefined
+  if (message.token !== expectedToken) return undefined
+  const page = message.page
+  if (typeof page !== 'string') return undefined
+  if (page === '' || page.length > MAX_NAV_REF_LENGTH) return undefined
+  return page
+}
+
+/**
+ * Percent-decodes a reference for comparison against archive record paths,
+ * which are stored decoded. A lone '%' makes decodeURIComponent throw, and
+ * that must not escape into the message handler.
+ */
+export function decodeRefPath(path: string): string {
+  try {
+    return decodeURIComponent(path)
+  } catch {
+    return path
+  }
+}
+
+/**
+ * Builds the script injected into a sandboxed page of a multi-page site
+ * (ADR-0022). It turns a click on a defused page link into a request the
+ * parent may refuse. It carries no authority of its own: any script already
+ * in the frame can post the same message, so the security of the feature
+ * lives in the parent's validation. The token it echoes proves only that
+ * the message came from the document MBZoo composed.
+ */
+export function pageNavScript(token: string): string {
+  // JSON.stringify keeps the token a well-formed JS string literal, but it
+  // does not escape '<', so a literal </script> would still close the element
+  // early. Escaping '<' as \u003c leaves the value identical at runtime.
+  const literal = JSON.stringify(token).replace(/</g, '\\u003c')
+  return (
+    `<script>(function(){var T=${literal};` +
+    'document.addEventListener("click",function(e){' +
+    'var t=e.target;if(!t||!t.closest)return;' +
+    'var a=t.closest("[data-mbz-page]");if(!a)return;' +
+    'e.preventDefault();e.stopPropagation();' +
+    'try{parent.postMessage({source:"mbzoo",type:"navigate",token:T,' +
+    'page:String(a.getAttribute("data-mbz-page")||"")},"*")}catch(err){}' +
+    '},true)})()</script>'
+  )
+}
+
 /** Joins an archive directory with a possibly-relative reference. */
 export function resolveRelative(dir: string, ref: string): string {
   const base = dir.replace(/^\//, '').replace(/\/$/, '')
+  const { path } = splitRef(ref)
   const parts: string[] = []
-  if (ref.startsWith('/')) {
-    parts.push(...ref.split('/'))
+  if (path.startsWith('/')) {
+    parts.push(...path.split('/'))
   } else {
-    parts.push(...base.split('/').filter(Boolean), ...ref.split('/'))
+    parts.push(...base.split('/').filter(Boolean), ...path.split('/'))
   }
   const out: string[] = []
   for (const part of parts) {
