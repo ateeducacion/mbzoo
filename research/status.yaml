@@ -37,6 +37,8 @@ added:
     note: Docs site — ADR-0015 (Rspress 2 in apps/docs, unified static deploy; VitePress fallback). TECH-012/TECH-013 registered. ADR template splits decision body from investigation addendum.
   - date: 2026-08-25
     note: Detail pane rebuilt as toolbar + Preview/Info/Raw tabs; per-activity export shipped — ADR-0016 (module XML, rendered content HTML, files ZIP; no whole-backup re-packaging). fflate declared in core and viewer.
+  - date: 2026-08-25
+    note: Sandboxed previews fixed against real backups — ADR-0017 supersedes ADR-0014 (inline data: assets instead of unusable app-origin blob: URLs; allow-popups + escape so author links open a tab). Random quiz slots now resolve to their bank category pool instead of claiming the questions are absent.
 
 risks:
   RISK-001:

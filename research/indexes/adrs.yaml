@@ -54,7 +54,7 @@ adrs:
     date: 2026-08-25
   ADR-0014:
     title: Static content previews — pdf.js canvas and opaque-origin HTML sandbox
-    status: Accepted
+    status: Superseded
     date: 2026-08-25
   ADR-0015:
     title: Documentation site — Rspress 2 in an isolated workspace, unified static deploy
@@ -62,5 +62,9 @@ adrs:
     date: 2026-08-25
   ADR-0016:
     title: Per-activity export — module XML, rendered content HTML and a files ZIP
+    status: Accepted
+    date: 2026-08-25
+  ADR-0017:
+    title: Sandboxed previews — inline data: assets and author links in a new tab
     status: Accepted
     date: 2026-08-25

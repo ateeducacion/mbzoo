@@ -28,6 +28,7 @@ export {
   parseQuizQuestionIds,
   type QuizAnswer,
   type QuizQuestion,
+  randomQuestionPool,
 } from './moodle/questions-xml.ts'
 export { MAX_XML_BYTES, parseXmlEvents, type XmlEvent } from './moodle/xml.ts'
 export { type BackupSession, openBackup, openBackupSession } from './open-backup.ts'

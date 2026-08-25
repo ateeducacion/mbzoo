@@ -16,6 +16,13 @@ export interface QuizQuestion {
   readonly name: string
   readonly questionText: string
   readonly answers: QuizAnswer[]
+  /**
+   * Bank category this question lives in. A `random` question draws from
+   * its own category at attempt time, so this is what turns a random slot
+   * into the pool it will pick from — the pool ships in the same backup.
+   */
+  readonly categoryId: number
+  readonly categoryName: string
 }
 
 export interface QuizAnswer {
@@ -30,6 +37,27 @@ interface MutableQuestion {
   name: string
   questionText: string
   answers: Array<{ text: string; fraction: number }>
+  categoryId: number
+  categoryName: string
+}
+
+/**
+ * Questions a `random` slot may draw, i.e. the rest of its bank category.
+ *
+ * Returns an empty array for a non-random question, and for a random one
+ * whose category carries nothing else. Callers must not present an empty
+ * result as "the questions are missing from the backup": it means this
+ * category had no drawable questions, which is a different claim.
+ */
+export function randomQuestionPool(
+  questions: ReadonlyMap<number, QuizQuestion>,
+  questionId: number,
+): QuizQuestion[] {
+  const slot = questions.get(questionId)
+  if (!slot || slot.qtype !== 'random') return []
+  return [...questions.values()].filter(
+    (q) => q.categoryId === slot.categoryId && q.qtype !== 'random',
+  )
 }
 
 export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQuestion>> {
@@ -39,19 +67,34 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
   let current: MutableQuestion | undefined
   let nameDone = false
   let questionTextDone = false
+  // Category context: <name> closes before the questions it contains.
+  let categoryId = Number.NaN
+  let categoryName = ''
 
   const leafOf = (): string | undefined => path[path.length - 1]
   const parentOf = (): string | undefined => path[path.length - 2]
 
   await parseXmlEvents(xml, (ev) => {
     if (ev.type === 'open') {
+      if (ev.name === 'question_category') {
+        categoryId = Number(ev.attributes.id ?? Number.NaN)
+        categoryName = ''
+      }
       // Question entries live under <questions> (3.x) or directly under the
       // category (text-wrapper variant).
       if (
         ev.name === 'question' &&
         (leafOf() === 'questions' || leafOf() === 'question_category')
       ) {
-        current = { id: Number.NaN, qtype: '', name: '', questionText: '', answers: [] }
+        current = {
+          id: Number.NaN,
+          qtype: '',
+          name: '',
+          questionText: '',
+          answers: [],
+          categoryId,
+          categoryName,
+        }
         nameDone = false
         questionTextDone = false
         const idAttr = ev.attributes.id
@@ -69,6 +112,9 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
     }
 
     const value = text.trim()
+    if (!current && leafOf() === 'name' && parentOf() === 'question_category') {
+      categoryName = value
+    }
     if (current) {
       const leaf = leafOf()
       const parent = parentOf()
@@ -115,6 +161,8 @@ function finalize(c: MutableQuestion): QuizQuestion {
     name: c.name,
     questionText: c.questionText,
     answers: c.answers,
+    categoryId: c.categoryId,
+    categoryName: c.categoryName,
   }
 }
 
