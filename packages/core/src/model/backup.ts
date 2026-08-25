@@ -22,6 +22,12 @@ export interface CourseInfo {
   readonly idNumber: string
   summary: string
   readonly startDate?: number | undefined
+  /**
+   * Site the backup was taken from (<original_wwwroot>), '' when absent.
+   * The only way to turn a `$@…@$` link token back into a real URL, since
+   * the backup stores no absolute links (see moodle/links.ts).
+   */
+  originalWwwroot: string
   readonly source: SourceInfo
 }
 

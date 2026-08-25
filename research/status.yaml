@@ -43,6 +43,13 @@ added:
     note: Experimental H5P playback — ADR-0018 adopts h5p-standalone (TECH-014) inside the ADR-0017 opaque-origin sandbox via an in-memory virtual filesystem shim. Synthetic .h5p package added to the demo fixture. Vendored-core GPL question recorded as open risk.
   - date: 2026-08-25
     note: H5P playback verified against real packages (REPO-009) — fixed media loading (new Image() bypassed the shim; H5P.getPath() injects a content-id segment) and string library versions. Upstream licensing clarification requested (tunapanda/h5p-standalone#188). Real specimens stay un-vendored; synthetic fixture should grow to cover the same shapes.
+  - date: 2026-08-25
+    note: >-
+      Quizzes built from random slots now page through the pool they draw from
+      instead of repeating N identical placeholders, captioned with how many an
+      attempt actually asks (SMR_SEGI 10-of-30, SMR_SOR 20-of-30). Moodle's
+      $@CODE*arg@$ link tokens are decoded against <original_wwwroot> —
+      ADR-0019; $@NULL@$ is normalized away at the activity parse boundary.
 
 risks:
   RISK-001:

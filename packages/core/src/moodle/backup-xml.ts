@@ -35,6 +35,8 @@ export async function parseMoodleBackupXml(
   const path: string[] = []
   let text = ''
   let course: { -readonly [K in keyof CourseInfo]: CourseInfo[K] } | undefined
+  // Recorded before <contents>, i.e. before `course` exists; applied at the end.
+  let originalWwwroot = ''
   const sections: Array<{ -readonly [K in keyof SectionInfo]: SectionInfo[K] }> = []
   const activities: Array<{ -readonly [K in keyof ActivityInfo]: ActivityInfo[K] }> = []
   let warnedClose = false
@@ -50,6 +52,7 @@ export async function parseMoodleBackupXml(
           shortname: '',
           idNumber: '',
           summary: '',
+          originalWwwroot: '',
           source: { xmlPath: p },
         }
       } else if (p.endsWith('/contents/sections/section')) {
@@ -88,6 +91,8 @@ export async function parseMoodleBackupXml(
       warnedClose = true
     }
 
+    if (p === 'moodle_backup/information/original_wwwroot') originalWwwroot = value
+
     switch (true) {
       case /^moodle_backup\/information\/contents\/course\//.test(p):
         if (course) fillCourseField(course, leaf(p), value)
@@ -117,6 +122,7 @@ export async function parseMoodleBackupXml(
       'moodle_backup.xml does not contain information/details/course — not a Moodle backup?',
     )
   }
+  course.originalWwwroot = originalWwwroot
   return { course, sections, activities }
 }
 

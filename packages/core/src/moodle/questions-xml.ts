@@ -60,6 +60,79 @@ export function randomQuestionPool(
   )
 }
 
+/**
+ * What a quiz's slots actually offer a reader, once random slots are
+ * expanded into the pools they draw from.
+ *
+ * A quiz built entirely from random slots serializes as N identical
+ * placeholders. Showing those N placeholders tells the reader nothing: the
+ * questions they can be asked are the pool, and the pool ships in the same
+ * backup. So the plan lists the pool once and reports how many slots draw
+ * from it, which is the fact the placeholders were standing in for.
+ */
+export interface QuizSlotPlan {
+  /**
+   * Questions to show, in slot order, with each random slot replaced by its
+   * pool. Deduplicated: several slots normally draw from the same category
+   * and the reader should meet each question once.
+   */
+  readonly questions: QuizQuestion[]
+  /** Slots that always ask the same question. */
+  readonly fixedSlots: number
+  /** Slots filled by drawing from a bank category at attempt time. */
+  readonly randomSlots: number
+  /** Distinct questions those random slots can draw, across all categories. */
+  readonly poolSize: number
+  /** Ids of the questions contributed by a pool rather than by a fixed slot. */
+  readonly drawnIds: ReadonlySet<number>
+}
+
+/**
+ * Resolves a quiz's slot list into the questions a reader can inspect.
+ *
+ * A random slot whose category holds nothing drawable keeps its placeholder:
+ * dropping it would hide a slot that exists, and the placeholder still names
+ * the category the questions were expected in.
+ */
+export function resolveQuizSlots(
+  questions: ReadonlyMap<number, QuizQuestion>,
+  slotIds: readonly number[],
+): QuizSlotPlan {
+  const shown: QuizQuestion[] = []
+  const seen = new Set<number>()
+  const drawnIds = new Set<number>()
+  let fixedSlots = 0
+  let randomSlots = 0
+
+  const push = (q: QuizQuestion): void => {
+    if (seen.has(q.id)) return
+    seen.add(q.id)
+    shown.push(q)
+  }
+
+  for (const id of slotIds) {
+    const slot = questions.get(id)
+    if (!slot) continue
+    if (slot.qtype !== 'random') {
+      fixedSlots++
+      push(slot)
+      continue
+    }
+    randomSlots++
+    const pool = randomQuestionPool(questions, id)
+    if (pool.length === 0) {
+      push(slot)
+      continue
+    }
+    for (const candidate of pool) {
+      drawnIds.add(candidate.id)
+      push(candidate)
+    }
+  }
+
+  return { questions: shown, fixedSlots, randomSlots, poolSize: drawnIds.size, drawnIds }
+}
+
 export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQuestion>> {
   const questions = new Map<number, QuizQuestion>()
   const path: string[] = []

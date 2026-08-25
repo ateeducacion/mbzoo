@@ -49,12 +49,19 @@ const STRINGS = {
     'quiz.partial': 'partial',
     'quiz.wrong': 'incorrect',
     'quiz.answers': 'Answers',
-    'quiz.randomFrom': 'Drawn at random from “{cat}” — {n} question(s) available in this backup',
-    'quiz.randomPool': 'Questions it can draw',
     'quiz.randomEmpty':
       'Drawn at random from “{cat}”, whose questions are not present in this backup',
+    'quiz.randomSummary':
+      'Each attempt draws {n} question(s) at random. All {pool} question(s) they can draw are shown here.',
+    'quiz.randomSummaryMixed':
+      '{fixed} fixed question(s), plus {n} drawn at random on each attempt. The {pool} question(s) those slots can draw are shown here too.',
+    'quiz.drawnFrom': 'drawn from “{cat}”',
+    'quiz.drawnChip': 'drawn at random',
     'quiz.randomUnknown':
       'Random question — drawn from a category at attempt time; the category is not identified in this backup',
+    'link.internal': 'Course link — opens this activity in MBZoo',
+    'link.original': 'Course link, rewritten by the backup. On the original site: {url}',
+    'link.unresolved': 'Course link — this backup does not record where it pointed.',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -153,11 +160,18 @@ const STRINGS = {
     'quiz.partial': 'parcial',
     'quiz.wrong': 'incorrecta',
     'quiz.answers': 'Respuestas',
-    'quiz.randomFrom': 'Se sortea al azar de «{cat}»: {n} pregunta(s) disponibles en esta copia',
-    'quiz.randomPool': 'Preguntas que puede sortear',
     'quiz.randomEmpty': 'Se sortea al azar de «{cat}», cuyas preguntas no están en esta copia',
+    'quiz.randomSummary':
+      'Cada intento sortea {n} pregunta(s) al azar. Aquí se muestran las {pool} preguntas que pueden salir.',
+    'quiz.randomSummaryMixed':
+      '{fixed} pregunta(s) fijas, más {n} sorteadas al azar en cada intento. Aquí se muestran también las {pool} preguntas que pueden salir.',
+    'quiz.drawnFrom': 'sorteada de «{cat}»',
+    'quiz.drawnChip': 'sorteada al azar',
     'quiz.randomUnknown':
       'Pregunta al azar: se sortea de una categoría en el intento; la categoría no se identifica en esta copia',
+    'link.internal': 'Enlace del curso: abre esta actividad en MBZoo',
+    'link.original': 'Enlace del curso, reescrito por la copia. En el sitio original: {url}',
+    'link.unresolved': 'Enlace del curso: esta copia no registra a dónde apuntaba.',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',

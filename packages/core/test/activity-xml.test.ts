@@ -27,6 +27,23 @@ describe('parseActivityXml', () => {
     expect(a.fields.get('content')).toContain('Hello')
     expect(a.fields.get('contentformat')).toBe('1')
   })
+
+  // Moodle serializes SQL NULL as a literal string; renderers print field
+  // values, so it must never survive the parse (observed in every REPO-004
+  // backup — CS401 alone carries 448 of them).
+  test('drops the $@NULL@$ sentinel instead of exposing it as content', async () => {
+    const xml = `<?xml version="1.0"?>
+<activity id="4" moduleid="4" modulename="url" contextid="104">
+  <url id="4">
+    <name>Link</name>
+    <intro>$@NULL@$</intro>
+    <externalurl>https://example.org</externalurl>
+  </url>
+</activity>`
+    const a = await parseActivityXml(xml)
+    expect(a.fields.get('intro')).toBe('')
+    expect(a.fields.get('externalurl')).toBe('https://example.org')
+  })
 })
 
 describe('@@PLUGINFILE@@ handling', () => {

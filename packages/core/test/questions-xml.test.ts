@@ -3,6 +3,7 @@ import {
   parseQuestionsXml,
   parseQuizQuestionIds,
   randomQuestionPool,
+  resolveQuizSlots,
 } from '../src/moodle/questions-xml.ts'
 
 // Moodle 3.x shape (verified on SMR_SEGI/SMR_SOR, REPO-004).
@@ -173,5 +174,67 @@ describe('question categories', () => {
 </question_categories>`
     const q = await parseQuestionsXml(only)
     expect(randomQuestionPool(q, 5)).toEqual([])
+  })
+})
+
+// Real exams draw every slot at random: SMR_SEGI "Examen (SEGI01)" is ten
+// random slots over a 30-question category, SMR_SOR "Examen para SOR01"
+// twenty over thirty (REPO-004 corpus, inspected 2026-08-25).
+describe('resolveQuizSlots', () => {
+  test('expands random slots into the pool, once, and counts the draw', async () => {
+    const bank = await parseQuestionsXml(RANDOM)
+    // Three slots, all the same random placeholder: one attempt asks three.
+    const plan = resolveQuizSlots(bank, [900, 900, 900])
+
+    expect(plan.randomSlots).toBe(3)
+    expect(plan.fixedSlots).toBe(0)
+    expect(plan.poolSize).toBe(2)
+    expect(plan.questions.map((q) => q.id)).toEqual([901, 902])
+    expect(plan.drawnIds.has(901)).toBe(true)
+  })
+
+  test('keeps fixed slots in slot order and marks only pool questions as drawn', async () => {
+    const bank = await parseQuestionsXml(RANDOM)
+    const plan = resolveQuizSlots(bank, [910, 900])
+
+    expect(plan.fixedSlots).toBe(1)
+    expect(plan.randomSlots).toBe(1)
+    expect(plan.questions.map((q) => q.id)).toEqual([910, 901, 902])
+    expect(plan.drawnIds.has(910)).toBe(false)
+    expect(plan.poolSize).toBe(2)
+  })
+
+  test('a fixed slot that is also in the pool is shown once', async () => {
+    const bank = await parseQuestionsXml(RANDOM)
+    const plan = resolveQuizSlots(bank, [901, 900])
+
+    expect(plan.questions.map((q) => q.id)).toEqual([901, 902])
+    expect(plan.fixedSlots).toBe(1)
+  })
+
+  test('a random slot with nothing to draw keeps its placeholder', async () => {
+    const empty = `<?xml version="1.0"?>
+<question_categories>
+  <question_category id="1">
+    <name>Empty</name>
+    <questions>
+      <question id="5"><qtype>random</qtype><name>r</name><questiontext>1</questiontext></question>
+    </questions>
+  </question_category>
+</question_categories>`
+    const bank = await parseQuestionsXml(empty)
+    const plan = resolveQuizSlots(bank, [5])
+
+    expect(plan.questions.map((q) => q.id)).toEqual([5])
+    expect(plan.randomSlots).toBe(1)
+    expect(plan.poolSize).toBe(0)
+  })
+
+  test('slots missing from the bank are skipped, not rendered as blanks', async () => {
+    const bank = await parseQuestionsXml(RANDOM)
+    const plan = resolveQuizSlots(bank, [4242, 901])
+
+    expect(plan.questions.map((q) => q.id)).toEqual([901])
+    expect(plan.fixedSlots).toBe(1)
   })
 })

@@ -579,22 +579,76 @@ function randomQuizFixture(): { name: string; mimeType: string; buffer: Buffer }
   }, 'random-quiz.mbz')
 }
 
-test('a random quiz slot shows the pool it draws from, not "not in the backup"', async ({
-  page,
-}) => {
+test('a random quiz slot pages through the pool it draws from', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', randomQuizFixture())
   await page.getByRole('button', { name: /Self-assessment quiz/ }).click()
 
+  // One random slot over a two-question category, plus one fixed slot: the
+  // reader must reach both bank questions, not a placeholder card.
+  const summary = page.locator('.quiz-random-summary')
+  await expect(summary).toBeVisible()
+  await expect(summary).toContainText('2')
+  await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
+
   const card = page.locator('.quiz-card')
-  await expect(card).toContainText('Default')
+  await expect(card).toContainText('Pool layout')
+  await expect(card.locator('.q-pool-chip')).toContainText('Default')
   // The pool ships in the backup, so we must not claim the opposite.
   await expect(card).not.toContainText('not included in the backup')
   await expect(card).not.toContainText('not present in this backup')
+  // A real question, not the placeholder standing in for it.
+  await expect(card.locator('input[type="radio"]')).toHaveCount(2)
+  await expect(card).not.toContainText('Organizado al azar')
 
-  await expect(card.locator('.random-pool')).toBeVisible()
-  const items = card.locator('.random-pool-list li')
-  expect(await items.count()).toBeGreaterThan(0)
-  // The random placeholder never appears inside its own pool.
-  await expect(card.locator('.random-pool-list')).not.toContainText('Organizado al azar')
+  await page.locator('.quiz-nav .btn-outline').nth(1).click()
+  await expect(card).toContainText('Container formats')
+})
+
+/**
+ * Moodle rewrites internal links as $@CODE*arg@$ at backup time. Untouched,
+ * they resolve against MBZoo's own origin (ADR-0019).
+ */
+function encodedLinkFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>' +
+          '&lt;a id="to-other-course" href="$@COURSEVIEWBYID*62@$"&gt;Other course&lt;/a&gt;' +
+          '&lt;a id="to-welcome" href="$@PAGEVIEWBYID*3001@$"&gt;Welcome page&lt;/a&gt;' +
+          '&lt;a id="to-nowhere" href="$@NOSUCHCODE*1@$"&gt;Unknown&lt;/a&gt;' +
+          '&lt;img id="token-img" src="$@COURSEVIEWBYID*62@$" alt="x"&gt;' +
+          '</content>',
+      ),
+    )
+  }, 'encoded-links.mbz')
+}
+
+test('backup link tokens resolve instead of pointing at MBZoo', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', encodedLinkFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  // Another course on the original site: a real link, opened in a new tab.
+  const other = page.locator('#to-other-course')
+  await expect(other).toHaveAttribute('href', 'https://demo.example.invalid/course/view.php?id=62')
+  await expect(other).toHaveAttribute('target', '_blank')
+  expect(await other.getAttribute('rel')).toContain('noopener')
+
+  // An activity travelling in this same backup navigates inside MBZoo.
+  await expect(page.locator('#to-welcome')).toHaveAttribute('data-mbz-activity', '3001')
+
+  // A code MBZoo cannot decode must not pretend to lead anywhere.
+  await expect(page.locator('#to-nowhere')).not.toHaveAttribute('href', /./)
+
+  // No token may survive in a URL attribute: it would be requested from us.
+  const hrefs = await page.locator('.activity-content [href], .activity-content [src]').all()
+  for (const el of hrefs) {
+    expect((await el.getAttribute('href')) ?? '').not.toContain('$@')
+    expect((await el.getAttribute('src')) ?? '').not.toContain('$@')
+  }
+
+  await page.locator('#to-welcome').click()
+  await expect(page.locator('#detail-title')).toContainText('Welcome page')
 })

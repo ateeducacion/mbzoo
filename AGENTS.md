@@ -85,7 +85,10 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
    iframe permission, postMessage bridge or network capability requires an
    evidence-backed security/architecture decision and threat-model review.
 4. Nothing may upload user data anywhere. No telemetry, analytics or automatic
-   fetching of backup-referenced remote content.
+   fetching of backup-referenced remote content. Backup link tokens
+   (`$@CODE*arg@$`) are decoded and offered as links, never requested, and an
+   undecodable one must lose its href rather than resolve against our own
+   origin (ADR-0019).
 5. Path traversal, XML entity expansion and malformed input are regression
    classes. Extend security tests whenever archive, parser or renderer trust
    boundaries change.

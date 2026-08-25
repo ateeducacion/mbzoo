@@ -221,6 +221,28 @@ async function openActivity(activityId: number, sectionName: string): Promise<vo
   }
 }
 
+/** Section heading a given activity is listed under, for the detail header. */
+function sectionNameOf(activityId: number): string {
+  const button = document.querySelector(
+    `.activity-button[data-activity-id="${CSS.escape(String(activityId))}"]`,
+  )
+  return button?.closest('li')?.parentElement?.parentElement?.querySelector('h3')?.textContent ?? ''
+}
+
+// Course links inside rendered content that point at an activity travelling in
+// this same backup (renderers.ts resolveBackupLinks). Their href still points
+// at the original Moodle so exports stay useful; in the app they navigate here.
+detail.addEventListener('click', (ev) => {
+  const target = ev.target
+  if (!(target instanceof Element)) return
+  const link = target.closest('a[data-mbz-activity]')
+  if (!link) return
+  const id = Number(link.getAttribute('data-mbz-activity'))
+  if (!Number.isFinite(id)) return
+  ev.preventDefault()
+  void openActivity(id, sectionNameOf(id))
+})
+
 async function handleBlob(blob: Blob, name: string): Promise<void> {
   show('loading')
   loadingTitle.textContent = `${t('loading.reading')} ${name}`

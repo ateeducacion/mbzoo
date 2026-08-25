@@ -1372,19 +1372,32 @@ footer a {
   color: var(--muted);
 }
 
-/* Random quiz slot: the bank category it draws from (ADR-0016 research). */
-.random-pool-list {
-  list-style: none;
-  margin: 0;
-  padding: 8px 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Random quiz slots expanded into their pool: the reader is paging through
+   more questions than one attempt asks, so the count needs a caption. */
+.quiz-random-summary {
+  background: rgba(230, 126, 34, 0.08);
+  border-color: rgba(230, 126, 34, 0.28);
+  color: #9a5b12;
 }
-.random-pool-list li {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font: 400 12.5px var(--font-body);
-  color: var(--ink-2);
+.q-pool-chip {
+  font: 500 11.5px var(--font-body);
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+/* Course links Moodle rewrote into $@…@$ tokens (core moodle/links.ts). */
+.mbz-link-internal {
+  text-decoration-style: solid;
+}
+.mbz-link-original::after {
+  content: " ↗";
+  font-size: 0.85em;
+}
+.mbz-link-dead {
+  color: var(--muted);
+  text-decoration: line-through;
+  cursor: help;
 }

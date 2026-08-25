@@ -14,13 +14,15 @@ import type {
   QuizQuestion,
 } from '@mbzoo/core'
 import {
+  backupLinkUrl,
   contentHashPath,
+  decodeBackupLink,
   matchFileRecord,
   parseActivityXml,
   parseBookXml,
   parseQuestionsXml,
   parseQuizQuestionIds,
-  randomQuestionPool,
+  resolveQuizSlots,
 } from '@mbzoo/core'
 import DOMPurify from 'dompurify'
 import * as pdfjs from 'pdfjs-dist'
@@ -237,7 +239,65 @@ export class Renderer {
       resolvedParts.push(this.blobUrl(data, rec.mimeType || guessMime(rec.fileName)))
     }
     resolvedParts.push(html.slice(cursor))
-    return sanitizeHtml(resolvedParts.join(''))
+    return this.safeHtml(resolvedParts.join(''))
+  }
+
+  /** Sanitization plus link decoding — the single path for backup HTML. */
+  private safeHtml(html: string): string {
+    return this.resolveBackupLinks(sanitizeHtml(html))
+  }
+
+  /**
+   * Decodes Moodle's `$@CODE*arg@$` link tokens (see core moodle/links.ts).
+   *
+   * Untouched, a token stays in the href and the browser resolves it against
+   * MBZoo's own origin — a link that looks like ours and leads nowhere. Three
+   * outcomes: an activity that travelled in this backup becomes in-app
+   * navigation; anything the backup gives us a site for becomes a labelled
+   * link to that Moodle, opened in a new tab and never fetched by us; the
+   * rest keeps its text and loses its href, because a link MBZoo cannot
+   * resolve must not pretend to lead somewhere.
+   */
+  private resolveBackupLinks(html: string): string {
+    if (!html.includes('$@')) return html
+    const wwwroot = this.ctx.backup.course.originalWwwroot
+    const inBackup = new Set(this.ctx.backup.activities.map((a) => a.id))
+    const tpl = document.createElement('template')
+    tpl.innerHTML = html // already through sanitizeHtml (ADR-0012)
+
+    for (const el of tpl.content.querySelectorAll('a[href]')) {
+      const raw = el.getAttribute('href') ?? ''
+      if (!raw.includes('$@')) continue
+      el.removeAttribute('href')
+      const link = decodeBackupLink(raw.trim())
+      const url = link ? backupLinkUrl(link, wwwroot) : undefined
+      const cmid = link?.moduleId
+      if (cmid !== undefined && inBackup.has(cmid)) {
+        el.setAttribute('data-mbz-activity', String(cmid))
+        el.setAttribute('href', url ?? '#')
+        el.setAttribute('title', t('link.internal'))
+        el.classList.add('mbz-link-internal')
+      } else if (url !== undefined) {
+        el.setAttribute('href', url)
+        el.setAttribute('target', '_blank')
+        el.setAttribute('rel', 'noopener noreferrer nofollow')
+        el.setAttribute('title', t('link.original', { url }))
+        el.classList.add('mbz-link-original')
+      } else {
+        el.setAttribute('title', t('link.unresolved'))
+        el.classList.add('mbz-link-dead')
+      }
+    }
+
+    // Any token left in a URL attribute would be requested from MBZoo's
+    // origin. Resolving one is not an option either: fetching course-
+    // referenced remote content by itself is exactly what MBZoo does not do.
+    for (const el of tpl.content.querySelectorAll('[href], [src], [srcset], [poster]')) {
+      for (const attr of ['href', 'src', 'srcset', 'poster']) {
+        if (el.getAttribute(attr)?.includes('$@')) el.removeAttribute(attr)
+      }
+    }
+    return tpl.innerHTML
   }
 
   private async renderHtmlActivity(
@@ -733,17 +793,31 @@ export class Renderer {
       questionIds = await parseQuizQuestionIds(new TextDecoder().decode(quizXml))
     }
     const bank = await this.questionBank()
-    const questions: QuizQuestion[] = []
-    for (const id of questionIds) {
-      const q = bank.get(id)
-      if (q) questions.push(q)
-    }
+    const plan = resolveQuizSlots(bank, questionIds)
+    const questions = plan.questions
     if (questions.length === 0) {
       const note = document.createElement('p')
       note.className = 'fallback-note'
       note.textContent = t('quiz.noQuestions')
       container.appendChild(note)
       return
+    }
+
+    // Random slots were expanded into their pool, so the reader is now
+    // paging through more questions than an attempt would ever ask. Say so,
+    // otherwise the count reads as the length of the exam.
+    if (plan.randomSlots > 0 && plan.poolSize > 0) {
+      const drawn = document.createElement('p')
+      drawn.className = 'quiz-notice quiz-random-summary'
+      drawn.textContent =
+        plan.fixedSlots > 0
+          ? t('quiz.randomSummaryMixed', {
+              fixed: plan.fixedSlots,
+              n: plan.randomSlots,
+              pool: plan.poolSize,
+            })
+          : t('quiz.randomSummary', { n: plan.randomSlots, pool: plan.poolSize })
+      container.appendChild(drawn)
     }
 
     let index = 0
@@ -781,7 +855,8 @@ export class Renderer {
       counter.textContent = `${t('quiz.question')} ${index + 1} ${t('quiz.of')} ${questions.length}`
       prev.toggleAttribute('disabled', index === 0)
       next.toggleAttribute('disabled', index === questions.length - 1)
-      card.replaceChildren(this.questionCard(questions[index] as QuizQuestion, bank))
+      const current = questions[index] as QuizQuestion
+      card.replaceChildren(this.questionCard(current, plan.drawnIds.has(current.id)))
     }
     prev.addEventListener('click', () => showQuestion(index - 1))
     next.addEventListener('click', () => showQuestion(index + 1))
@@ -816,7 +891,7 @@ export class Renderer {
       const dt = document.createElement('dt')
       dt.textContent = e.concept
       const dd = document.createElement('dd')
-      dd.innerHTML = sanitizeHtml(e.definition)
+      dd.innerHTML = this.safeHtml(e.definition)
       list.append(dt, dd)
     }
     container.appendChild(list)
@@ -999,7 +1074,7 @@ export class Renderer {
       title.textContent = ch.title
       const body = document.createElement('div')
       body.className = 'activity-content'
-      body.innerHTML = sanitizeHtml(ch.content)
+      body.innerHTML = this.safeHtml(ch.content)
       chapterBox.append(title, body)
       // Chapter images resolve from mod_book/chapters filearea.
       void this.resolveChapterImages(body, ch, contextId)
@@ -1129,7 +1204,7 @@ export class Renderer {
     return this.questionBankCache
   }
 
-  private questionCard(q: QuizQuestion, bank?: ReadonlyMap<number, QuizQuestion>): HTMLElement {
+  private questionCard(q: QuizQuestion, drawn = false): HTMLElement {
     const type = q.qtype.toLowerCase()
     const el = document.createElement('div')
     const head = document.createElement('div')
@@ -1140,51 +1215,34 @@ export class Renderer {
     const name = document.createElement('strong')
     name.textContent = q.name
     head.append(badge, ' ', name)
+    if (drawn) {
+      // Which questions are drawn and which are always asked is not visible
+      // from the question itself, and matters most in a mixed quiz.
+      const from = document.createElement('span')
+      from.className = 'q-pool-chip'
+      from.textContent =
+        q.categoryName === '' ? t('quiz.drawnChip') : t('quiz.drawnFrom', { cat: q.categoryName })
+      head.append(' ', from)
+    }
     el.appendChild(head)
 
     const body = document.createElement('div')
     body.className = 'activity-content'
     if (type === 'random') {
-      // A random slot is a pointer to a bank category, not a missing
-      // question: the pool it draws from normally ships in the same
-      // backup, so show it instead of claiming the questions are absent.
-      const pool = bank ? randomQuestionPool(bank, q.id) : []
+      // resolveQuizSlots keeps a placeholder only when its category has
+      // nothing drawable in this backup — a pool that exists was expanded
+      // into its own cards, so there is none to list here.
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      if (q.categoryName === '') {
-        note.textContent = t('quiz.randomUnknown')
-      } else if (pool.length === 0) {
-        note.textContent = t('quiz.randomEmpty', { cat: q.categoryName })
-      } else {
-        note.textContent = t('quiz.randomFrom', { cat: q.categoryName, n: pool.length })
-      }
+      note.textContent =
+        q.categoryName === ''
+          ? t('quiz.randomUnknown')
+          : t('quiz.randomEmpty', { cat: q.categoryName })
       body.appendChild(note)
-
-      if (pool.length > 0) {
-        const details = document.createElement('details')
-        details.className = 'advanced random-pool'
-        const summary = document.createElement('summary')
-        summary.textContent = `${t('quiz.randomPool')} (${pool.length})`
-        details.appendChild(summary)
-        const list = document.createElement('ul')
-        list.className = 'random-pool-list'
-        for (const candidate of pool) {
-          const li = document.createElement('li')
-          const kind = document.createElement('span')
-          kind.className = 'mod-badge t-blue'
-          kind.textContent = candidate.qtype
-          const label = document.createElement('span')
-          label.textContent = candidate.name || `#${candidate.id}`
-          li.append(kind, ' ', label)
-          list.appendChild(li)
-        }
-        details.appendChild(list)
-        body.appendChild(details)
-      }
       el.appendChild(body)
       return el
     }
-    body.innerHTML = sanitizeHtml(q.questionText)
+    body.innerHTML = this.safeHtml(q.questionText)
     el.appendChild(body)
 
     if (type === 'essay') {
@@ -1223,7 +1281,7 @@ export class Renderer {
       input.name = `q-${q.id}`
       input.value = String(i)
       const text = document.createElement('span')
-      text.innerHTML = sanitizeHtml(a.text)
+      text.innerHTML = this.safeHtml(a.text)
       label.append(input, text)
       const mark = document.createElement('em')
       mark.className = 'q-fraction'

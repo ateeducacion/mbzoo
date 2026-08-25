@@ -18,9 +18,12 @@ content and files locally.
 **Status: bootstrap / experimental.** Works today: ZIP + TAR.GZ detection,
 metadata parsing, course tree, and content previews for pages, labels, URLs,
 resources (PDF via pdf.js, images, text, sandboxed HTML websites), quizzes
-(read-only question navigation), glossaries, books, assignment summaries and
-unknown-plugin fallbacks. Experimental H5P playback runs inside the same
-opaque-origin sandbox (ADR-0018). Each activity can also be exported on its own —
+(read-only question navigation — random slots page through the pool they draw
+from), glossaries, books, assignment summaries and unknown-plugin fallbacks.
+Course links the backup encoded as `$@…@$` tokens resolve to the activity in
+this backup or to the original site, and are never fetched (ADR-0019).
+Experimental H5P playback runs inside the same opaque-origin sandbox
+(ADR-0018). Each activity can also be exported on its own —
 its module XML, its rendered content as a standalone HTML file, or its
 attached files as a ZIP. Whole-backup re-packaging and everything else is
 planned — see the

@@ -72,3 +72,7 @@ adrs:
     title: Experimental H5P playback — h5p-standalone inside the opaque-origin sandbox
     status: Accepted
     date: 2026-08-25
+  ADR-0019:
+    title: Decode Moodle's $@…@$ link tokens instead of letting them resolve against MBZoo
+    status: Accepted
+    date: 2026-08-25

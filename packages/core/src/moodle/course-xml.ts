@@ -10,13 +10,15 @@ import { parseXmlEvents } from './xml.ts'
 
 export async function parseCourseXml(
   xml: string,
-  fallback: Pick<CourseInfo, 'fullname'>,
+  fallback: Pick<CourseInfo, 'fullname' | 'originalWwwroot'>,
 ): Promise<CourseInfo> {
   const out: { -readonly [K in keyof CourseInfo]: CourseInfo[K] } = {
     fullname: '',
     shortname: '',
     idNumber: '',
     summary: '',
+    // Site provenance only exists in moodle_backup.xml; keep it on the model.
+    originalWwwroot: fallback.originalWwwroot,
     source: { xmlPath: 'course/course.xml' },
   }
   const path: string[] = []

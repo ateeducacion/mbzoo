@@ -15,11 +15,21 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Forum | ✅ metadata | 🔜 planned (read-only) | discussions only exist if backup included user data |
 | Glossary | ✅ metadata | 🔜 planned (read-only) | |
 | Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
-| Quiz | ✅ metadata + question bank | 🔜 inspection-first | faithful execution requires Moodle's Question Engine — not a goal; practice mode is a separate idea (prompt §6) |
+| Quiz | ✅ metadata + question bank | ✅ read-only question navigation | random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
 | SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
 | H5P (mod_h5pactivity / .h5p files) | ✅ metadata + package | ⚠️ experimental playback | sandboxed player, self-contained packages; see ADR-0018 — unsupported content types fall back to download |
 | eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |
 | Unknown third-party plugins | ✅ | ✅ metadata fallback | never break the course view |
 
 Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
+
+## Course links
+
+Moodle cannot store absolute URLs for links between activities, so a backup
+carries them as `$@COURSEVIEWBYID*62@$`-style tokens. MBZoo decodes them
+(ADR-0019): a link to an activity that travelled in the same backup opens
+that activity in MBZoo, anything else becomes a labelled link to the site
+recorded in `<original_wwwroot>` — opened in a new tab, never fetched by
+MBZoo — and a token MBZoo cannot decode keeps its text but leads nowhere,
+rather than pretending to point somewhere.
 

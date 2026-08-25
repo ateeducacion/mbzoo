@@ -16,12 +16,22 @@ vista del curso.
 | Foro | ✅ metadatos | 🔜 planeado (solo lectura) | los debates solo existen si la copia incluyó usuarios |
 | Glosario | ✅ | ✅ entradas renderizadas | concepto + definición |
 | Tarea (Assignment) | ✅ | ✅ resumen | fechas de entrega/cierre y tipos de entrega |
-| Cuestionario (Quiz) | ✅ banco de preguntas | ✅ inspección navegable | preguntas con radios/checkboxes estilo Moodle; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
+| Cuestionario (Quiz) | ✅ banco de preguntas | ✅ inspección navegable | preguntas con radios/checkboxes estilo Moodle; las preguntas al azar recorren el banco del que se sortean, indicando cuántas pide cada intento; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
 | SCORM | ✅ metadatos + paquete | ⏳ investigación | lanzar requiere un runtime (candidato: scorm-again, Q-012) |
 | H5P | ✅ metadatos + paquete | ⏳ investigación | candidato: h5p-standalone (Q-013) |
 | eXeLearning .elp/.elpx | ✅ como archivos | ⏳ investigación | estudio de formato en Q-016 |
 | Plugins desconocidos | ✅ | ✅ fallback de metadatos | nunca rompen la vista del curso |
 
 Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).
+
+## Enlaces del curso
+
+Moodle no puede guardar URLs absolutas para los enlaces entre actividades, así
+que la copia los lleva como fichas del tipo `$@COURSEVIEWBYID*62@$`. MBZoo las
+descodifica (ADR-0019): un enlace a una actividad que viajó en la misma copia
+abre esa actividad en MBZoo; el resto se convierte en un enlace etiquetado al
+sitio que registra `<original_wwwroot>` —se abre en una pestaña nueva y MBZoo
+nunca lo descarga—; y una ficha que MBZoo no sabe descodificar conserva su texto
+pero no lleva a ninguna parte, en vez de fingir que apunta a algún sitio.
 
 [English version](../guide/activity-support.html)
