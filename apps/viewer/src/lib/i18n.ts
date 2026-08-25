@@ -192,8 +192,12 @@ const STRINGS = {
     'raw.missing': 'No module XML was found for this activity in the backup.',
     'raw.truncated':
       'Showing the first {n} of {total} characters — use Export ▾ for the whole file.',
-    'footer.note':
-      'MBZoo is experimental software — see the README for what is implemented vs planned.',
+    'footer.note': 'MBZoo is experimental software — see the',
+    'footer.made': 'Made with',
+    'footer.by': 'by',
+    'footer.repo': 'GitHub repository',
+    'footer.trademark': 'Moodle™ is a registered trademark of',
+    'footer.notAffiliated': '. This project is not affiliated with Moodle Pty Ltd.',
     'h5p.experimental': 'Experimental H5P playback — runs sandboxed, offline.',
     'h5p.invalid': 'This .h5p package could not be read — use Download.',
     'h5p.playerUnavailable': 'The H5P player could not be loaded — use Download.',
@@ -387,8 +391,12 @@ const STRINGS = {
     'raw.missing': 'No se encontró el XML de módulo de esta actividad en la copia.',
     'raw.truncated':
       'Mostrando los primeros {n} de {total} caracteres: usa Exportar ▾ para el archivo completo.',
-    'footer.note':
-      'MBZoo es software experimental: consulta el README para ver qué está implementado.',
+    'footer.note': 'MBZoo es software experimental: consulta el',
+    'footer.made': 'Hecho con',
+    'footer.by': 'por',
+    'footer.repo': 'Repositorio en GitHub',
+    'footer.trademark': 'Moodle™ es una marca registrada de',
+    'footer.notAffiliated': '. Este proyecto no está afiliado a Moodle Pty Ltd.',
     'h5p.experimental': 'Reproducción H5P experimental: se ejecuta aislada y sin conexión.',
     'h5p.invalid': 'No se pudo leer este paquete .h5p: usa Descargar.',
     'h5p.playerUnavailable': 'No se pudo cargar el reproductor H5P: usa Descargar.',
@@ -406,8 +414,13 @@ const lang = detectLang()
 
 /** Translate a key; {placeholders} substituted from vars. */
 export function t(key: StringKey, vars?: Record<string, string | number>): string {
-  let s: string = STRINGS[lang][key] ?? STRINGS.en[key] ?? ''
-  if (s === '') {
+  // Presence, not truthiness: a translation is allowed to be empty on
+  // purpose. Spanish folds "drop.file" into "drop.title" ("Arrastra aquí tu
+  // archivo"), and treating that as missing printed the key on the landing
+  // page and warned on every load.
+  const dict: Partial<Record<StringKey, string>> = STRINGS[lang]
+  let s = dict[key] ?? STRINGS.en[key]
+  if (s === undefined) {
     // A missing key is a bug: make it visible in dev instead of rendering ??.
     console.warn(`[i18n] missing key: ${key}`)
     return key

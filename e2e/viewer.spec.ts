@@ -689,6 +689,26 @@ test('chat and wiki name their settings and say where the content went', async (
   await expect(page.locator('#detail')).toContainText('Home')
 })
 
+// Spanish folds "drop.file" into "drop.title", so its translation is an empty
+// string on purpose. Treating empty as missing printed the key itself on the
+// landing page and warned on every load.
+test.describe('Spanish locale', () => {
+  test.use({ locale: 'es-ES' })
+
+  test('an intentionally empty translation renders as empty, not as its key', async ({ page }) => {
+    const warnings: string[] = []
+    page.on('console', (m) => {
+      if (m.type() === 'warning') warnings.push(m.text())
+    })
+    await page.goto('/')
+
+    const title = page.locator('.dz-title')
+    await expect(title).toContainText('Arrastra aquí tu archivo')
+    await expect(title).not.toContainText('drop.file')
+    expect(warnings.filter((w) => w.includes('missing key'))).toEqual([])
+  })
+})
+
 /**
  * Two reads in flight at once used to clobber each other's worker handler, so
  * the first promise never settled and the renderer stopped half-way with no

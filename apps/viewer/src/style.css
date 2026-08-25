@@ -437,7 +437,6 @@ main {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  scrollbar-width: thin;
 }
 .course-head {
   padding: 2px 4px 0;
@@ -713,16 +712,107 @@ main {
   font-size: 0.78rem;
 }
 
+/* ---------- scrollbars ----------
+   The platform default is a heavy slab drawn over the content: in the course
+   tree it sat on top of the module badges. Reserve a gutter so nothing is
+   ever underneath it, and draw the thumb as a quiet pill inset from the edge. */
+#tree,
+#detail,
+.text-preview,
+.scroller,
+#detail .activity-content pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+  scrollbar-gutter: stable;
+}
+#tree::-webkit-scrollbar,
+#detail::-webkit-scrollbar,
+.text-preview::-webkit-scrollbar,
+.scroller::-webkit-scrollbar,
+#detail .activity-content pre::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+#tree::-webkit-scrollbar-track,
+#detail::-webkit-scrollbar-track,
+.text-preview::-webkit-scrollbar-track,
+.scroller::-webkit-scrollbar-track,
+#detail .activity-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+#tree::-webkit-scrollbar-thumb,
+#detail::-webkit-scrollbar-thumb,
+.text-preview::-webkit-scrollbar-thumb,
+.scroller::-webkit-scrollbar-thumb,
+#detail .activity-content pre::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 999px;
+  /* Transparent border inset by background-clip: a slim pill, not a slab. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+#tree:hover::-webkit-scrollbar-thumb,
+#detail:hover::-webkit-scrollbar-thumb {
+  background: var(--faint);
+  background-clip: content-box;
+}
+#tree::-webkit-scrollbar-corner,
+#detail::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* ---------- footer ---------- */
 footer {
   max-width: 1500px;
   margin: 0 auto;
-  padding: 0 clamp(16px, 3vw, 40px) 28px;
-  font: 400 11.5px var(--font-body);
+  padding: 8px clamp(16px, 3vw, 40px) 32px;
+  font: 400 11px var(--font-body);
   color: var(--faint);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+footer p {
+  margin: 0;
 }
 footer a {
   color: var(--muted);
+}
+footer a:hover {
+  color: var(--orange-deep);
+}
+.footer-made {
+  color: var(--muted);
+}
+.footer-heart {
+  color: var(--red);
+  font-size: 1.05em;
+  /* The emoji's variation selector swallows the collapsed whitespace after
+     it, so the gap is set here rather than left to the markup. */
+  margin: 0 3px 0 1px;
+}
+.footer-trademark {
+  color: var(--faint);
+  max-width: 62ch;
+}
+.footer-repo {
+  display: inline-flex;
+  color: var(--muted);
+  margin-top: 2px;
+  border-radius: 6px;
+}
+.footer-repo:hover {
+  color: var(--ink);
+}
+.footer-sep {
+  color: var(--line-2);
+  padding: 0 2px;
+}
+/* Only takes space when there is something to say. */
+.footer-status:empty {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
