@@ -30,9 +30,15 @@
         <!-- biome-ignore lint/a11y/useHeadingContent: populated from parsed backup at runtime -->
         <h2 id="course-title"></h2>
         <p id="course-meta"></p>
-        <ol id="sections"></ol>
+        <div class="explorer">
+          <aside id="tree" aria-label="Course structure">
+            <ol id="sections"></ol>
+          </aside>
+          <section id="detail" hidden aria-labelledby="detail-title">
+            <p class="fallback-note">Select an activity on the left to view its content.</p>
+          </section>
+        </div>
       </section>
-      <section id="detail" hidden aria-labelledby="detail-title"></section>
     </main>
 
     <footer>
