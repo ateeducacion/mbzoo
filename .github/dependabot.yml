@@ -1,10 +1,21 @@
 version: 2
-
-# Bun 1.4 writes bun.lock with lockfileVersion 2. GitHub Dependabot's Bun
-# updater currently supports only lockfileVersion 1, so enabling the Bun
-# ecosystem would make every scheduled update fail. Re-enable it when the
-# updater supports v2; GitHub Actions updates remain automated below.
 updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 10
+    groups:
+      bun-non-breaking:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
