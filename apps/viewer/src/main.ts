@@ -175,6 +175,8 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     }
   }
 
+  void renderUserDisclosure()
+
   sectionsList.replaceChildren()
   // A delegated section belongs under the activity that owns it, not beside
   // the numbered ones (Moodle 4.5+ mod_subsection).
@@ -252,6 +254,86 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     sectionsList.appendChild(li)
   }
   searchInput.value = ''
+}
+
+/**
+ * Says out loud when the file carries personal data.
+ *
+ * A backup taken with `users=1` writes a users.xml holding names, emails,
+ * usernames, phone numbers, postal addresses and the last IP each account
+ * logged in from. For a tool whose whole claim is that nothing leaves your
+ * device, that is the most important thing it can tell you about a file —
+ * before anyone emails it, uploads it or commits it to a repository.
+ *
+ * So the disclosure leads and the list follows, closed: knowing a file names
+ * 400 people is the part everyone needs; reading their names is a deliberate
+ * act, and not one to perform by accident while screen-sharing.
+ */
+async function renderUserDisclosure(): Promise<void> {
+  const box = document.getElementById('personal-data')
+  if (!box) return
+  box.replaceChildren()
+  box.hidden = true
+
+  let bytes: Uint8Array
+  try {
+    bytes = await readEntry('users.xml')
+  } catch {
+    return
+  }
+  const { parseUsersXml } = await import('@mbzoo/core')
+  const { users, personalData } = await parseUsersXml(new TextDecoder().decode(bytes))
+  if (users.length === 0) return
+
+  box.hidden = false
+  const title = document.createElement('div')
+  title.className = 'personal-data-title'
+  title.textContent = `⚠ ${t('users.title', { n: users.length })}`
+  box.appendChild(title)
+
+  if (personalData.length > 0) {
+    const kinds = document.createElement('p')
+    kinds.className = 'personal-data-kinds'
+    kinds.textContent = `${t('users.includes')} ${personalData
+      .map((kind) => t(`users.kind.${kind}`))
+      .join(' · ')}`
+    box.appendChild(kinds)
+  }
+
+  const note = document.createElement('p')
+  note.className = 'personal-data-note'
+  note.textContent = t('users.note')
+  box.appendChild(note)
+
+  const details = document.createElement('details')
+  details.className = 'advanced personal-data-list'
+  const summary = document.createElement('summary')
+  summary.textContent = t('users.reveal', { n: users.length })
+  details.appendChild(summary)
+  const list = document.createElement('ul')
+  list.className = 'user-list'
+  for (const user of users) {
+    const li = document.createElement('li')
+    const name = document.createElement('strong')
+    name.textContent = `${user.firstName} ${user.lastName}`.trim() || user.userName
+    li.appendChild(name)
+    const detail = [user.email, user.idNumber, user.city].filter((x) => x !== '').join(' · ')
+    if (detail !== '') {
+      const meta = document.createElement('span')
+      meta.className = 'user-meta'
+      meta.textContent = detail
+      li.append(' ', meta)
+    }
+    if (user.deleted) {
+      const gone = document.createElement('em')
+      gone.className = 'user-deleted'
+      gone.textContent = t('users.deleted')
+      li.append(' ', gone)
+    }
+    list.appendChild(li)
+  }
+  details.appendChild(list)
+  box.appendChild(details)
 }
 
 /**

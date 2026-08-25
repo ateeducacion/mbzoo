@@ -34,6 +34,19 @@ Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016)
 Media files (video, audio) preview inline with native controls; a media
 element decodes its file but never executes it.
 
+## Personal data
+
+A backup taken with **users included** carries a root `users.xml` holding
+names, usernames, email addresses, ID numbers, phone numbers, postal
+addresses, institutions, the last IP each account logged in from, and profile
+descriptions. MBZoo says so as soon as such a file is opened: how many people,
+and which kinds of data are actually populated. The list of names sits behind
+a disclosure that stays closed, so reading it is deliberate rather than
+something that happens while screen-sharing.
+
+Nothing leaves your device — but the file does. Treat a backup with user data
+as personal data before emailing it, uploading it or committing it anywhere.
+
 ## Grading
 
 Every activity's grade item travels in a content-only backup, so MBZoo shows

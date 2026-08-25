@@ -126,6 +126,19 @@ Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016)
 Media files (video, audio) preview inline with native controls; a media
 element decodes its file but never executes it.
 
+## Personal data
+
+A backup taken with **users included** carries a root `users.xml` holding
+names, usernames, email addresses, ID numbers, phone numbers, postal
+addresses, institutions, the last IP each account logged in from, and profile
+descriptions. MBZoo says so as soon as such a file is opened: how many people,
+and which kinds of data are actually populated. The list of names sits behind
+a disclosure that stays closed, so reading it is deliberate rather than
+something that happens while screen-sharing.
+
+Nothing leaves your device — but the file does. Treat a backup with user data
+as personal data before emailing it, uploading it or committing it anywhere.
+
 ## Grading
 
 Every activity's grade item travels in a content-only backup, so MBZoo shows
@@ -202,6 +215,19 @@ Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-
 
 Los archivos de vídeo y audio se previsualizan en línea con los controles
 nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
+
+## Datos personales
+
+Una copia hecha **con usuarios** lleva un `users.xml` en la raíz con nombres,
+nombres de usuario, correos, números de identificación, teléfonos, direcciones
+postales, instituciones, la última IP desde la que entró cada cuenta y las
+descripciones de perfil. MBZoo lo dice nada más abrir el archivo: cuántas
+personas y qué tipos de dato están realmente rellenos. La lista de nombres
+queda tras un desplegable cerrado, para que leerla sea un acto deliberado y no
+algo que pasa mientras compartes pantalla.
+
+De tu dispositivo no sale nada, pero el archivo sí. Trata una copia con datos
+de usuario como datos personales antes de enviarla, subirla o commitearla.
 
 ## Calificación
 

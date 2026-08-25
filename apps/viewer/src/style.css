@@ -1730,3 +1730,49 @@ audio.media-preview {
   font: 400 12.5px var(--font-body);
   color: var(--ink-2);
 }
+
+/* Personal data disclosure: the warning leads, the names follow closed. A
+   file that names people is the most important thing to say about it. */
+.personal-data {
+  border: 1px solid rgba(200, 84, 79, 0.35);
+  background: rgba(200, 84, 79, 0.07);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.personal-data-title {
+  font: 800 12.5px var(--font-head);
+  color: #a03b36;
+}
+.personal-data-kinds,
+.personal-data-note {
+  margin: 0;
+  font: 400 11.5px / 1.5 var(--font-body);
+  color: var(--ink-2);
+}
+.personal-data-note {
+  color: var(--muted);
+}
+.personal-data-list {
+  margin-top: 2px;
+}
+.user-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font: 400 12.5px var(--font-body);
+  color: var(--ink-2);
+}
+.user-meta {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.user-deleted {
+  font-style: normal;
+  color: var(--faint);
+}

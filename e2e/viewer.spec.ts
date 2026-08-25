@@ -791,6 +791,77 @@ test('concurrent activity opens both finish', async ({ page }) => {
   await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
 })
 
+/**
+ * A backup taken with users=1 carries names, emails, usernames and addresses.
+ * The demo fixture is content-only on purpose — the public demo should not
+ * ship a personal-data warning — so this builds one that is not.
+ */
+function withUsersFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'moodle_backup.xml', (xml) =>
+      xml.replace(
+        '<setting><level>root</level><name>users</name><value>0</value></setting>',
+        '<setting><level>root</level><name>users</name><value>1</value></setting>',
+      ),
+    )
+    entries['users.xml'] = strToU8(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<users>
+  <user id="9001" contextid="900">
+    <username>demo.teacher</username>
+    <idnumber>T-001</idnumber>
+    <email>teacher@example.invalid</email>
+    <city>Las Palmas</city>
+    <country>ES</country>
+    <lastip>203.0.113.7</lastip>
+    <auth>manual</auth>
+    <firstname>Demo</firstname>
+    <lastname>Teacher</lastname>
+    <deleted>0</deleted>
+  </user>
+  <user id="9002" contextid="901">
+    <username>demo.student</username>
+    <email>student@example.invalid</email>
+    <auth>manual</auth>
+    <firstname>Demo</firstname>
+    <lastname>Student</lastname>
+    <deleted>1</deleted>
+  </user>
+</users>
+`,
+    )
+  }, 'with-users.mbz')
+}
+
+test('a backup carrying people says so, and does not spill the names by default', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', withUsersFixture())
+
+  const box = page.locator('#personal-data')
+  await expect(box).toBeVisible()
+  await expect(box).toContainText('2')
+  // Which kinds are present, so the warning is specific rather than vague.
+  await expect(box).toContainText(/email addresses|correos/)
+  await expect(box).toContainText(/IP addresses|direcciones IP/)
+
+  // The names are there, but reading them is a deliberate act.
+  await expect(page.locator('.user-list')).toBeHidden()
+  await box.locator('summary').click()
+  await expect(page.locator('.user-list li').first()).toContainText('Demo Teacher')
+  await expect(page.locator('.user-list li').first()).toContainText('teacher@example.invalid')
+  await expect(page.locator('.user-list li').nth(1)).toContainText(
+    /deleted account|cuenta eliminada/,
+  )
+})
+
+test('a content-only backup shows no personal-data warning', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await expect(page.locator('#personal-data')).toBeHidden()
+})
+
 test('an activity shows what it is worth and the rubric that judges it', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', FIXTURE)

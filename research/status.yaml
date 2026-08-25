@@ -124,6 +124,15 @@ added:
       get typed summaries. Constants from lib/grade/constants.php and
       lib/resourcelib.php (REPO-005); every shape verified against the Moodle
       5.2.2 specimen and SMR_SOR's eight-category gradebook.
+  - date: 2026-08-25
+    note: >-
+      users.xml is read at last. A backup taken with users=1 carries names,
+      emails, usernames, ID numbers, phones, postal addresses, last-login IPs
+      and profile descriptions — verified on a Moodle 5.2.2 backup taken with
+      the box ticked. MBZoo now leads with the disclosure (how many people,
+      which kinds of data are actually populated) and keeps the names behind a
+      closed details element. The demo fixture stays content-only on purpose:
+      the public demo should not ship a personal-data warning.
 
 risks:
   RISK-001:

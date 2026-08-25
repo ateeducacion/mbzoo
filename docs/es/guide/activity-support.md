@@ -34,6 +34,19 @@ Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-
 Los archivos de vídeo y audio se previsualizan en línea con los controles
 nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
 
+## Datos personales
+
+Una copia hecha **con usuarios** lleva un `users.xml` en la raíz con nombres,
+nombres de usuario, correos, números de identificación, teléfonos, direcciones
+postales, instituciones, la última IP desde la que entró cada cuenta y las
+descripciones de perfil. MBZoo lo dice nada más abrir el archivo: cuántas
+personas y qué tipos de dato están realmente rellenos. La lista de nombres
+queda tras un desplegable cerrado, para que leerla sea un acto deliberado y no
+algo que pasa mientras compartes pantalla.
+
+De tu dispositivo no sale nada, pero el archivo sí. Trata una copia con datos
+de usuario como datos personales antes de enviarla, subirla o commitearla.
+
 ## Calificación
 
 El ítem de calificación de cada actividad viaja en una copia sin datos de
