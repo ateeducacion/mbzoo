@@ -211,6 +211,13 @@ const STRINGS = {
     'scorm.noLaunchable': 'This SCORM package declares no launchable item.',
     'scorm.runtimeUnavailable':
       'The SCORM runtime could not be loaded, so the package is shown without one.',
+    'epub.chapters': 'Chapters',
+    'epub.previous': '← Previous',
+    'epub.next': 'Next →',
+    'epub.hint':
+      'Chapters are opened from this list; links between them inside the page are inactive.',
+    'epub.invalid': 'This file is not a readable EPUB package.',
+    'epub.empty': 'This EPUB declares no readable chapters.',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -475,6 +482,13 @@ const STRINGS = {
     'scorm.noLaunchable': 'Este paquete SCORM no declara ningún elemento lanzable.',
     'scorm.runtimeUnavailable':
       'No se ha podido cargar el runtime de SCORM, así que el paquete se muestra sin él.',
+    'epub.chapters': 'Capítulos',
+    'epub.previous': '← Anterior',
+    'epub.next': 'Siguiente →',
+    'epub.hint':
+      'Los capítulos se abren desde esta lista; los enlaces entre ellos dentro de la página no navegan.',
+    'epub.invalid': 'Este fichero no es un paquete EPUB legible.',
+    'epub.empty': 'Este EPUB no declara ningún capítulo legible.',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',

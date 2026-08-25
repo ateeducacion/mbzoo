@@ -816,6 +816,44 @@ test('a link between SCOs navigates through MBZoo (ADR-0022 + ADR-0023)', async 
   await expect(page.frameLocator('.html-frame').locator('#sco-title')).toHaveText('Second step')
 })
 
+test('an EPUB is read chapter by chapter in the sandbox (ADR-0024)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo folder/ }).click()
+
+  // The chapter row comes from the OPF spine, in reading order.
+  const chapters = page.locator('button[data-chapter]')
+  await expect(chapters).toHaveCount(2)
+  await expect(chapters.first()).toHaveText('First chapter')
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#chapter-title')).toHaveText('First chapter')
+  // The chapter's relative stylesheet and image are inlined from the package,
+  // so the chapter renders styled with nothing fetched.
+  await expect(frame.locator('#chapter-title')).toHaveCSS('color', 'rgb(0, 0, 255)')
+  const imgOk = await frame
+    .locator('#chapter-img')
+    .evaluate(
+      (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+    )
+  expect(imgOk).toBe(true)
+
+  // A link to another chapter is defused: no unprocessed document may be
+  // reachable from the frame (the ADR-0020 rule).
+  await expect(frame.locator('#chapter-link')).not.toHaveAttribute('href', /./)
+
+  // Next moves through the spine.
+  await page.getByRole('button', { name: 'Next →' }).click()
+  await expect(page.frameLocator('.html-frame').locator('#chapter-title')).toHaveText(
+    'Second chapter',
+  )
+
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+})
+
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {
   await page.goto('/')
   await page.setInputFiles('#file-input', websiteFixture())

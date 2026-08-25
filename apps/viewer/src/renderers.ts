@@ -31,6 +31,13 @@ import {
 import DOMPurify from 'dompurify'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import {
+  composeChapter,
+  type EpubBook,
+  isEpubFileName,
+  readEpub,
+  unzipEpub,
+} from './lib/epub-reader.ts'
 import { scanExternalRefs } from './lib/external-refs.ts'
 import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
@@ -761,6 +768,14 @@ export class Renderer {
     if (!data) return card
 
     const mime = rec.mimeType || guessMime(rec.fileName)
+    if (isEpubFileName(rec.fileName)) {
+      try {
+        await this.renderEpub(data, card)
+      } finally {
+        addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      }
+      return card
+    }
     if (isH5pFileName(rec.fileName)) {
       try {
         await this.renderH5p(data, card)
@@ -1128,6 +1143,118 @@ export class Renderer {
     // allow-scripts only: opaque origin — no same-origin access to the app.
     frame.sandbox.add('allow-scripts')
     card.appendChild(frame)
+  }
+
+  /**
+   * EPUB reading (ADR-0024): the spine becomes a chapter row, and each
+   * chapter renders in the same opaque-origin sandbox with the same injected
+   * CSP as any other archive HTML. Nothing is fetched; every asset the
+   * chapter references is inlined from the package already in memory.
+   */
+  private async renderEpub(data: Uint8Array, card: HTMLElement): Promise<void> {
+    const fallback = (key: 'epub.invalid' | 'epub.empty'): void => {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t(key)
+      card.appendChild(note)
+    }
+    // A package is hostile input: neither unzipping nor reading the package
+    // document may reach the caller as a raw error.
+    let book: EpubBook
+    try {
+      book = readEpub(unzipEpub(data))
+    } catch {
+      fallback('epub.invalid')
+      return
+    }
+    if (book.chapters.length === 0) {
+      fallback('epub.empty')
+      return
+    }
+
+    if (book.title !== '') {
+      const title = document.createElement('p')
+      title.className = 'website-note'
+      title.textContent = book.title
+      card.appendChild(title)
+    }
+
+    const holder = document.createElement('div')
+    const bar = document.createElement('div')
+    bar.className = 'site-pages'
+    const label = document.createElement('span')
+    label.className = 'site-pages-label'
+    label.textContent = `${t('epub.chapters')} (${book.chapters.length})`
+    bar.appendChild(label)
+
+    let index = 0
+    let chapterUrls: string[] = []
+    const show = (next: number): void => {
+      index = Math.min(Math.max(next, 0), book.chapters.length - 1)
+      const chapter = book.chapters[index]
+      if (!chapter) return
+      for (const b of bar.querySelectorAll('button[data-chapter]')) {
+        b.classList.toggle('selected', b.getAttribute('data-chapter') === chapter.path)
+      }
+      let html: string
+      try {
+        html = composeChapter(book, chapter.path)
+      } catch {
+        return
+      }
+      html = retargetExternalLinks(html)
+      html = injectHead(html, PAGE_LINK_STYLE)
+      html = injectCsp(html, SANDBOX_CSP)
+      const before = this.urls.length
+      const frame = document.createElement('iframe')
+      frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+      frame.title = chapter.title
+      frame.className = 'html-frame'
+      // Same tokens as every other archive HTML preview (ADR-0014): opaque
+      // origin, and never allow-same-origin.
+      frame.sandbox.add('allow-scripts')
+      frame.sandbox.add('allow-popups')
+      frame.sandbox.add('allow-popups-to-escape-sandbox')
+      const minted = this.urls.slice(before)
+      holder.replaceChildren(frame)
+      this.revoke(chapterUrls)
+      chapterUrls = minted
+      prev.disabled = index === 0
+      next_.disabled = index === book.chapters.length - 1
+    }
+
+    for (const chapter of book.chapters) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'btn-outline'
+      button.setAttribute('data-chapter', chapter.path)
+      button.textContent = chapter.title
+      button.addEventListener('click', () => show(book.chapters.indexOf(chapter)))
+      bar.appendChild(button)
+    }
+    card.appendChild(bar)
+
+    const nav = document.createElement('div')
+    nav.className = 'site-pages'
+    const prev = document.createElement('button')
+    prev.type = 'button'
+    prev.className = 'btn-outline'
+    prev.textContent = t('epub.previous')
+    prev.addEventListener('click', () => show(index - 1))
+    const next_ = document.createElement('button')
+    next_.type = 'button'
+    next_.className = 'btn-outline'
+    next_.textContent = t('epub.next')
+    next_.addEventListener('click', () => show(index + 1))
+    nav.append(prev, next_)
+    card.appendChild(nav)
+
+    const hint = document.createElement('p')
+    hint.className = 'fallback-note site-pages-hint'
+    hint.textContent = t('epub.hint')
+    card.appendChild(hint)
+    card.appendChild(holder)
+    show(0)
   }
 
   /** Rewrites relative src/href references to blob URLs of archive files. */

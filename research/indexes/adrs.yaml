@@ -92,3 +92,7 @@ adrs:
     title: Experimental SCORM playback — scorm-again in the same document as the SCO
     status: Accepted
     date: 2026-08-25
+  ADR-0024:
+    title: EPUB reading — a spine reader of our own, not a reader library
+    status: Accepted
+    date: 2026-08-25
