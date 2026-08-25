@@ -275,9 +275,16 @@ footer {
   border-left: 3px solid var(--accent);
   border-radius: 4px;
 }
-#tree #sections h3 { font-size: 0.85rem; }
-#tree .activity-list li { margin: 0.15rem 0; }
-.activity-button { font-size: 0.9rem; line-height: 1.35; }
+#tree #sections h3 {
+  font-size: 0.85rem;
+}
+#tree .activity-list li {
+  margin: 0.15rem 0;
+}
+.activity-button {
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
 
 #detail {
   position: sticky;
@@ -287,8 +294,11 @@ footer {
 }
 
 @media (max-width: 820px) {
-  .explorer { grid-template-columns: 1fr; }
-  #tree, #detail {
+  .explorer {
+    grid-template-columns: 1fr;
+  }
+  #tree,
+  #detail {
     position: static;
     max-height: 60vh;
   }
