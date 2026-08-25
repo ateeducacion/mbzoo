@@ -44,6 +44,58 @@ function mutatedFixture(
  * A Page whose content embeds a stored image through @@PLUGINFILE@@ — the
  * shape every real course uses and that the synthetic fixture never had.
  */
+/**
+ * A Page that embeds a stored PDF with <object>, the way a teacher does it
+ * from the HTML source view. Moodle stores page content with noclean, so the
+ * markup survives into the backup verbatim.
+ */
+function pagePdfFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  const pdf = Buffer.from(
+    'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0MSA+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDIwIDQwIFRkIChNQlpPTyBFTUJFRCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQxIDAwMDAwIG4gCjAwMDAwMDAzMzIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MDIKJSVFT0YK',
+    'base64',
+  )
+  return mutatedFixture((entries) => {
+    const bytes = new Uint8Array(pdf)
+    const hash = createHash('sha1').update(bytes).digest('hex')
+    entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
+
+    replaceTextEntry(entries, 'files.xml', (xml) => {
+      const record = `  <file>
+    <contenthash>${hash}</contenthash>
+    <contextid>104</contextid>
+    <component>mod_page</component>
+    <filearea>content</filearea>
+    <itemid>0</itemid>
+    <filepath>/</filepath>
+    <filename>notes.pdf</filename>
+    <userid>2</userid>
+    <filesize>${bytes.byteLength}</filesize>
+    <mimetype>application/pdf</mimetype>
+    <status>0</status>
+    <timecreated>1700000000</timecreated>
+    <timemodified>1700000000</timemodified>
+    <source>$@NULL@$</source>
+    <author>$@NULL@$</author>
+    <license>$@NULL@$</license>
+    <sortorder>0</sortorder>
+    <repositorytype>$@NULL@$</repositorytype>
+    <repositoryid>$@NULL@$</repositoryid>
+    <reference>$@NULL@$</reference>
+  </file>`
+      return xml.replace('</files>', `${record}\n</files>`)
+    })
+
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="pdf-text"&gt;See the notes below.&lt;/p&gt;' +
+          '&lt;object data="@@PLUGINFILE@@/notes.pdf" type="application/pdf"&gt;fallback&lt;/object&gt;' +
+          '&lt;iframe id="remote" src="https://evil.example/x"&gt;&lt;/iframe&gt;</content>',
+      ),
+    )
+  }, 'page-pdf.mbz')
+}
+
 function pageImageFixture(): { name: string; mimeType: string; buffer: Buffer } {
   // 1x1 red PNG.
   const png = Buffer.from(
@@ -693,6 +745,27 @@ test('an image embedded in a Page renders (@@PLUGINFILE@@)', async ({ page }) =>
   expect(loaded).toBe(true)
   // The same applies to a link pointing at a stored file.
   await expect(page.locator('#page-link')).toHaveAttribute('href', /^blob:/)
+})
+
+test('a PDF embedded in a Page renders instead of vanishing', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', pagePdfFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await expect(page.locator('#pdf-text')).toBeVisible()
+  // DOMPurify unwraps <object> and drops <iframe> with its subtree, so the
+  // reference has to be promoted before sanitizing or there is nothing left
+  // to render. It comes back as a real pdf.js canvas.
+  await expect(page.locator('.activity-content canvas')).toBeVisible()
+  await expect(page.locator('[data-mbz-embed]')).toHaveCount(0)
+
+  // An embed pointing anywhere but a resolved backup file stays dropped —
+  // this must not become a way to load remote content (ADR-0009).
+  await expect(page.locator('#remote')).toHaveCount(0)
+  expect(requests.filter((u) => u.includes('evil.example'))).toEqual([])
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

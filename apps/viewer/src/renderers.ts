@@ -43,6 +43,7 @@ import {
   MAX_PDF_PAGES,
   pageNavScript,
   parseNavigationRequest,
+  placeholderizeEmbeds,
   resolveRelative,
   SANDBOX_CSP,
   splitRef,
@@ -147,11 +148,43 @@ export class Renderer {
     container: HTMLElement,
   ): Promise<void> {
     await this.renderActivityBody(activity, parsedActivity, container)
+    // An embed promoted by placeholderizeEmbeds is inert markup until it is
+    // turned into a real preview, so that runs on the body before anything
+    // is appended after it.
+    await this.hydrateEmbeds(container)
     // What the activity is worth and how it is judged sit in sibling files,
     // not in the module payload, so they are appended for every module rather
     // than repeated in each renderer.
     await this.renderGradeItem(activity, container)
     await this.renderGradingForm(activity, container)
+  }
+
+  /**
+   * Turns each `<div data-mbz-embed>` left by placeholderizeEmbeds into the
+   * preview it stands for. The bytes come from the blob URL MBZoo minted for
+   * that file, so nothing is fetched and nothing is re-parsed from the page.
+   */
+  private async hydrateEmbeds(container: HTMLElement): Promise<void> {
+    for (const holder of [...container.querySelectorAll('[data-mbz-embed]')]) {
+      const url = holder.getAttribute('data-mbz-embed') ?? ''
+      const source = this.blobSources.get(url)
+      if (!source) {
+        holder.remove()
+        continue
+      }
+      const card = document.createElement('div')
+      card.className = 'file-card'
+      if (source.mime === 'application/pdf') {
+        await this.renderPdf(source.data, 'embedded.pdf', card)
+      } else {
+        const note = document.createElement('p')
+        note.className = 'fallback-note'
+        note.textContent = t('embed.notPreviewable')
+        card.appendChild(note)
+      }
+      addDownload(card, url, embeddedFileName(source.mime))
+      holder.replaceWith(card)
+    }
   }
 
   private async renderActivityBody(
@@ -338,7 +371,7 @@ export class Renderer {
       resolvedParts.push(this.blobUrl(data, rec.mimeType || guessMime(rec.fileName)))
     }
     resolvedParts.push(html.slice(cursor))
-    return this.safeHtml(resolvedParts.join(''))
+    return this.safeHtml(placeholderizeEmbeds(resolvedParts.join('')))
   }
 
   /** Sanitization plus link decoding — the single path for backup HTML. */
@@ -710,7 +743,7 @@ export class Renderer {
       return card
     }
     if (mime === 'application/pdf') {
-      await this.renderPdf(data, rec, card)
+      await this.renderPdf(data, rec.fileName, card)
       addDownload(card, this.blobUrl(data, mime), rec.fileName)
       return card
     }
@@ -733,11 +766,7 @@ export class Renderer {
   }
 
   /** Draws PDF pages onto canvases with pdf.js (ADR-0014). */
-  private async renderPdf(
-    data: Uint8Array,
-    rec: BackupFileRecord,
-    card: HTMLElement,
-  ): Promise<void> {
+  private async renderPdf(data: Uint8Array, fileName: string, card: HTMLElement): Promise<void> {
     try {
       const doc = await pdfjs.getDocument({ data: data.slice() }).promise
       const pages = Math.min(doc.numPages, MAX_PDF_PAGES)
@@ -766,7 +795,7 @@ export class Renderer {
     } catch {
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      note.textContent = `Could not render “${rec.fileName}” inline — use Download.`
+      note.textContent = `Could not render “${fileName}” inline — use Download.`
       card.appendChild(note)
     }
   }
@@ -2352,6 +2381,12 @@ function notAvailable(container: HTMLElement): void {
   p.className = 'fallback-note'
   p.textContent = 'This item stores no additional content in the backup.'
   container.appendChild(p)
+}
+
+/** Download name for a file the course embedded rather than listed. */
+function embeddedFileName(mime: string): string {
+  const ext = mime === 'application/pdf' ? 'pdf' : (mime.split('/').pop() ?? 'bin')
+  return `embedded.${ext}`
 }
 
 /** DOMPurify wrapper — the single sanitization point (ADR-0012). */

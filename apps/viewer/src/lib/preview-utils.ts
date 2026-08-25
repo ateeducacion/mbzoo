@@ -190,6 +190,39 @@ export function resolveRelative(dir: string, ref: string): string {
   return out.join('/')
 }
 
+/**
+ * Rewrites `<object>`, `<embed>` and `<iframe>` elements that point at a file
+ * MBZoo has already resolved into an inert placeholder the sanitizer keeps.
+ *
+ * Moodle stores Page content with `noclean`, so whatever a teacher pasted in
+ * the HTML source view travels verbatim into the backup — embedding a PDF
+ * with `<object>` is the common way to do it. DOMPurify's html profile drops
+ * `<iframe>` with its whole subtree, removes `<embed>`, and unwraps
+ * `<object>`, so the reference is gone before anything can act on it. This
+ * runs on the raw string *before* the single sanitize call (ADR-0012): it
+ * only deletes markup and substitutes a `<div>` carrying a data attribute,
+ * and its output still goes through sanitizeHtml before reaching innerHTML.
+ * The trust boundary does not move.
+ *
+ * Only `blob:` targets are promoted — those are the ones MBZoo minted itself
+ * from `@@PLUGINFILE@@`. An embed pointing anywhere else keeps being dropped,
+ * so this cannot become a way to load remote content (ADR-0009).
+ */
+export function placeholderizeEmbeds(html: string): string {
+  return html.replace(
+    /<(object|embed|iframe)\b([^>]*)>(?:[\s\S]*?<\/\1\s*>)?/gi,
+    (whole, tag: string, attrs: string) => {
+      const attr = tag.toLowerCase() === 'object' ? 'data' : 'src'
+      const found = new RegExp(`\\b${attr}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(attrs)
+      const url = (found?.[2] ?? found?.[3] ?? '').trim()
+      // Nothing but our own minted blob URLs, and nothing that could close
+      // the attribute we are about to write it into.
+      if (!/^blob:[^"'\s<>]+$/.test(url)) return whole
+      return `<div data-mbz-embed="${url}"></div>`
+    },
+  )
+}
+
 /** Human label for a stored file: what kind of content is it? */
 export function contentKind(mime: string, fileName: string): string {
   const m = mime.toLowerCase()

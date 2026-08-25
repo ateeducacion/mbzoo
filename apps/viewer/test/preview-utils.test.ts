@@ -9,6 +9,7 @@ import {
   injectHead,
   pageNavScript,
   parseNavigationRequest,
+  placeholderizeEmbeds,
   resolveRelative,
   SANDBOX_CSP,
   splitRef,
@@ -211,5 +212,46 @@ describe('ALLOWED_URI_REGEXP', () => {
     expect(allows('JaVaScRiPt:alert(1)')).toBe(false)
     expect(allows('vbscript:msgbox(1)')).toBe(false)
     expect(allows('data:text/html,<script>alert(1)</script>')).toBe(false)
+  })
+})
+
+describe('placeholderizeEmbeds', () => {
+  const BLOB = 'blob:http://localhost/9f2c-1'
+
+  test('promotes an embedded PDF the sanitizer would otherwise delete', () => {
+    expect(placeholderizeEmbeds(`<object data="${BLOB}" type="application/pdf">alt</object>`)).toBe(
+      `<div data-mbz-embed="${BLOB}"></div>`,
+    )
+    expect(placeholderizeEmbeds(`<embed src="${BLOB}" type="application/pdf">`)).toBe(
+      `<div data-mbz-embed="${BLOB}"></div>`,
+    )
+    expect(placeholderizeEmbeds(`<iframe src="${BLOB}"></iframe>`)).toBe(
+      `<div data-mbz-embed="${BLOB}"></div>`,
+    )
+  })
+
+  test('leaves anything that is not a resolved backup file alone', () => {
+    // Untouched here means still dropped by the sanitizer, which is the
+    // point: this must not become a way to load remote content (ADR-0009).
+    const remote = '<iframe src="https://evil.example/x"></iframe>'
+    expect(placeholderizeEmbeds(remote)).toBe(remote)
+    const relative = '<object data="notes.pdf"></object>'
+    expect(placeholderizeEmbeds(relative)).toBe(relative)
+    const none = '<object type="application/pdf"></object>'
+    expect(placeholderizeEmbeds(none)).toBe(none)
+  })
+
+  test('a hostile target cannot break out of the attribute it is written into', () => {
+    const evil = '<object data="blob:x&quot; onload=&quot;alert(1)"></object>'
+    expect(placeholderizeEmbeds(evil)).toBe(evil)
+    const spaced = '<object data="blob:http://x/a b"></object>'
+    expect(placeholderizeEmbeds(spaced)).toBe(spaced)
+  })
+
+  test('keeps surrounding content and handles several embeds', () => {
+    const html = `<p>before</p><object data="${BLOB}"></object><p>after</p>`
+    expect(placeholderizeEmbeds(html)).toBe(
+      `<p>before</p><div data-mbz-embed="${BLOB}"></div><p>after</p>`,
+    )
   })
 })

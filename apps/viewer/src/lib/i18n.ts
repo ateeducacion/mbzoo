@@ -200,6 +200,7 @@ const STRINGS = {
     'site.pages': 'Pages in this site',
     'site.pagesHint':
       'Links inside the page work; this list also reaches pages the entry page never links to.',
+    'embed.notPreviewable': 'This course embedded a file MBZoo cannot show inline.',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -453,6 +454,7 @@ const STRINGS = {
     'site.pages': 'Páginas de este sitio',
     'site.pagesHint':
       'Los enlaces dentro de la página funcionan; esta lista además llega a páginas que la portada no enlaza.',
+    'embed.notPreviewable': 'Este curso incrusta un fichero que MBZoo no puede mostrar en línea.',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',
