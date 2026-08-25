@@ -94,6 +94,16 @@ describe('backupLinkUrl', () => {
     }
   })
 
+  // CodeQL js/polynomial-redos: originalWwwroot comes out of the backup, so
+  // trimming its trailing slashes must not be quadratic in their number.
+  test('a wwwroot ending in thousands of slashes is trimmed quickly', () => {
+    const link = decodeBackupLink('$@COURSEVIEWBYID*62@$')
+    const root = `${SITE}${'/'.repeat(50_000)}`
+    const started = performance.now()
+    expect(link && backupLinkUrl(link, root)).toBe(`${SITE}/course/view.php?id=62`)
+    expect(performance.now() - started).toBeLessThan(250)
+  })
+
   test('an undecodable code never produces a URL', () => {
     const link = decodeBackupLink('$@SOMETHINGENTIRELYNEW*1@$')
     expect(link && backupLinkUrl(link, SITE)).toBeUndefined()

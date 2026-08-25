@@ -228,6 +228,34 @@ function moodleBackupXml(): string {
           <title>Demo content package</title>
           <directory>activities/imscp_3018</directory>
         </activity>
+        <activity>
+          <moduleid>3019</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>url</modulename>
+          <title>Demo external link</title>
+          <directory>activities/url_3019</directory>
+        </activity>
+        <activity>
+          <moduleid>3020</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>folder</modulename>
+          <title>Demo folder</title>
+          <directory>activities/folder_3020</directory>
+        </activity>
+        <activity>
+          <moduleid>3021</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>chat</modulename>
+          <title>Demo chat</title>
+          <directory>activities/chat_3021</directory>
+        </activity>
+        <activity>
+          <moduleid>3022</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>wiki</modulename>
+          <title>Demo wiki</title>
+          <directory>activities/wiki_3022</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -430,6 +458,39 @@ H5P.MBZooText.prototype.attach = function ($container) {
   return zipSync(entries, { level: 6, mtime: FIXED_MTIME })
 }
 
+/**
+ * A quarter-second 8-bit mono tone, built rather than embedded so the fixture
+ * stays synthetic, deterministic and readable. Gives the audio preview
+ * something that actually plays instead of a placeholder that looks broken.
+ */
+function toneWav(): Uint8Array {
+  const rate = 8000
+  const samples = rate / 4
+  const bytes = new Uint8Array(44 + samples)
+  const view = new DataView(bytes.buffer)
+  const ascii = (offset: number, text: string): void => {
+    for (let i = 0; i < text.length; i++) bytes[offset + i] = text.charCodeAt(i)
+  }
+  ascii(0, 'RIFF')
+  view.setUint32(4, 36 + samples, true)
+  ascii(8, 'WAVEfmt ')
+  view.setUint32(16, 16, true) // PCM header size
+  view.setUint16(20, 1, true) // format: PCM
+  view.setUint16(22, 1, true) // channels: mono
+  view.setUint32(24, rate, true)
+  view.setUint32(28, rate, true) // byte rate = rate * channels * bytes/sample
+  view.setUint16(32, 1, true) // block align
+  view.setUint16(34, 8, true) // bits per sample
+  ascii(36, 'data')
+  view.setUint32(40, samples, true)
+  for (let i = 0; i < samples; i++) {
+    // 440 Hz, faded out so it does not end on a click.
+    const fade = 1 - i / samples
+    bytes[44 + i] = 128 + Math.round(60 * fade * Math.sin((2 * Math.PI * 440 * i) / rate))
+  }
+  return bytes
+}
+
 async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true })
 
@@ -464,6 +525,24 @@ async function main(): Promise<void> {
     },
     {
       filepath: '',
+      filename: 'notes.txt',
+      content: 'A second file so the folder renders as a list, not a single preview.\n',
+      component: 'mod_folder',
+      contextId: '120',
+      filearea: 'content',
+      mimetype: 'text/plain',
+    },
+    {
+      filepath: '',
+      filename: 'tone.wav',
+      content: toneWav(),
+      component: 'mod_folder',
+      contextId: '120',
+      filearea: 'content',
+      mimetype: 'audio/wav',
+    },
+    {
+      filepath: '',
       filename: 'demo-text.h5p',
       content: h5pPackageBytes(),
       component: 'mod_h5pactivity',
@@ -491,12 +570,17 @@ ${specFiles.map(fileRecord).join('\n')}
   add('course/course.xml', courseXml())
   add(
     'sections/section_2001/section.xml',
-    sectionXml(2001, 1, 'Introduction', '3001,3002,3004,3006,3007,3012,3013,3014,3015'),
+    sectionXml(
+      2001,
+      1,
+      'Introduction',
+      '3001,3002,3004,3006,3007,3012,3013,3014,3015,3019,3021,3022',
+    ),
   )
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
   add(
     'sections/section_2002/section.xml',
-    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018'),
+    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020'),
   )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
@@ -744,6 +828,56 @@ ${specFiles.map(fileRecord).join('\n')}
     <intro>&lt;p&gt;An IMS package with two pages.&lt;/p&gt;</intro>
     <structure>${imscpStructure()}</structure>
   </imscp>
+</activity>
+`,
+  )
+  add(
+    'activities/url_3019/url.xml',
+    `${XML_HEADER}<activity id="19" moduleid="19" modulename="url" contextid="119">
+  <url id="19">
+    <name>Demo external link</name>
+    <intro>&lt;p&gt;A link MBZoo never follows on your behalf.&lt;/p&gt;</intro>
+    <externalurl>https://example.org/mbzoo</externalurl>
+    <display>0</display>
+  </url>
+</activity>
+`,
+  )
+  add(
+    'activities/folder_3020/folder.xml',
+    `${XML_HEADER}<activity id="20" moduleid="20" modulename="folder" contextid="120">
+  <folder id="20">
+    <name>Demo folder</name>
+    <intro>&lt;p&gt;Two files, including audio.&lt;/p&gt;</intro>
+  </folder>
+</activity>
+`,
+  )
+  // Messages are user data, so this chat ships empty by construction.
+  add(
+    'activities/chat_3021/chat.xml',
+    `${XML_HEADER}<activity id="21" moduleid="21" modulename="chat" contextid="121">
+  <chat id="21">
+    <name>Demo chat</name>
+    <intro>&lt;p&gt;Office hours.&lt;/p&gt;</intro>
+    <chattime>1700000000</chattime>
+    <messages>
+    </messages>
+  </chat>
+</activity>
+`,
+  )
+  add(
+    'activities/wiki_3022/wiki.xml',
+    `${XML_HEADER}<activity id="22" moduleid="22" modulename="wiki" contextid="122">
+  <wiki id="22">
+    <name>Demo wiki</name>
+    <intro>&lt;p&gt;Collaborative notes.&lt;/p&gt;</intro>
+    <wikimode>collaborative</wikimode>
+    <firstpagetitle>Home</firstpagetitle>
+    <subwikis>
+    </subwikis>
+  </wiki>
 </activity>
 `,
   )

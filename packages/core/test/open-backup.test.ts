@@ -27,10 +27,10 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     expect(b.sections.map((s) => s.number)).toEqual([1, 2])
     expect(b.sections[0]?.name).toBe('Introduction')
     expect(b.sections[0]?.activityIds).toEqual([
-      3001, 3002, 3004, 3006, 3007, 3012, 3013, 3014, 3015,
+      3001, 3002, 3004, 3006, 3007, 3012, 3013, 3014, 3015, 3019, 3021, 3022,
     ])
     expect(b.sections[1]?.activityIds).toEqual([
-      3003, 3005, 3008, 3009, 3010, 3011, 3016, 3017, 3018,
+      3003, 3005, 3008, 3009, 3010, 3011, 3016, 3017, 3018, 3020,
     ])
   })
 
@@ -42,7 +42,7 @@ describe('openBackup (synthetic ZIP fixture)', () => {
 
   test('indexes files.xml records', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
-    expect(b.files.size).toBe(4)
+    expect(b.files.size).toBe(6)
     const names = [...b.files.values()].map((f) => f.fileName)
     expect(names).toContain('readme.txt')
     expect(names).toContain('dot.svg')

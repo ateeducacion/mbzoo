@@ -79,6 +79,13 @@ added:
       inline. SCORM deliberately left out — tracked separately. Fixed a latent
       worker bug where two reads in flight clobbered each other's handler, so
       one promise never settled and a renderer stopped mid-way in silence.
+  - date: 2026-08-25
+    note: >-
+      Demo fixture now covers every renderer MBZoo has (url, folder, chat and
+      wiki added; folder carries a generated 8-bit WAV so the new audio preview
+      has real coverage). CodeQL alert 7 (js/polynomial-redos, high) fixed:
+      backupLinkUrl trimmed trailing slashes with /\/+$/ on a value that comes
+      out of the backup; it now scans linearly, with a regression test.
 
 risks:
   RISK-001:

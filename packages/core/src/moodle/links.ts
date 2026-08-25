@@ -92,8 +92,16 @@ export function backupLinkUrl(link: BackupLink, originalWwwroot: string): string
   if (link.path === '') return undefined
   const root = originalWwwroot.trim()
   if (!/^https?:\/\/[^/?#\s]+/i.test(root)) return undefined
-  return `${root.replace(/\/+$/, '')}${link.path}`
+  // Trailing slashes are trimmed by scanning, not by /\/+$/: that pattern is
+  // quadratic on a run of slashes, and this string comes out of the backup
+  // (CodeQL js/polynomial-redos).
+  let end = root.length
+  while (end > 0 && root.charCodeAt(end - 1) === SLASH) end--
+  return `${root.slice(0, end)}${link.path}`
 }
+
+/** '/' — compared by code unit so the trim above stays a linear scan. */
+const SLASH = 47
 
 function templateFor(code: string): string | undefined {
   const exact = RULES.get(code)

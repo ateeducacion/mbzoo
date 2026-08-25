@@ -106,7 +106,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('2 sections')
-  expect(meta).toContain('18 activities')
+  expect(meta).toContain('22 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -637,6 +637,48 @@ test('a match question shows the pairs it asks you to relate', async ({ page }) 
   await expect(card.locator('.q-match-list dd').first()).toBeHidden()
   await page.getByRole('button', { name: /Mostrar respuestas|Reveal answers/ }).click()
   await expect(card.locator('.q-match-list dd').first()).toHaveText('Moodle backup')
+})
+
+test('a folder lists its files and plays the audio one in place', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo folder/ }).click()
+
+  // contentKind() labelled audio long before filePreview() could show it.
+  const audio = page.locator('audio.media-preview')
+  await expect(audio).toBeVisible()
+  await expect(audio).toHaveAttribute('controls', '')
+  const playable = await audio.evaluate(
+    (el) => (el as HTMLAudioElement).readyState > 0 || (el as HTMLAudioElement).duration > 0,
+  )
+  expect(playable).toBe(true)
+  // The download stays available next to the player, not instead of it.
+  await expect(page.locator('.file-card', { has: audio }).getByText('Download')).toBeVisible()
+})
+
+test('a url activity offers the link without ever following it', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo external link/ }).click()
+
+  await expect(page.locator('#detail a[href="https://example.org/mbzoo"]')).toBeVisible()
+  expect(requests.filter((u) => u.includes('example.org'))).toHaveLength(0)
+})
+
+test('chat and wiki name their settings and say where the content went', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  await page.getByRole('button', { name: /Demo chat/ }).click()
+  await expect(page.locator('#detail .fallback-note')).toContainText(
+    /without user data|sin datos de usuario/,
+  )
+
+  await page.getByRole('button', { name: /Demo wiki/ }).click()
+  await expect(page.locator('#detail')).toContainText(/Collaborative wiki|Wiki colaborativo/)
+  await expect(page.locator('#detail')).toContainText('Home')
 })
 
 /**
