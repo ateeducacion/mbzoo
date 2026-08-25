@@ -290,6 +290,23 @@ searchInput.addEventListener('input', () => {
   }
 })
 
+// Example links: fetch in-page instead of navigating away.
+for (const link of document.querySelectorAll<HTMLAnchorElement>('.example-link')) {
+  link.addEventListener('click', (ev) => {
+    ev.preventDefault()
+    const src = link.dataset.src ?? link.href
+    void (async () => {
+      try {
+        const res = await fetch(src)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        await handleBlob(await res.blob(), src.split('/').pop() ?? 'example.mbz')
+      } catch (e) {
+        setStatus(`Could not load example: ${e instanceof Error ? e.message : 'unknown'}`, 'error')
+      }
+    })()
+  })
+}
+
 // Support opening a backup directly via ?url=<mbz> (CORS must allow it).
 async function openFromUrlParam(): Promise<void> {
   const target = new URLSearchParams(location.search).get('url')

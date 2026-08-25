@@ -726,6 +726,9 @@ footer a {
   .explorer {
     grid-template-columns: 1fr;
   }
+  .steps {
+    display: none;
+  }
   #tree,
   #detail {
     position: static;
@@ -1067,4 +1070,14 @@ footer a {
 .brand-logo {
   height: 56px;
   width: auto;
+}
+
+.examples {
+  margin: 10px 0 0;
+  font: 400 12.5px var(--font-body);
+  color: #7a8494;
+}
+.examples a {
+  color: var(--orange-deep);
+  font-weight: 600;
 }

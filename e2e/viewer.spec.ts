@@ -207,3 +207,28 @@ test('book chapters, hidden activity indicator and availability', async ({ page 
   await expect(panel).toContainText('Member of group #7')
   await expect(panel).toContainText('RESTRICTED-1')
 })
+
+test('example link opens the demo course with all activity types', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('link', { name: /demo course/ }).click()
+  await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
+  // All types present in the tree.
+  for (const mod of [
+    'page',
+    'label',
+    'quiz',
+    'glossary',
+    'resource',
+    'assign',
+    'book',
+    'supermodule',
+  ]) {
+    await expect(page.locator(`.mod-badge`, { hasText: mod }).first()).toBeVisible()
+  }
+})
+
+test('steps are hidden on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 480, height: 800 })
+  await page.goto('/')
+  await expect(page.locator('.steps')).toBeHidden()
+})
