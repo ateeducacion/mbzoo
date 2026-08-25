@@ -73,5 +73,14 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
+    // Keep the worker in one self-contained chunk.
+    //
+    // Left to code-split, the worker's entry chunk doubles as a shared vendor
+    // chunk that the worker itself then re-imports. Chromium dedupes that by
+    // URL and evaluates the module once; WebKit evaluates it twice, and the
+    // second evaluation reassigns `self.onmessage` to a fresh module instance
+    // whose `session` is undefined — so parsing succeeds and every read after
+    // it fails with "No backup is open", with no error anywhere.
+    rollupOptions: { output: { inlineDynamicImports: true } },
   },
 })

@@ -285,11 +285,15 @@ function exportMenu(items: readonly ExportItem[], deps: DetailDeps): HTMLElement
     else close()
   })
   document.addEventListener('click', close)
-  wrap.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape') {
-      close()
-      button.focus()
-    }
+  // Escape is bound to the document, not to the menu's own subtree: Safari
+  // does not focus a <button> when it is clicked, so after opening the menu
+  // focus is still on the body and a keydown listener inside the menu never
+  // hears the key. A menu should close on Escape wherever focus happens to
+  // be, so the document is the correct place for this regardless.
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape' || list.hidden) return
+    close()
+    button.focus()
   })
 
   for (const item of items) {

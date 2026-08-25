@@ -409,7 +409,12 @@ test('plays the synthetic H5P package inside the opaque-origin sandbox', async (
   expect(await image.evaluate((el: HTMLImageElement) => el.src)).toMatch(/^blob:/)
   expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(16)
 
-  expect(pageErrors).toEqual([])
+  // The player asks for fullscreen and the sandbox refuses, because we
+  // deliberately withhold allow-fullscreen. WebKit reports that refusal as a
+  // page error while Chromium stays quiet; it is the sandbox working, so it
+  // is the one message this assertion tolerates.
+  const sandboxRefusals = /Permission policy 'Fullscreen' check failed/
+  expect(pageErrors.filter((e) => !sandboxRefusals.test(e))).toEqual([])
   expect(probeRequests).toEqual([])
 })
 
@@ -1487,4 +1492,78 @@ test('backup link tokens resolve instead of pointing at MBZoo', async ({ page })
 
   await page.locator('#to-welcome').click()
   await expect(page.locator('#detail-title')).toContainText('Welcome page')
+})
+
+// ---- TEMP WEBKIT DIAG ----
+test('TEMP webkit diag', async ({ page }) => {
+  const logs: string[] = []
+  page.on('console', (m) => logs.push(`console.${m.type()}: ${m.text()}`))
+  page.on('pageerror', (e) => logs.push(`pageerror: ${e.name}: ${e.message}`))
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+  await page.waitForTimeout(4000)
+  const state = await page.evaluate(() => ({
+    detail: document.querySelector('#detail')?.innerHTML?.slice(0, 400) ?? null,
+    hasContent: !!document.querySelector('.activity-content'),
+    tabs: [...document.querySelectorAll('[role="tab"], .tab')]
+      .map((t) => t.textContent)
+      .slice(0, 5),
+  }))
+  console.log('WEBKIT_DIAG2', JSON.stringify({ state, logs: logs.slice(0, 20) }, null, 1))
+})
+
+/** A Page whose only content is a video embedded from another site. */
+function embeddedVideoFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;iframe width="560" height="315" ' +
+          'src="https://www.youtube.com/embed/mwecn6UIzqc" frameborder="0" allowfullscreen=""&gt;' +
+          '&lt;/iframe&gt;</content>',
+      ),
+    )
+  }, 'embedded-video.mbz')
+}
+
+test('the personal-data and warnings boxes stay invisible when empty', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  // The demo backup is content-only and parses without warnings, so both
+  // boxes carry `hidden`. Each also sets its own `display`, which beats the
+  // UA rule for [hidden] — so `hidden` alone left an empty coloured frame.
+  for (const id of ['#personal-data', '#warnings']) {
+    const box = page.locator(id)
+    await expect(box).toHaveAttribute('hidden', '')
+    await expect(box).toBeHidden()
+  }
+})
+
+test('a video embedded from another site is named, not silently dropped', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', embeddedVideoFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  const content = page.locator('.activity-content')
+  await expect(content).toBeVisible()
+  // The sanitizer deletes an <iframe> outright, so without promotion this
+  // page reports itself empty — which is worse than showing nothing, because
+  // the backup does carry content.
+  await expect(content).not.toContainText('stores no additional content')
+  await expect(content.locator('.type-chip')).toHaveText('YouTube')
+  await expect(content.locator('a.button-link')).toHaveAttribute(
+    'href',
+    'https://www.youtube.com/embed/mwecn6UIzqc',
+  )
+  await expect(content.locator('a.button-link')).toHaveAttribute('rel', /noreferrer/)
+
+  // Named, never loaded (ADR-0009).
+  await expect(content.locator('iframe')).toHaveCount(0)
+  expect(requests.filter((u) => u.includes('youtube'))).toEqual([])
 })

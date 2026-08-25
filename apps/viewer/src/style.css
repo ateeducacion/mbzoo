@@ -564,6 +564,10 @@ main {
   color: #147a7a;
 }
 
+/* An author `display` beats the UA [hidden] rule, so restate it. */
+.warnings[hidden] {
+  display: none;
+}
 .warnings {
   display: flex;
   flex-direction: column;
@@ -1733,6 +1737,11 @@ audio.media-preview {
 
 /* Personal data disclosure: the warning leads, the names follow closed. A
    file that names people is the most important thing to say about it. */
+/* An author `display` beats the UA [hidden] rule, so restate it. Without
+   this the box renders as an empty red frame on every content-only backup. */
+.personal-data[hidden] {
+  display: none;
+}
 .personal-data {
   border: 1px solid rgba(200, 84, 79, 0.35);
   background: rgba(200, 84, 79, 0.07);
