@@ -231,6 +231,26 @@ export class Renderer {
       await this.renderImscp(fields, contextId, container)
       return
     }
+    if (mod === 'assignment') {
+      // The pre-2.3 module, removed in Moodle 4.2. Its dates and type are
+      // the authored settings; submissions are user data.
+      await this.renderIntroPlusMetadataShell(
+        fields,
+        contextId,
+        container,
+        'mod_assignment',
+        'intro',
+      )
+      container.appendChild(
+        this.buildSummary([
+          ['availableFrom', fields.get('timeavailable')],
+          ['dueDate', fields.get('timedue')],
+        ]),
+      )
+      // Shown verbatim: the 2.2 type codes have no mapping we can cite.
+      container.appendChild(this.buildFacts([[t('assignment.type'), fields.get('assignmenttype')]]))
+      return
+    }
     if (mod === 'forum' || mod === 'chat' || mod === 'wiki') {
       await this.renderDiscussionLike(mod, fields, contextId, container)
       return

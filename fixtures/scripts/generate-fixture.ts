@@ -256,6 +256,20 @@ function moodleBackupXml(): string {
           <title>Demo wiki</title>
           <directory>activities/wiki_3022</directory>
         </activity>
+        <activity>
+          <moduleid>3023</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>survey</modulename>
+          <title>Demo survey (retired)</title>
+          <directory>activities/survey_3023</directory>
+        </activity>
+        <activity>
+          <moduleid>3024</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>assignment</modulename>
+          <title>Demo 2.2 assignment (retired)</title>
+          <directory>activities/assignment_3024</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -580,7 +594,7 @@ ${specFiles.map(fileRecord).join('\n')}
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
   add(
     'sections/section_2002/section.xml',
-    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020'),
+    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020,3023,3024'),
   )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
@@ -878,6 +892,39 @@ ${specFiles.map(fileRecord).join('\n')}
     <subwikis>
     </subwikis>
   </wiki>
+</activity>
+`,
+  )
+  // Two modules Moodle has removed from core. Moodle itself can no longer
+  // restore them, which is exactly why an inspector should still read them —
+  // and why the fixture carries one of each retirement (5.0 and 4.2).
+  add(
+    'activities/survey_3023/survey.xml',
+    `${XML_HEADER}<activity id="23" moduleid="23" modulename="survey" contextid="123">
+  <survey id="23">
+    <name>Demo survey (retired)</name>
+    <intro>&lt;p&gt;A COLLES-style survey, from before Moodle 5.0 dropped the module.&lt;/p&gt;</intro>
+    <template>1</template>
+    <days>0</days>
+    <answers>
+    </answers>
+  </survey>
+</activity>
+`,
+  )
+  add(
+    'activities/assignment_3024/assignment.xml',
+    `${XML_HEADER}<activity id="24" moduleid="24" modulename="assignment" contextid="124">
+  <assignment id="24">
+    <name>Demo 2.2 assignment (retired)</name>
+    <intro>&lt;p&gt;The pre-2.3 assignment module, removed in Moodle 4.2.&lt;/p&gt;</intro>
+    <assignmenttype>upload</assignmenttype>
+    <timeavailable>1700000000</timeavailable>
+    <timedue>1701000000</timedue>
+    <grade>100</grade>
+    <submissions>
+    </submissions>
+  </assignment>
 </activity>
 `,
   )

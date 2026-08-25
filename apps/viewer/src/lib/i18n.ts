@@ -99,6 +99,7 @@ const STRINGS = {
     'workshop.instructReviewers': 'Instructions for assessment',
     'workshop.examples': 'Example submissions',
     'imscp.contents': 'Package contents',
+    'assignment.type': 'Submission type',
     'legacy.badge': 'retired',
     'legacy.tooltip': 'Removed from Moodle core in {version} ({issue})',
     'legacy.notice':
@@ -297,6 +298,7 @@ const STRINGS = {
     'workshop.instructReviewers': 'Instrucciones para la evaluación',
     'workshop.examples': 'Envíos de ejemplo',
     'imscp.contents': 'Contenido del paquete',
+    'assignment.type': 'Tipo de entrega',
     'legacy.badge': 'retirado',
     'legacy.tooltip': 'Eliminado del núcleo de Moodle en {version} ({issue})',
     'legacy.notice':

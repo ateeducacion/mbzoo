@@ -115,7 +115,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('2 sections')
-  expect(meta).toContain('22 activities')
+  expect(meta).toContain('24 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -732,6 +732,13 @@ test('chat and wiki name their settings and say where the content went', async (
   await expect(page.locator('.legacy-pill')).toBeVisible()
   await expect(page.locator('.legacy-notice')).toContainText('5.0')
   await expect(page.locator('.legacy-notice')).toContainText('MDL-82457')
+
+  // All three retirements are in the fixture, each with its own release.
+  await page.getByRole('button', { name: /Demo survey/ }).click()
+  await expect(page.locator('.legacy-notice')).toContainText('5.0')
+  await page.getByRole('button', { name: /Demo 2.2 assignment/ }).click()
+  await expect(page.locator('.legacy-notice')).toContainText('4.2')
+  await expect(page.locator('.legacy-notice')).toContainText('MDL-72350')
 
   // A module that still exists carries no such label.
   await page.getByRole('button', { name: /Demo forum/ }).click()
