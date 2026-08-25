@@ -638,6 +638,111 @@ ${specFiles.map(fileRecord).join('\n')}
     sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010,3011,3016,3017,3018,3020,3023,3024'),
   )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
+  // A grade item beside the assignment, and the rubric that judges it —
+  // both live in sibling files and both travel without user data.
+  add(
+    'activities/assign_3008/grades.xml',
+    `${XML_HEADER}<activity_gradebook>
+  <grade_items>
+    <grade_item id="7001">
+      <categoryid>5001</categoryid>
+      <itemname>Demo assignment</itemname>
+      <itemtype>mod</itemtype>
+      <itemmodule>assign</itemmodule>
+      <gradetype>1</gradetype>
+      <grademax>100</grademax>
+      <grademin>0</grademin>
+      <gradepass>50</gradepass>
+      <aggregationcoef2>0.5</aggregationcoef2>
+      <hidden>0</hidden>
+      <locked>0</locked>
+      <sortorder>4</sortorder>
+      <grade_grades>
+      </grade_grades>
+    </grade_item>
+  </grade_items>
+  <grade_letters>
+  </grade_letters>
+</activity_gradebook>
+`,
+  )
+  add(
+    'activities/assign_3008/grading.xml',
+    `${XML_HEADER}<areas>
+  <area id="5033">
+    <areaname>submissions</areaname>
+    <activemethod>rubric</activemethod>
+    <definitions>
+      <definition id="1">
+        <method>rubric</method>
+        <name>Report rubric</name>
+        <description>&lt;p id="rubric-desc"&gt;How the report is assessed.&lt;/p&gt;</description>
+        <plugin_gradingform_rubric_definition>
+          <criteria>
+            <criterion id="1">
+              <sortorder>1</sortorder>
+              <description>Clarity</description>
+              <levels>
+                <level id="1"><score>0</score><definition>Hard to follow</definition></level>
+                <level id="2"><score>5</score><definition>Clear throughout</definition></level>
+              </levels>
+            </criterion>
+            <criterion id="2">
+              <sortorder>2</sortorder>
+              <description>Evidence</description>
+              <levels>
+                <level id="3"><score>0</score><definition>None cited</definition></level>
+                <level id="4"><score>5</score><definition>Well cited</definition></level>
+              </levels>
+            </criterion>
+          </criteria>
+        </plugin_gradingform_rubric_definition>
+      </definition>
+    </definitions>
+  </area>
+</areas>
+`,
+  )
+  add(
+    'gradebook.xml',
+    `${XML_HEADER}<gradebook>
+  <grade_categories>
+    <grade_category id="5001">
+      <parent>$@NULL@$</parent>
+      <depth>1</depth>
+      <fullname>?</fullname>
+      <aggregation>13</aggregation>
+      <keephigh>0</keephigh>
+      <droplow>0</droplow>
+    </grade_category>
+    <grade_category id="5002">
+      <parent>5001</parent>
+      <depth>2</depth>
+      <fullname>Coursework</fullname>
+      <aggregation>10</aggregation>
+      <keephigh>0</keephigh>
+      <droplow>1</droplow>
+    </grade_category>
+  </grade_categories>
+  <grade_items>
+    <grade_item id="7000">
+      <categoryid>5001</categoryid>
+      <itemname>Course total</itemname>
+      <itemtype>course</itemtype>
+      <gradetype>1</gradetype>
+      <grademax>100</grademax>
+      <grademin>0</grademin>
+      <gradepass>0</gradepass>
+      <sortorder>1</sortorder>
+    </grade_item>
+  </grade_items>
+  <grade_letters>
+    <grade_letter id="1"><lowerboundary>90</lowerboundary><letter>A</letter></grade_letter>
+    <grade_letter id="2"><lowerboundary>50</lowerboundary><letter>Pass</letter></grade_letter>
+  </grade_letters>
+</gradebook>
+`,
+  )
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
   add('activities/page_3001/module.xml', activityXml('page', 'Welcome page'))
   add('activities/label_3002/label.xml', activityXml('label', 'Intro label'))

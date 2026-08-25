@@ -1665,3 +1665,68 @@ audio.media-preview {
   color: var(--faint);
   padding: 3px 8px;
 }
+
+/* Rubrics and marking guides from grading.xml. */
+.rubric-criterion {
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--line);
+}
+.rubric-levels {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rubric-levels li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font: 400 13.5px var(--font-body);
+  color: var(--ink-2);
+}
+.rubric-score {
+  font: 700 12px var(--font-body);
+  font-style: normal;
+  color: var(--orange-deep);
+  background: rgba(245, 130, 32, 0.1);
+  border-radius: 6px;
+  padding: 1px 8px;
+  min-width: 2.2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Course gradebook: the authored structure, never anyone's marks. */
+.course-gradebook {
+  margin-top: 14px;
+}
+.gradebook-tree,
+.gradebook-items {
+  list-style: none;
+  margin: 0;
+  padding: 8px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 400 13.5px var(--font-body);
+  color: var(--ink-2);
+}
+.gradebook-items {
+  padding: 4px 0 0 16px;
+  border-left: 2px solid var(--line);
+  margin-left: 4px;
+}
+.gradebook-aggregation,
+.gradebook-max {
+  font: 400 12px var(--font-body);
+  font-style: normal;
+  color: var(--muted);
+}
+.gradebook-letters {
+  margin: 0;
+  padding: 0 14px 12px;
+  font: 400 12.5px var(--font-body);
+  color: var(--ink-2);
+}

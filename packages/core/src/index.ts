@@ -26,6 +26,23 @@ export {
 } from './moodle/feedback-xml.ts'
 export { fileKey, NULL_SENTINEL, parseFilesXml } from './moodle/files-xml.ts'
 export { type GlossaryEntry, parseGlossaryXml } from './moodle/glossary-xml.ts'
+export {
+  type CourseGradebook,
+  type GradeAggregation,
+  type GradeCategory,
+  type GradeItem,
+  type GradeKind,
+  type GradeLetter,
+  parseActivityGradesXml,
+  parseGradebookXml,
+} from './moodle/grades-xml.ts'
+export {
+  type GradingArea,
+  type GradingDefinition,
+  parseGradingXml,
+  type RubricCriterion,
+  type RubricLevel,
+} from './moodle/grading-xml.ts'
 export { type LegacyModule, legacyModule } from './moodle/legacy-modules.ts'
 export {
   type LessonAnswer,

@@ -4,8 +4,8 @@
 # If a checksum changes unexpectedly, treat it as a parser/generator regression.
 fixtures:
   demo-course-zip.mbz:
-    sha256: d51d98de26bc39965501bf929ea368928c87951f60719f892837a2644cf7b172
-    bytes: 20766
+    sha256: f39a0e09a1a37378d382f43e29dc7d062884fd033dd91682f9a639ebe65580c3
+    bytes: 22200
     format: zip
     synthetic: true
     contains_user_data: false
@@ -14,6 +14,7 @@ fixtures:
     includes:
       sections: 3
       activities: [page, label, page(content), quiz(2 questions), glossary(2 entries), resource, assign, supermodule(unknown-plugin), h5pactivity(synthetic .h5p: nested libs, string versions, content/ image), feedback(label + multichoice + pagebreak + textarea), lesson(branching: content page + question page), choice(2 options), forum(qanda, no discussions), data(2 fields), workshop(instructions + example), imscp(PHP-serialized TOC), url, folder(text + 8-bit WAV tone), chat, wiki, survey(retired 5.0), assignment(retired 4.2), subsection(delegated section owning a page)]
+      grading: [assign grade item (max/pass/weight), assign rubric (2 criteria), course gradebook (2 categories, 2 letters)]
       files_indexed: 6
     expected_parser_result:
       course_fullname: Demo Course for MBZoo

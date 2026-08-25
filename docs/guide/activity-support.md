@@ -23,6 +23,7 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Chat · Wiki | ✅ | ✅ typed summary | schedule / wiki mode; messages and pages are user data. Chat is labelled *retired*: Moodle removed it in 5.0 (MDL-82457) |
 | Feedback (questionnaire) | ✅ | ✅ items rendered | labels, questions and their options in author order; responses only exist with user data |
 | Quiz | ✅ metadata + question bank | ✅ read-only question navigation | multichoice/true-false/short answer/essay/match; random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
+| Question bank · External tool · BigBlueButton | ✅ | ✅ typed summary | configuration records; MBZoo never launches an external tool |
 | SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
 | H5P (mod_h5pactivity / .h5p files) | ✅ metadata + package | ⚠️ experimental playback | sandboxed player, self-contained packages; see ADR-0018 — unsupported content types fall back to download |
 | eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |
@@ -32,6 +33,21 @@ Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016)
 
 Media files (video, audio) preview inline with native controls; a media
 element decodes its file but never executes it.
+
+## Grading
+
+Every activity's grade item travels in a content-only backup, so MBZoo shows
+what it is out of, what counts as a pass, its weight and whether it was hidden
+— read from `grades.xml` beside the module payload. Students' marks
+(`<grade_grades>`) are user data and are never read.
+
+Rubrics and marking guides live in `grading.xml`, and are often the clearest
+statement of what a task is assessed on: criteria, levels and their scores are
+rendered in full. A grading method MBZoo does not decode is named rather than
+shown as empty.
+
+The course-wide gradebook — the category tree, its aggregation method, and the
+grade letters — is shown in the detail pane before an activity is selected.
 
 ## Retired modules
 

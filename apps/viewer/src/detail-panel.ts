@@ -185,6 +185,9 @@ function buildInfoPanel(activity: ActivityInfo, parsed: ParsedActivity, panel: H
     )
     addRow(access, t('info.groups'), settings.groupMode)
     addRow(access, t('info.completion'), settings.completion)
+    // Authored intent that was parsed but never shown.
+    if (settings.completionView) addRow(access, t('info.completionView'), t('info.yes'))
+    if (settings.completionPassGrade) addRow(access, t('info.completionPass'), t('info.yes'))
     if (settings.completionExpected > 0) {
       addRow(access, t('info.completionDue'), formatDate(settings.completionExpected, lang))
     }

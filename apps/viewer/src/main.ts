@@ -142,6 +142,9 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   empty.className = 'fallback-note'
   empty.textContent = t('detail.empty')
   detail.appendChild(empty)
+  // The course gradebook has no better home than the panel that is otherwise
+  // blank until something is selected.
+  void renderCourseGradebook(detail)
 
   courseTitle.textContent = backup.course.fullname || backup.course.shortname || '(untitled course)'
   courseSub.textContent = [
@@ -249,6 +252,77 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     sectionsList.appendChild(li)
   }
   searchInput.value = ''
+}
+
+/**
+ * Course-wide gradebook: the category tree, its aggregation and the grade
+ * letters. Authored structure — the marks themselves never travel without
+ * user data.
+ */
+async function renderCourseGradebook(container: HTMLElement): Promise<void> {
+  let bytes: Uint8Array
+  try {
+    bytes = await readEntry('gradebook.xml')
+  } catch {
+    return
+  }
+  const { parseGradebookXml } = await import('@mbzoo/core')
+  const book = await parseGradebookXml(new TextDecoder().decode(bytes))
+  if (book.categories.length === 0 && book.items.length === 0) return
+
+  const details = document.createElement('details')
+  details.className = 'advanced course-gradebook'
+  const summary = document.createElement('summary')
+  summary.textContent = t('gradebook.title')
+  details.appendChild(summary)
+
+  const byCategory = new Map<number, typeof book.items>()
+  for (const item of book.items) {
+    byCategory.set(item.categoryId, [...(byCategory.get(item.categoryId) ?? []), item])
+  }
+
+  const list = document.createElement('ul')
+  list.className = 'gradebook-tree'
+  for (const category of [...book.categories].sort((a, b) => a.depth - b.depth)) {
+    const li = document.createElement('li')
+    li.style.marginLeft = `${Math.max(0, category.depth - 1) * 14}px`
+    const name = document.createElement('strong')
+    name.textContent = category.name || t('gradebook.courseTotal')
+    const how = document.createElement('em')
+    how.className = 'gradebook-aggregation'
+    how.textContent = t(`gradebook.aggregation.${category.aggregation}`)
+    li.append(name, ' ', how)
+    const items = byCategory.get(category.id) ?? []
+    if (items.length > 0) {
+      const sub = document.createElement('ul')
+      sub.className = 'gradebook-items'
+      for (const item of [...items].sort((a, b) => a.sortOrder - b.sortOrder)) {
+        const row = document.createElement('li')
+        const label = document.createElement('span')
+        label.textContent =
+          item.name || t(`gradebook.itemType.${item.itemType === 'course' ? 'course' : 'activity'}`)
+        const out = document.createElement('em')
+        out.className = 'gradebook-max'
+        out.textContent = item.kind === 'value' ? `/ ${item.max}` : t(`grade.kind.${item.kind}`)
+        row.append(label, ' ', out)
+        sub.appendChild(row)
+      }
+      li.appendChild(sub)
+    }
+    list.appendChild(li)
+  }
+  details.appendChild(list)
+
+  if (book.letters.length > 0) {
+    const letters = document.createElement('p')
+    letters.className = 'gradebook-letters'
+    letters.textContent = [...book.letters]
+      .sort((a, b) => b.lowerBoundary - a.lowerBoundary)
+      .map((l) => `${l.letter} ≥ ${l.lowerBoundary}`)
+      .join(' · ')
+    details.appendChild(letters)
+  }
+  container.appendChild(details)
 }
 
 async function openActivity(activityId: number, sectionName: string): Promise<void> {

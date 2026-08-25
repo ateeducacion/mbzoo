@@ -145,6 +145,19 @@ export class Renderer {
     parsedActivity: ParsedActivity,
     container: HTMLElement,
   ): Promise<void> {
+    await this.renderActivityBody(activity, parsedActivity, container)
+    // What the activity is worth and how it is judged sit in sibling files,
+    // not in the module payload, so they are appended for every module rather
+    // than repeated in each renderer.
+    await this.renderGradeItem(activity, container)
+    await this.renderGradingForm(activity, container)
+  }
+
+  private async renderActivityBody(
+    activity: ActivityInfo,
+    parsedActivity: ParsedActivity,
+    container: HTMLElement,
+  ): Promise<void> {
     this.dispose()
     const fields = parsedActivity.fields
     const contextId = parsedActivity.contextId
@@ -261,6 +274,10 @@ export class Renderer {
     }
     if (mod === 'hvp' || mod === 'h5pactivity') {
       await this.renderH5pActivity(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'qbank' || mod === 'lti' || mod === 'bigbluebuttonbn') {
+      await this.renderToolLike(mod, fields, contextId, container)
       return
     }
     // Known module families without a dedicated body renderer: show the
@@ -439,7 +456,26 @@ export class Renderer {
       p.textContent = `Unsupported URL target: ${target}`
       container.appendChild(p)
     }
+    const urlMode = this.displayMode(fields.get('display'))
+    if (urlMode) container.appendChild(this.buildFacts([[t('display.label'), urlMode]]))
     if (!introHtml && !target) notAvailable(container)
+  }
+
+  /**
+   * RESOURCELIB_DISPLAY_* (lib/resourcelib.php, REPO-005): how the student
+   * actually met the file. Only the modes that change the encounter are
+   * named; 'auto' is Moodle's default and says nothing.
+   */
+  private displayMode(raw: string | undefined): string | undefined {
+    const MODES: Record<string, string> = {
+      '1': t('display.embed'),
+      '2': t('display.frame'),
+      '3': t('display.newWindow'),
+      '4': t('display.download'),
+      '5': t('display.open'),
+      '6': t('display.popup'),
+    }
+    return raw === undefined ? undefined : MODES[raw]
   }
 
   private async renderFileList(
@@ -1090,6 +1126,121 @@ export class Renderer {
   }
 
   /** Glossary: concept/definition entries from glossary.xml. */
+  /**
+   * The activity's grade item: what it is out of, what passes, its weight.
+   * Lives in grades.xml beside the payload and travels without user data —
+   * the marks themselves (<grade_grades>) do not.
+   */
+  private async renderGradeItem(activity: ActivityInfo, container: HTMLElement): Promise<void> {
+    const dir = `activities/${activity.moduleName}_${activity.id}`
+    const bytes = await this.tryRead(`${dir}/grades.xml`)
+    if (!bytes) return
+    const { parseActivityGradesXml } = await import('@mbzoo/core')
+    const items = await parseActivityGradesXml(new TextDecoder().decode(bytes))
+    const graded = items.filter((i) => i.kind !== 'none')
+    if (graded.length === 0) return
+
+    const title = document.createElement('div')
+    title.className = 'q-answers-title'
+    title.textContent = t('grade.title')
+    container.appendChild(title)
+    for (const item of graded) {
+      const facts: Array<[string, string | undefined]> = [
+        [t('grade.outOf'), item.kind === 'value' ? String(item.max) : t(`grade.kind.${item.kind}`)],
+        [t('grade.pass'), item.pass > 0 ? String(item.pass) : undefined],
+        [t('grade.weight'), item.weight > 0 ? String(item.weight) : undefined],
+        [t('grade.hidden'), item.hidden ? t('info.yes') : undefined],
+      ]
+      if (items.length > 1 && item.name !== '') facts.unshift([t('grade.item'), item.name])
+      container.appendChild(this.buildFacts(facts))
+    }
+  }
+
+  /**
+   * Rubric or marking guide from grading.xml — often the clearest statement
+   * of what a task is assessed on, and nothing else in the backup says it.
+   */
+  private async renderGradingForm(activity: ActivityInfo, container: HTMLElement): Promise<void> {
+    const dir = `activities/${activity.moduleName}_${activity.id}`
+    const bytes = await this.tryRead(`${dir}/grading.xml`)
+    if (!bytes) return
+    const { parseGradingXml } = await import('@mbzoo/core')
+    const areas = await parseGradingXml(new TextDecoder().decode(bytes))
+    for (const area of areas) {
+      for (const def of area.definitions) {
+        const details = document.createElement('details')
+        details.className = 'advanced grading-form'
+        details.open = true
+        const summary = document.createElement('summary')
+        summary.textContent = `${def.name || t(`grading.method.${def.method === 'guide' ? 'guide' : 'rubric'}`)}`
+        details.appendChild(summary)
+
+        if (def.description !== '') {
+          const body = document.createElement('div')
+          body.className = 'activity-content'
+          body.innerHTML = this.safeHtml(def.description)
+          details.appendChild(body)
+        }
+
+        if (def.criteria.length === 0) {
+          // A method we do not decode is not a form with no criteria.
+          const note = document.createElement('p')
+          note.className = 'fallback-note'
+          note.textContent = t('grading.notShown', { method: def.method })
+          details.appendChild(note)
+        } else {
+          for (const criterion of def.criteria) {
+            const row = document.createElement('div')
+            row.className = 'rubric-criterion'
+            const head = document.createElement('strong')
+            head.innerHTML = this.safeHtml(criterion.description)
+            row.appendChild(head)
+            const levels = document.createElement('ul')
+            levels.className = 'rubric-levels'
+            for (const level of criterion.levels) {
+              const li = document.createElement('li')
+              const score = document.createElement('em')
+              score.className = 'rubric-score'
+              score.textContent = String(level.score)
+              const text = document.createElement('span')
+              text.innerHTML = this.safeHtml(level.definition)
+              li.append(score, text)
+              levels.appendChild(li)
+            }
+            row.appendChild(levels)
+            details.appendChild(row)
+          }
+        }
+        container.appendChild(details)
+      }
+    }
+  }
+
+  /**
+   * Question bank, external tool and meeting modules: their payload is a
+   * configuration record, so a typed summary is all there is to show.
+   */
+  private async renderToolLike(
+    mod: string,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, `mod_${mod}`, 'intro')
+    if (mod === 'lti') {
+      // The tool URL is the author's link; MBZoo never launches it.
+      container.appendChild(
+        this.buildFacts([[t('lti.toolUrl'), fields.get('toolurl') || fields.get('securetoolurl')]]),
+      )
+    } else if (mod === 'bigbluebuttonbn') {
+      container.appendChild(this.buildFacts([[t('bbb.type'), fields.get('type')]]))
+    }
+    const note = document.createElement('p')
+    note.className = 'fallback-note'
+    note.textContent = t(mod === 'qbank' ? 'qbank.note' : mod === 'lti' ? 'lti.note' : 'bbb.note')
+    container.appendChild(note)
+  }
+
   /** Label/value facts that are not dates — module settings worth naming. */
   private buildFacts(pairs: Array<[string, string | undefined]>): HTMLElement {
     const grid = document.createElement('div')

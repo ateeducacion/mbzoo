@@ -114,6 +114,16 @@ added:
       lesson-level nextpagedefault setting and never to an answer. Delegated
       sections (Moodle 4.5+ mod_subsection) now resolve to the module that owns
       them and nest under it in the tree, instead of appearing as siblings.
+  - date: 2026-08-25
+    note: >-
+      Grading surfaced end to end: per-activity grade items (grades.xml),
+      rubrics and marking guides (grading.xml) and the course gradebook
+      (gradebook.xml, shown in the otherwise blank detail pane). module.xml's
+      completionview/completionpassgrade are read at last, resource/url display
+      modes are named from RESOURCELIB_DISPLAY_*, and qbank/lti/bigbluebuttonbn
+      get typed summaries. Constants from lib/grade/constants.php and
+      lib/resourcelib.php (REPO-005); every shape verified against the Moodle
+      5.2.2 specimen and SMR_SOR's eight-category gradebook.
 
 risks:
   RISK-001:

@@ -36,6 +36,21 @@ Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-
 Los archivos de vídeo y audio se previsualizan en línea con los controles
 nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
 
+## Calificación
+
+El ítem de calificación de cada actividad viaja en una copia sin datos de
+usuario, así que MBZoo muestra sobre cuánto va, qué nota aprueba, su peso y si
+estaba oculta —leído de `grades.xml`, junto al payload del módulo—. Las notas
+del alumnado (`<grade_grades>`) son datos de usuario y no se leen nunca.
+
+Las rúbricas y guías de evaluación están en `grading.xml` y suelen ser la
+declaración más clara de qué se evalúa: criterios, niveles y puntuaciones se
+muestran completos. Un método de evaluación que MBZoo no descodifica se nombra
+en vez de mostrarse vacío.
+
+El libro de calificaciones del curso —árbol de categorías, agregación y letras—
+se muestra en el panel de detalle antes de seleccionar una actividad.
+
 ## Módulos retirados
 
 Moodle ha eliminado `chat` y `survey` del núcleo (5.0, MDL-82457) y

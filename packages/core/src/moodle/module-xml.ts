@@ -16,6 +16,10 @@ export interface ActivitySettings {
   readonly completion: 'none' | 'manual' | 'automatic' | 'unknown'
   readonly completionExpected: number
   readonly showDescription: boolean
+  /** `completionview`: the student must open the activity to complete it. */
+  readonly completionView: boolean
+  /** `completionpassgrade`: completing it requires a passing grade. */
+  readonly completionPassGrade: boolean
   readonly availability: AvailabilitySummary
 }
 
@@ -67,6 +71,8 @@ export async function parseModuleXml(xml: string): Promise<ActivitySettings> {
     completion,
     completionExpected: Number(fields.get('completionexpected') ?? '0') || 0,
     showDescription: (fields.get('showdescription') ?? '0') === '1',
+    completionView: (fields.get('completionview') ?? '0') === '1',
+    completionPassGrade: (fields.get('completionpassgrade') ?? '0') === '1',
     availability,
   }
 }

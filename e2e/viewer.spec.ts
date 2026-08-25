@@ -203,7 +203,8 @@ test('quiz navigation, glossary entries and assignment summary', async ({ page }
   // Assignment: intro + dates + submission type.
   await page.getByRole('button', { name: /Demo assignment/ }).click()
   await expect(page.locator('#detail .activity-intro')).toContainText('Upload a short report')
-  const summary = page.locator('.summary-grid')
+  // The grade item adds a second facts grid, so scope to the dates one.
+  const summary = page.locator('.summary-grid').first()
   await expect(summary).toContainText('Due')
   await expect(page.locator('.summary-row')).toContainText('File')
 })
@@ -788,6 +789,41 @@ test('concurrent activity opens both finish', async ({ page }) => {
   // And the one that lost the race still renders when reopened.
   await page.getByRole('button', { name: /Demo lesson/ }).click()
   await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
+})
+
+test('an activity shows what it is worth and the rubric that judges it', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo assignment/ }).click()
+
+  // grades.xml: authored, and present without any user data.
+  const detail = page.locator('#detail')
+  await expect(detail).toContainText(/Out of|Sobre/)
+  await expect(detail).toContainText('100')
+  await expect(detail).toContainText(/Pass mark|Nota para aprobar/)
+  await expect(detail).toContainText('50')
+
+  // grading.xml: the rubric is often the clearest statement of the task.
+  await expect(page.locator('#rubric-desc')).toBeVisible()
+  const criteria = page.locator('.rubric-criterion')
+  await expect(criteria).toHaveCount(2)
+  await expect(criteria.first()).toContainText('Clarity')
+  const scores = criteria.first().locator('.rubric-score')
+  await expect(scores).toHaveCount(2)
+  await expect(scores.first()).toHaveText('0')
+})
+
+test('the course gradebook shows its structure, never anyone marks', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  const book = page.locator('.course-gradebook')
+  await expect(book).toBeVisible()
+  await book.locator('summary').click()
+  await expect(book).toContainText('Coursework')
+  await expect(book).toContainText(/weighted mean|media ponderada/)
+  await expect(book).toContainText(/natural|suma/)
+  await expect(book.locator('.gradebook-letters')).toContainText('A ≥ 90')
 })
 
 // Moodle 4.5+ delegated sections: the section belongs under the module that
