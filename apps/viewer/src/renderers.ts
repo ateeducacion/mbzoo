@@ -32,6 +32,7 @@ import { scanExternalRefs } from './lib/external-refs.ts'
 import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
 import {
+  ALLOWED_URI_REGEXP,
   contentKind,
   decodeRefPath,
   formatBytes,
@@ -2355,7 +2356,10 @@ function notAvailable(container: HTMLElement): void {
 
 /** DOMPurify wrapper — the single sanitization point (ADR-0012). */
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true, svg: false } })
+  return DOMPurify.sanitize(html, {
+    USE_PROFILES: { html: true, svg: false },
+    ALLOWED_URI_REGEXP,
+  })
 }
 
 /** Assets larger than this stay out of an exported HTML file. */

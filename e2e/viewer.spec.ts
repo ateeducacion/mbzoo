@@ -40,6 +40,58 @@ function mutatedFixture(
   }
 }
 
+/**
+ * A Page whose content embeds a stored image through @@PLUGINFILE@@ — the
+ * shape every real course uses and that the synthetic fixture never had.
+ */
+function pageImageFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  // 1x1 red PNG.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  return mutatedFixture((entries) => {
+    const bytes = new Uint8Array(png)
+    const hash = createHash('sha1').update(bytes).digest('hex')
+    entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
+
+    replaceTextEntry(entries, 'files.xml', (xml) => {
+      const record = `  <file>
+    <contenthash>${hash}</contenthash>
+    <contextid>104</contextid>
+    <component>mod_page</component>
+    <filearea>content</filearea>
+    <itemid>0</itemid>
+    <filepath>/</filepath>
+    <filename>diagram.png</filename>
+    <userid>2</userid>
+    <filesize>${bytes.byteLength}</filesize>
+    <mimetype>image/png</mimetype>
+    <status>0</status>
+    <timecreated>1700000000</timecreated>
+    <timemodified>1700000000</timemodified>
+    <source>$@NULL@$</source>
+    <author>$@NULL@$</author>
+    <license>$@NULL@$</license>
+    <sortorder>0</sortorder>
+    <repositorytype>$@NULL@$</repositorytype>
+    <repositoryid>$@NULL@$</repositoryid>
+    <reference>$@NULL@$</reference>
+  </file>`
+      return xml.replace('</files>', `${record}\n</files>`)
+    })
+
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="page-text"&gt;Body text.&lt;/p&gt;' +
+          '&lt;img id="page-img" src="@@PLUGINFILE@@/diagram.png" alt="diagram"&gt;' +
+          '&lt;a id="page-link" href="@@PLUGINFILE@@/diagram.png"&gt;download&lt;/a&gt;</content>',
+      ),
+    )
+  }, 'page-image.mbz')
+}
+
 function hostilePageFixture(): { name: string; mimeType: string; buffer: Buffer } {
   return mutatedFixture((entries) => {
     replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
@@ -622,6 +674,25 @@ test('a forged navigation request cannot leave the resource (ADR-0022)', async (
 
   await expect(page.frameLocator('.html-frame').locator('#site-marker')).toBeVisible()
   await expect(page.locator('.site-pages button.selected')).toHaveText('index.html')
+})
+
+test('an image embedded in a Page renders (@@PLUGINFILE@@)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', pageImageFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await expect(page.locator('#page-text')).toBeVisible()
+  // resolveHtml swaps @@PLUGINFILE@@ for a managed blob: URL before the HTML
+  // is sanitized, so the sanitizer has to let blob: through or the reference
+  // is deleted and the reader gets a broken image.
+  const img = page.locator('#page-img')
+  await expect(img).toHaveAttribute('src', /^blob:/)
+  const loaded = await img.evaluate(
+    (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+  )
+  expect(loaded).toBe(true)
+  // The same applies to a link pointing at a stored file.
+  await expect(page.locator('#page-link')).toHaveAttribute('href', /^blob:/)
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

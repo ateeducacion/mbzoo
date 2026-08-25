@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  ALLOWED_URI_REGEXP,
   decodeRefPath,
   formatBytes,
   guessMime,
@@ -188,5 +189,27 @@ describe('pageNavScript', () => {
       SANDBOX_CSP,
     )
     expect(built.indexOf('Content-Security-Policy')).toBeLessThan(built.indexOf('<script'))
+  })
+})
+
+describe('ALLOWED_URI_REGEXP', () => {
+  const allows = (uri: string): boolean => ALLOWED_URI_REGEXP.test(uri)
+
+  test('lets through the schemes MBZoo needs, including its own blob URLs', () => {
+    expect(allows('blob:http://localhost/9f2c')).toBe(true)
+    expect(allows('https://example.org/x')).toBe(true)
+    expect(allows('mailto:someone@example.org')).toBe(true)
+    // Relative references must survive: course HTML is full of them.
+    expect(allows('../page.html')).toBe(true)
+    expect(allows('#section')).toBe(true)
+  })
+
+  test('still refuses the schemes that execute', () => {
+    // Widening the policy for blob: must not widen it for anything else —
+    // this is the single sanitization path (ADR-0012).
+    expect(allows('javascript:alert(1)')).toBe(false)
+    expect(allows('JaVaScRiPt:alert(1)')).toBe(false)
+    expect(allows('vbscript:msgbox(1)')).toBe(false)
+    expect(allows('data:text/html,<script>alert(1)</script>')).toBe(false)
   })
 })

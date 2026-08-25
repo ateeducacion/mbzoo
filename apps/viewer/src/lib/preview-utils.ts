@@ -35,6 +35,23 @@ export const H5P_CSP =
   "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
   "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
+/**
+ * URI schemes backup HTML may keep after sanitization. This is DOMPurify's
+ * own default list plus `blob:`.
+ *
+ * `blob:` is not a concession to the backup — it is how MBZoo's own content
+ * reaches the reader. resolveHtml replaces every `@@PLUGINFILE@@` token with
+ * a managed blob URL *before* sanitizing (the refs are URL-encoded in backup
+ * HTML, so they must be matched on the raw text), and DOMPurify's default
+ * policy rejects `blob:` on every attribute. Without this, every image a
+ * teacher embedded in a Page arrived with no `src` at all.
+ *
+ * It grants a hostile backup nothing: a `blob:` URL only resolves if this
+ * origin minted it, and the ones we mint hold that backup's own files.
+ */
+export const ALLOWED_URI_REGEXP =
+  /^(?:(?:https?|mailto|ftp|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i
+
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
