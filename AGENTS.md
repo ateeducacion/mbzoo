@@ -1,20 +1,26 @@
 # AGENTS.md — MBZoo
 
-**MBZoo**: open, inspect, preview and export Moodle `.mbz` backups directly in
-the browser. *See what's inside your MBZ.* License: MIT.
+**MBZoo** opens, inspects and previews Moodle `.mbz` backups directly in the
+browser. *See what's inside your MBZ.* License: MIT. Export/re-packaging is
+planned, not implemented.
 
 ## Current maturity
 
-Bootstrap complete (2026-08-24). Working end-to-end: drag/drop `.mbz` → archive
-detection (ZIP + TAR.GZ) → metadata parsing in a Web Worker → course title +
-section/activity tree. Everything else (activity renderers, SCORM/H5P launch,
-exports) is **planned**, not implemented. Do not advertise planned capabilities
-as existing.
+Experimental but working end-to-end (2026-08-25): drag/drop `.mbz` → archive
+detection (ZIP + TAR.GZ) → parsing in a Web Worker → normalized course model →
+course/section/activity explorer.
+
+Implemented content support includes sanitized Page/Label HTML, URL activities,
+Resource/File/Folder previews, PDF/image/text previews, sandboxed HTML files,
+and metadata fallback for unknown modules. Dedicated Book/Forum/Glossary/
+Assignment/Quiz experiences, SCORM/H5P launchers, eXeLearning inspection,
+static export/re-packaging and multi-gigabyte streaming/lazy access remain
+planned or under research. Do not advertise planned capabilities as existing.
 
 ## Repository map
 
 ```
-apps/viewer/    browser app (Vite, vanilla TS, parse worker)
+apps/viewer/    browser app (Vite, vanilla TS, parse worker, renderers)
 apps/cli/       Bun CLI adapter over the core
 packages/core/  portable parser: model/ archive/ moodle/   (@mbzoo/core)
 fixtures/       deterministic synthetic .mbz fixtures + generator + manifest
@@ -46,8 +52,11 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
 - The normalized model (`packages/core/src/model/backup.ts`) is the only
   contract crossing package boundaries. XML library objects never escape
   `src/moodle`.
-- Viewer writes backup-derived strings with `textContent` only — never
-  `innerHTML` (ADR-0009).
+- Viewer uses `textContent` for backup-derived text by default. Backup-derived
+  HTML may reach `innerHTML` only after the single `sanitizeHtml()`/DOMPurify
+  path defined by ADR-0012. Do not create a second sanitization path.
+- Executable HTML files run only in an opaque-origin sandboxed iframe with the
+  injected CSP defined by ADR-0014; never in the MBZoo application origin.
 - New packages only when a real boundary exists (ADR-0011).
 
 ## Coding conventions
@@ -62,14 +71,20 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
 
 ## Security rules (binding)
 
-1. Every `.mbz` is hostile input. Validate at trust boundaries; use `unknown`
-   and narrow explicitly; never unsafe type assertions.
-2. Never execute embedded content (SCORM/H5P/HTML/SVG) in the app origin.
-   Launchers belong in sandboxed iframes with CSP + postMessage bridges
-   (ADR-0009) — none exist yet; do not add one without an SDD + ADR.
-3. Nothing may upload user data anywhere. No telemetry, no analytics.
-4. Path traversal, XML entity expansion and malformed input are tested
-   regressions — extend those tests when touching parsers.
+1. Every `.mbz` and every value extracted from it is hostile input. Validate at
+   trust boundaries; use `unknown` and narrow explicitly; never unsafe type
+   assertions to silence validation.
+2. Never execute backup-provided JavaScript in the MBZoo application origin.
+   Page/Label HTML is sanitized (ADR-0012); executable HTML-file previews use
+   the opaque-origin sandbox + injected CSP from ADR-0014.
+3. SCORM/H5P launchers are not implemented. Any new executable-content surface,
+   iframe permission, postMessage bridge or network capability requires an
+   evidence-backed security/architecture decision and threat-model review.
+4. Nothing may upload user data anywhere. No telemetry, analytics or automatic
+   fetching of backup-referenced remote content.
+5. Path traversal, XML entity expansion and malformed input are regression
+   classes. Extend security tests whenever archive, parser or renderer trust
+   boundaries change.
 
 ## Evidence & documentation rules
 
@@ -77,24 +92,25 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
   EXP-NNN / ADR-NNNN) or carry `[PENDING: verification required]`.
 - Never invent sources, versions or benchmark numbers. Run the experiment.
 - Durable decisions get ADRs (template in `research/templates/`). Supersede;
-  never rewrite accepted ADRs.
-- Update `research/status.yaml` (append-only) when adding tasks/risks.
+  never rewrite accepted ADR history.
+- Update `research/status.yaml` append-only when adding/changing tracked tasks
+  or risks.
 
 ## Fixtures & privacy restrictions
 
 - Committed fixtures must be synthetic, deterministic and documented in
   `fixtures/manifest.yaml` with sha256. Regenerate via the generator script;
-  a changed checksum is a regression.
+  unexpected checksum drift is a regression.
 - NEVER commit real institution or personal Moodle backups. Real-world
   specimens (e.g. saylordotorg/course_backups, REPO-004) are downloaded ad hoc,
-  recorded with provenance, never vendored wholesale.
+  recorded with provenance, and never vendored wholesale.
 - Do not port GPL Moodle PHP into this MIT codebase line-by-line; study format
   facts instead (REPO-005).
 
 ## Files generated automatically
 
-- `research/indexes/*.yaml` — regenerate with `bun run research:indexes`;
-  CI detects stale output. Never hand-edit.
+- `research/indexes/*.yaml` — regenerate with `bun run research:indexes`; CI
+  detects stale output. Never hand-edit.
 
 ## What agents must never do
 
@@ -104,4 +120,4 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
 - Push, merge, publish releases or deploy unless explicitly authorized.
 - Edit generated files by hand; rewrite ADR history; reuse IDs.
 - Add heavy frameworks or new dependencies without an evidence-backed record
-  (purpose, license, maintenance, bundle impact).
+  covering purpose, license, maintenance and bundle impact.
