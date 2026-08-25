@@ -22,6 +22,12 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     expect(b.course.idNumber).toBe('MBZOO-DEMO')
   })
 
+  test('keeps the release and date the backup was taken with', async () => {
+    const b = await openBackup(Bun.file(FIXTURE))
+    expect(b.moodleRelease).toBe('3.8.4+ (Build: 20200909)')
+    expect(b.backupDate).toBe(1700000000)
+  })
+
   test('reconstructs sections with ordered activities', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
     expect(b.sections.map((s) => s.number)).toEqual([1, 3, 2])
@@ -97,6 +103,42 @@ describe('user-data flag', () => {
     )
     const b = await openBackup(new Blob([zipSync(entries)]))
     expect(b.includesUserData).toBe(false)
+  })
+})
+
+describe('backup provenance', () => {
+  async function withInformation(
+    mutate: (xml: string) => string,
+  ): Promise<Awaited<ReturnType<typeof openBackup>>> {
+    const bytes = new Uint8Array(await Bun.file(FIXTURE).arrayBuffer())
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import('fflate')
+    const entries = unzipSync(bytes)
+    const xml = entries['moodle_backup.xml']
+    if (!xml) throw new Error('fixture has no moodle_backup.xml')
+    entries['moodle_backup.xml'] = strToU8(mutate(strFromU8(xml)))
+    return await openBackup(new Blob([zipSync(entries)]))
+  }
+
+  test('a missing release reads as empty, never as a placeholder', async () => {
+    const b = await withInformation((xml) =>
+      xml.replace(/<moodle_release>[^<]*<\/moodle_release>/, ''),
+    )
+    expect(b.moodleRelease).toBe('')
+  })
+
+  test('a backup date that is not a positive number is absent', async () => {
+    const garbage = await withInformation((xml) =>
+      xml.replace('<backup_date>1700000000</backup_date>', '<backup_date>soon</backup_date>'),
+    )
+    expect(garbage.backupDate).toBeUndefined()
+    const zero = await withInformation((xml) =>
+      xml.replace('<backup_date>1700000000</backup_date>', '<backup_date>0</backup_date>'),
+    )
+    expect(zero.backupDate).toBeUndefined()
+    const missing = await withInformation((xml) =>
+      xml.replace('<backup_date>1700000000</backup_date>', ''),
+    )
+    expect(missing.backupDate).toBeUndefined()
   })
 })
 

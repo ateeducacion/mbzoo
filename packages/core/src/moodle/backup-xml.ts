@@ -25,6 +25,10 @@ export interface BackupXmlResult {
   readonly activities: ActivityInfo[]
   /** `users` root setting: was the backup taken with user data? */
   readonly includesUserData: boolean
+  /** <information><moodle_release>, '' when absent. */
+  readonly moodleRelease: string
+  /** <information><backup_date> as unix seconds, undefined when absent or not a number. */
+  readonly backupDate: number | undefined
 }
 
 /**
@@ -39,6 +43,8 @@ export async function parseMoodleBackupXml(
   let course: { -readonly [K in keyof CourseInfo]: CourseInfo[K] } | undefined
   // Recorded before <contents>, i.e. before `course` exists; applied at the end.
   let originalWwwroot = ''
+  let moodleRelease = ''
+  let backupDate: number | undefined
   // <settings><setting><level>root</level><name>users</name><value>0|1</value>.
   let includesUserData = false
   let settingName = ''
@@ -100,6 +106,11 @@ export async function parseMoodleBackupXml(
     }
 
     if (p === 'moodle_backup/information/original_wwwroot') originalWwwroot = value
+    else if (p === 'moodle_backup/information/moodle_release') moodleRelease = value
+    else if (p === 'moodle_backup/information/backup_date') {
+      const n = Number(value)
+      backupDate = value !== '' && Number.isFinite(n) && n > 0 ? n : undefined
+    }
     if (p === 'moodle_backup/information/settings/setting/level') settingLevel = value
     else if (p === 'moodle_backup/information/settings/setting/name') settingName = value
     else if (p === 'moodle_backup/information/settings/setting/value') {
@@ -139,7 +150,7 @@ export async function parseMoodleBackupXml(
     )
   }
   course.originalWwwroot = originalWwwroot
-  return { course, sections, activities, includesUserData }
+  return { course, sections, activities, includesUserData, moodleRelease, backupDate }
 }
 
 function leaf(path: string): string {

@@ -1695,3 +1695,99 @@ test('a video embedded from another site is named, not silently dropped', async 
   await expect(content.locator('iframe')).toHaveCount(0)
   expect(requests.filter((u) => u.includes('youtube'))).toEqual([])
 })
+
+const USERS_FIXTURE = join(here, '..', 'fixtures', 'files', 'demo-course-users.mbz')
+
+/**
+ * The detail pane used to sit blank until something was selected. Now it
+ * carries the backup at a glance (mockup 3a): real provenance from
+ * moodle_backup.xml, size metrics, the module mix, the gradebook and the
+ * warnings — and it steps aside as soon as an activity opens.
+ */
+test('the course summary fills the detail pane until an activity is opened', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', USERS_FIXTURE)
+
+  const summary = page.locator('#detail .course-summary')
+  await expect(summary).toBeVisible()
+  await expect(summary.locator('.detail-title')).toHaveText('Demo Course with People')
+
+  // Provenance is the backup's own, not a placeholder: release, container,
+  // the date it was taken (1700000000 → November 2023) and the parse time.
+  const meta = summary.locator('.summary-meta')
+  await expect(meta).toContainText('Moodle 4.4')
+  await expect(meta).toContainText('ZIP')
+  await expect(meta).toContainText('2023')
+  await expect(meta).toContainText(/parsed in|analizado en/)
+  await expect(meta).toContainText(' ms')
+
+  const tiles = summary.locator('.summary-tile')
+  await expect(tiles).toHaveCount(4)
+  await expect(tiles.nth(0)).toContainText('1')
+  await expect(tiles.nth(1)).toContainText('2')
+  await expect(tiles.nth(1)).toContainText(/activities|actividades/)
+  await expect(tiles.nth(3)).toContainText(/KB|MB/)
+
+  // One bar per module type, scaled to the most common one.
+  const bars = summary.locator('.summary-bar-row')
+  await expect(bars).toHaveCount(2)
+  await expect(bars.first().locator('.mod-badge')).toHaveText(/^(page|assign)$/)
+  await expect(bars.first().locator('.summary-bar-count')).toHaveText('1')
+  expect(
+    await bars
+      .first()
+      .locator('.summary-bar-fill')
+      .evaluate((n) => (n as HTMLElement).style.width),
+  ).toBe('100%')
+
+  // The gradebook block: course total, the graded items and the letters.
+  const book = summary.locator('.summary-gradebook')
+  await expect(book).toContainText(/Course total|Total del curso/)
+  await expect(book).toContainText(/natural/)
+  await expect(book).toContainText('Unit 1 report')
+  await expect(book).toContainText('/ 100')
+  await expect(book).toContainText('A ≥ 90')
+  // The full tree stays folded behind the same disclosure as before.
+  await expect(book.locator('.course-gradebook')).toBeVisible()
+  await expect(book.locator('.gradebook-tree')).toBeHidden()
+
+  await expect(summary.locator('.summary-warnings')).toHaveCount(0)
+  await expect(summary.locator('.summary-hint')).toBeVisible()
+
+  // Opening an activity replaces the summary…
+  await page.getByRole('button', { name: /Course guide/ }).click()
+  await expect(page.locator('#detail .course-summary')).toHaveCount(0)
+  await expect(page.locator('#detail .detail-title')).toHaveText('Course guide')
+
+  // …and the course title brings it back, with nothing left selected.
+  await page.locator('#course-title button').click()
+  await expect(page.locator('#detail .course-summary')).toBeVisible()
+  await expect(page.locator('.activity-button.selected')).toHaveCount(0)
+})
+
+test('the course summary counts hidden activities and surfaces parse warnings', async ({
+  page,
+}) => {
+  // Dropping files.xml is the cheapest way to make the parser warn.
+  const noFilesIndex = mutatedFixture((entries) => {
+    delete entries['files.xml']
+  }, 'no-files-index.mbz')
+  await page.goto('/')
+  await page.setInputFiles('#file-input', noFilesIndex)
+
+  const summary = page.locator('#detail .course-summary')
+  await expect(summary).toBeVisible()
+  await expect(summary.locator('.summary-tile').nth(1)).toContainText('27')
+
+  // 24 module types in the demo: the most common ones get bars, the rest
+  // are named in one line, and the one hidden activity is counted.
+  const types = summary.locator('.summary-types')
+  await expect(types.locator('.summary-bar-row')).toHaveCount(8)
+  await expect(types.locator('.summary-bar-row').first().locator('.mod-badge')).toHaveText('page')
+  await expect(types.locator('.summary-more')).toContainText(/hidden: 1|ocultas: 1/)
+  await expect(types.locator('.summary-more')).toContainText('url 1')
+
+  const warnings = summary.locator('.summary-warnings')
+  await expect(warnings).toContainText(/1 warning|1 aviso/)
+  await expect(warnings).toContainText('files.xml')
+})
