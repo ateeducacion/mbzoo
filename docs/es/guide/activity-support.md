@@ -19,6 +19,8 @@ vista del curso.
 | Base de datos | ✅ | ✅ esquema de campos | los campos que recoge; las entradas solo existen con datos de usuario |
 | Taller (Workshop) | ✅ | ✅ instrucciones + ejemplos | envíos de ejemplo y ambos bloques de instrucciones; el trabajo entre pares es dato de usuario |
 | Paquete IMS (imscp) | ✅ | ✅ índice + páginas en sandbox | índice leído del campo `structure` serializado en PHP (ADR-0021) |
+| Subsección | ✅ | ✅ anidada en el árbol | Moodle 4.5+ delega una sección en un módulo; MBZoo la anida bajo su dueño en vez de listarla como hermana |
+| Encuesta (retirada) · Tarea 2.2 (retirada) | ✅ | ✅ resumen | eliminadas del núcleo en 5.0 y 4.2; ningún Moodle actual puede restaurarlas |
 | Chat · Wiki | ✅ | ✅ resumen con tipo | horario / modo del wiki; mensajes y páginas son datos de usuario. El chat se marca como *retirado*: Moodle lo eliminó en 5.0 (MDL-82457) |
 | Glosario | ✅ | ✅ entradas renderizadas | concepto + definición; las entradas las escriben los usuarios, así que una copia hecha sin datos de usuario no trae ninguna y el visor lo indica |
 | Tarea (Assignment) | ✅ | ✅ resumen | fechas de entrega/cierre y tipos de entrega |

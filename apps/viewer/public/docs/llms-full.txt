@@ -21,16 +21,64 @@ MBZoo detects the format from magic bytes and supports **both**.
 ## Inside the archive
 
 ```
-moodle_backup.xml          course/section/activity skeleton
+moodle_backup.xml          course/section/activity skeleton, and the
+                           settings that decide what else is in here
 files.xml                  file index (contenthash, component, filearea…)
 course/course.xml          full course metadata (fullname lives here)
 sections/section_N/        per-section name, summary, activity order
-activities/<mod>_N/        per-activity XML (module.xml, <mod>.xml)
+activities/<mod>_N/        per-activity XML — see below
 files/<2 hex>/<sha1>       content-addressed file pool
+questions.xml              the question bank, shared by every quiz
+gradebook.xml              category tree, aggregation, grade letters
+users.xml                  the people — only when the backup was taken
+                           with user data (see Privacy)
 ```
 
-Facts verified against Moodle source (`moodle/moodle`, REPO-005) and real
-backups — see `research/` in the repository.
+An activity directory holds more than its module payload, and the siblings
+are where several things hide:
+
+```
+activities/assign_42/
+  assign.xml               the module's own settings and content
+  module.xml               visibility, completion rules, availability, tags
+  grades.xml               this activity's grade item: out of, pass, weight
+  grading.xml              rubric or marking guide, when one is defined
+  inforef.xml              which files.xml records this activity uses
+  calendar.xml roles.xml competencies.xml filters.xml
+```
+
+## The setting that decides everything
+
+The single most useful thing to know about a `.mbz` is whether it was taken
+**with user data**. Every module writes its full XML tree either way; what the
+`users` setting gates is each element's _data source_.
+
+Two modules that look equally rich in the schema can be worlds apart in a real
+file. A `lesson` writes all of its pages and answers unconditionally — the
+whole authored lesson is there. A `forum` writes nothing but the forum record;
+every discussion and post is user data. That is why an empty glossary in a
+content-only backup is not a bug, and why MBZoo says _why_ it is empty rather
+than just that it is.
+
+| Always in the backup                                                                                                                                                              | Only with user data                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| lesson pages and answers, choice options, database fields, workshop instructions and examples, quiz slots and the question bank, grade items and rubrics, the gradebook structure | forum discussions and posts, glossary entries, database records, wiki pages, chat messages, assignment submissions, quiz attempts, everyone's marks |
+
+## Links that point nowhere
+
+A backup may be restored onto a different site, so Moodle cannot store
+absolute URLs for course-internal links. It rewrites them as
+`$@COURSEVIEWBYID*62@$` tokens at backup time and decodes them at restore
+time. MBZoo never restores anything, so it decodes them for display instead —
+in-app navigation when the target travelled in the same backup, otherwise a
+labelled link to the site the backup came from, never fetched (ADR-0019).
+
+The same grammar carries `$@NULL@$`, which is Moodle's serialized SQL NULL —
+a field value, not a link, and never content.
+
+Facts verified against Moodle source (`moodle/moodle`, REPO-005) and against
+real backups, including courses generated in a real Moodle for the purpose —
+see `research/` in the repository.
 
 ## What MBZoo does with it
 
@@ -64,16 +112,64 @@ MBZoo detecta el formato por los magic bytes y soporta **ambos**.
 ## Dentro del archivo
 
 ```
-moodle_backup.xml          esqueleto curso/secciones/actividades
+moodle_backup.xml          esqueleto curso/secciones/actividades, y los
+                           ajustes que deciden qué más hay aquí dentro
 files.xml                  índice de archivos (contenthash, component, filearea…)
 course/course.xml          metadatos completos del curso (el fullname vive aquí)
 sections/section_N/        nombre, resumen y orden de actividades por sección
-activities/<mod>_N/        XML por actividad (module.xml, <mod>.xml)
+activities/<mod>_N/        XML por actividad — ver abajo
 files/<2 hex>/<sha1>       almacén de archivos direccionado por contenido
+questions.xml              el banco de preguntas, compartido por los cuestionarios
+gradebook.xml              árbol de categorías, agregación, letras de calificación
+users.xml                  las personas — solo si la copia se hizo con datos
+                           de usuario (ver Privacidad)
 ```
 
+Un directorio de actividad tiene más que su payload, y en los hermanos es
+donde se esconden varias cosas:
+
+```
+activities/assign_42/
+  assign.xml               ajustes y contenido propios del módulo
+  module.xml               visibilidad, finalización, restricciones, etiquetas
+  grades.xml               ítem de calificación: sobre cuánto, aprobado, peso
+  grading.xml              rúbrica o guía de evaluación, si hay
+  inforef.xml              qué registros de files.xml usa esta actividad
+  calendar.xml roles.xml competencies.xml filters.xml
+```
+
+## El ajuste que lo decide todo
+
+Lo más útil que se puede saber de un `.mbz` es si se hizo **con datos de
+usuario**. Todos los módulos escriben su árbol XML completo en cualquier caso;
+lo que el ajuste `users` condiciona es la _fuente de datos_ de cada elemento.
+
+Dos módulos que en el esquema parecen igual de ricos pueden ser mundos
+distintos en un fichero real. Una `lección` escribe todas sus páginas y
+respuestas sin condiciones: la unidad didáctica entera está ahí. Un `foro` no
+escribe más que el registro del foro; cada debate y cada mensaje son datos de
+usuario. Por eso un glosario vacío en una copia sin usuarios no es un fallo, y
+por eso MBZoo dice _por qué_ está vacío y no solo que lo está.
+
+| Siempre en la copia                                                                                                                                                                                                                      | Solo con datos de usuario                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| páginas y respuestas de lección, opciones de consulta, campos de base de datos, instrucciones y ejemplos de taller, slots de cuestionario y banco de preguntas, ítems de calificación y rúbricas, estructura del libro de calificaciones | debates y mensajes de foro, entradas de glosario, registros de base de datos, páginas de wiki, mensajes de chat, entregas de tareas, intentos de cuestionario, las notas de todos |
+
+## Enlaces que no llevan a ninguna parte
+
+Una copia puede restaurarse en otro sitio, así que Moodle no puede guardar
+URLs absolutas para los enlaces internos del curso. Los reescribe como fichas
+`$@COURSEVIEWBYID*62@$` al hacer la copia y los descodifica al restaurar.
+MBZoo no restaura nada, así que los descodifica para mostrarlos: navegación
+interna cuando el destino viajó en la misma copia, y si no, un enlace
+etiquetado al sitio del que salió la copia, que nunca se descarga (ADR-0019).
+
+La misma gramática lleva `$@NULL@$`, que es el NULL de SQL serializado de
+Moodle: un valor de campo, no un enlace, y nunca contenido.
+
 Hechos verificados contra el código de Moodle (`moodle/moodle`, REPO-005) y
-copias reales — ver `research/` en el repositorio.
+contra copias reales, incluidos cursos generados en un Moodle real para este
+fin — ver `research/` en el repositorio.
 
 ## Qué hace MBZoo con ello
 
@@ -112,6 +208,8 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Database                                      | ✅                          | ✅ field schema                  | the fields collected; records only exist with user data                                                                                                                                                        |
 | Workshop                                      | ✅                          | ✅ instructions + examples       | example submissions and both instruction blocks; peer work is user data                                                                                                                                        |
 | IMS content package                           | ✅                          | ✅ TOC + sandboxed pages         | table of contents read from the PHP-serialized `structure` (ADR-0021)                                                                                                                                          |
+| Subsection                                    | ✅                          | ✅ nested in the tree            | Moodle 4.5+ delegates a section to a module; MBZoo nests it under its owner rather than listing it as a sibling                                                                                                |
+| Survey (retired) · Assignment 2.2 (retired)   | ✅                          | ✅ summary                       | removed from Moodle core in 5.0 and 4.2; no current Moodle can restore them                                                                                                                                    |
 | Chat · Wiki                                   | ✅                          | ✅ typed summary                 | schedule / wiki mode; messages and pages are user data. Chat is labelled _retired_: Moodle removed it in 5.0 (MDL-82457)                                                                                       |
 | Feedback (questionnaire)                      | ✅                          | ✅ items rendered                | labels, questions and their options in author order; responses only exist with user data                                                                                                                       |
 | Quiz                                          | ✅ metadata + question bank | ✅ read-only question navigation | multichoice/true-false/short answer/essay/match; random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
@@ -186,30 +284,32 @@ MBZoo renderiza lo que la copia contiene realmente y es transparente con lo
 que no puede hacer. Los plugins de terceros desconocidos nunca rompen la
 vista del curso.
 
-| Módulo Moodle          | Inspeccionar          | Vista previa                  | Notas                                                                                                                                                                                                                                                                                       |
-| ---------------------- | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Página (Page)          | ✅                     | ✅ HTML saneado                | ADR-0012/0013                                                                                                                                                                                                                                                                               |
-| Etiqueta (Label)       | ✅                     | ✅ HTML saneado                |                                                                                                                                                                                                                                                                                             |
-| URL                    | ✅                     | ✅ enlace externo              | nunca se descarga automáticamente                                                                                                                                                                                                                                                           |
-| Recurso / Archivo      | ✅                     | ✅ vista integrada             | PDF con canvas pdf.js, imágenes, texto, HTML en sandbox (ADR-0014)                                                                                                                                                                                                                          |
-| Carpeta (Folder)       | ✅                     | ✅ tarjetas de archivo         |                                                                                                                                                                                                                                                                                             |
-| Página web con CSS+JS  | ✅                     | ✅ iframe en sandbox           | origen opaco + CSP; el JS queda aislado de la app (ADR-0014). Un sitio de varias páginas (p. ej. una exportación de eXeLearning) se recorre desde la lista de páginas de MBZoo, no siguiendo los enlaces dentro del iframe (ADR-0020)                                                       |
-| Libro (Book)           | ✅ metadatos           | ✅ capítulos con navegación    | TOC + anterior/siguiente (ADR-0013)                                                                                                                                                                                                                                                         |
-| Foro                   | ✅                     | ✅ resumen con tipo            | tipo de foro y ajustes; los debates solo existen si la copia incluyó usuarios                                                                                                                                                                                                               |
-| Lección                | ✅                     | ✅ páginas ramificadas         | páginas, respuestas y a dónde salta cada una: todo viaja en una copia sin datos de usuario                                                                                                                                                                                                  |
-| Consulta (Choice)      | ✅                     | ✅ pregunta + opciones         |                                                                                                                                                                                                                                                                                             |
-| Base de datos          | ✅                     | ✅ esquema de campos           | los campos que recoge; las entradas solo existen con datos de usuario                                                                                                                                                                                                                       |
-| Taller (Workshop)      | ✅                     | ✅ instrucciones + ejemplos    | envíos de ejemplo y ambos bloques de instrucciones; el trabajo entre pares es dato de usuario                                                                                                                                                                                               |
-| Paquete IMS (imscp)    | ✅                     | ✅ índice + páginas en sandbox | índice leído del campo `structure` serializado en PHP (ADR-0021)                                                                                                                                                                                                                            |
-| Chat · Wiki            | ✅                     | ✅ resumen con tipo            | horario / modo del wiki; mensajes y páginas son datos de usuario. El chat se marca como _retirado_: Moodle lo eliminó en 5.0 (MDL-82457)                                                                                                                                                    |
-| Glosario               | ✅                     | ✅ entradas renderizadas       | concepto + definición; las entradas las escriben los usuarios, así que una copia hecha sin datos de usuario no trae ninguna y el visor lo indica                                                                                                                                            |
-| Tarea (Assignment)     | ✅                     | ✅ resumen                     | fechas de entrega/cierre y tipos de entrega                                                                                                                                                                                                                                                 |
-| Encuesta (Feedback)    | ✅                     | ✅ elementos renderizados      | etiquetas, preguntas y sus opciones en el orden del autor; las respuestas solo existen con datos de usuario                                                                                                                                                                                 |
-| Cuestionario (Quiz)    | ✅ banco de preguntas  | ✅ inspección navegable        | preguntas con radios/checkboxes estilo Moodle; opción múltiple/verdadero-falso/respuesta corta/ensayo/relacionar; las preguntas al azar recorren el banco del que se sortean, indicando cuántas pide cada intento; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
-| SCORM                  | ✅ metadatos + paquete | ⏳ investigación               | lanzar requiere un runtime (candidato: scorm-again, Q-012)                                                                                                                                                                                                                                  |
-| H5P                    | ✅ metadatos + paquete | ⏳ investigación               | candidato: h5p-standalone (Q-013)                                                                                                                                                                                                                                                           |
-| eXeLearning .elp/.elpx | ✅ como archivos       | ⏳ investigación               | estudio de formato en Q-016                                                                                                                                                                                                                                                                 |
-| Plugins desconocidos   | ✅                     | ✅ fallback de metadatos       | nunca rompen la vista del curso                                                                                                                                                                                                                                                             |
+| Módulo Moodle                              | Inspeccionar          | Vista previa                  | Notas                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------ | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Página (Page)                              | ✅                     | ✅ HTML saneado                | ADR-0012/0013                                                                                                                                                                                                                                                                               |
+| Etiqueta (Label)                           | ✅                     | ✅ HTML saneado                |                                                                                                                                                                                                                                                                                             |
+| URL                                        | ✅                     | ✅ enlace externo              | nunca se descarga automáticamente                                                                                                                                                                                                                                                           |
+| Recurso / Archivo                          | ✅                     | ✅ vista integrada             | PDF con canvas pdf.js, imágenes, texto, HTML en sandbox (ADR-0014)                                                                                                                                                                                                                          |
+| Carpeta (Folder)                           | ✅                     | ✅ tarjetas de archivo         |                                                                                                                                                                                                                                                                                             |
+| Página web con CSS+JS                      | ✅                     | ✅ iframe en sandbox           | origen opaco + CSP; el JS queda aislado de la app (ADR-0014). Un sitio de varias páginas (p. ej. una exportación de eXeLearning) se recorre desde la lista de páginas de MBZoo, no siguiendo los enlaces dentro del iframe (ADR-0020)                                                       |
+| Libro (Book)                               | ✅ metadatos           | ✅ capítulos con navegación    | TOC + anterior/siguiente (ADR-0013)                                                                                                                                                                                                                                                         |
+| Foro                                       | ✅                     | ✅ resumen con tipo            | tipo de foro y ajustes; los debates solo existen si la copia incluyó usuarios                                                                                                                                                                                                               |
+| Lección                                    | ✅                     | ✅ páginas ramificadas         | páginas, respuestas y a dónde salta cada una: todo viaja en una copia sin datos de usuario                                                                                                                                                                                                  |
+| Consulta (Choice)                          | ✅                     | ✅ pregunta + opciones         |                                                                                                                                                                                                                                                                                             |
+| Base de datos                              | ✅                     | ✅ esquema de campos           | los campos que recoge; las entradas solo existen con datos de usuario                                                                                                                                                                                                                       |
+| Taller (Workshop)                          | ✅                     | ✅ instrucciones + ejemplos    | envíos de ejemplo y ambos bloques de instrucciones; el trabajo entre pares es dato de usuario                                                                                                                                                                                               |
+| Paquete IMS (imscp)                        | ✅                     | ✅ índice + páginas en sandbox | índice leído del campo `structure` serializado en PHP (ADR-0021)                                                                                                                                                                                                                            |
+| Subsección                                 | ✅                     | ✅ anidada en el árbol         | Moodle 4.5+ delega una sección en un módulo; MBZoo la anida bajo su dueño en vez de listarla como hermana                                                                                                                                                                                   |
+| Encuesta (retirada) · Tarea 2.2 (retirada) | ✅                     | ✅ resumen                     | eliminadas del núcleo en 5.0 y 4.2; ningún Moodle actual puede restaurarlas                                                                                                                                                                                                                 |
+| Chat · Wiki                                | ✅                     | ✅ resumen con tipo            | horario / modo del wiki; mensajes y páginas son datos de usuario. El chat se marca como _retirado_: Moodle lo eliminó en 5.0 (MDL-82457)                                                                                                                                                    |
+| Glosario                                   | ✅                     | ✅ entradas renderizadas       | concepto + definición; las entradas las escriben los usuarios, así que una copia hecha sin datos de usuario no trae ninguna y el visor lo indica                                                                                                                                            |
+| Tarea (Assignment)                         | ✅                     | ✅ resumen                     | fechas de entrega/cierre y tipos de entrega                                                                                                                                                                                                                                                 |
+| Encuesta (Feedback)                        | ✅                     | ✅ elementos renderizados      | etiquetas, preguntas y sus opciones en el orden del autor; las respuestas solo existen con datos de usuario                                                                                                                                                                                 |
+| Cuestionario (Quiz)                        | ✅ banco de preguntas  | ✅ inspección navegable        | preguntas con radios/checkboxes estilo Moodle; opción múltiple/verdadero-falso/respuesta corta/ensayo/relacionar; las preguntas al azar recorren el banco del que se sortean, indicando cuántas pide cada intento; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
+| SCORM                                      | ✅ metadatos + paquete | ⏳ investigación               | lanzar requiere un runtime (candidato: scorm-again, Q-012)                                                                                                                                                                                                                                  |
+| H5P                                        | ✅ metadatos + paquete | ⏳ investigación               | candidato: h5p-standalone (Q-013)                                                                                                                                                                                                                                                           |
+| eXeLearning .elp/.elpx                     | ✅ como archivos       | ⏳ investigación               | estudio de formato en Q-016                                                                                                                                                                                                                                                                 |
+| Plugins desconocidos                       | ✅                     | ✅ fallback de metadatos       | nunca rompen la vista del curso                                                                                                                                                                                                                                                             |
 
 Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).
 
@@ -274,13 +374,14 @@ url: /mbzoo/docs/ARCHITECTURE.md
 
 # Architecture
 
-Status: bootstrap (2026-08-24). Durable decisions live in
-`research/decisions/adr/`; this page summarizes the shape.
+Status: experimental but working end to end (2026-08-25). Durable decisions
+live in `research/decisions/adr/`; this page summarizes the shape.
 
 ```
                  ┌──────────────────────────────┐
   .mbz file ───▶ │  apps/viewer (Vite, vanilla) │
    (File/Blob)   │   main.ts        worker.ts   │
+                 │   renderers.ts   detail-panel│
                  └───────┬──────────────┬───────┘
                          │              │ postMessage(ArrayBuffer)
                          ▼              ▼
@@ -298,6 +399,21 @@ Status: bootstrap (2026-08-24). Durable decisions live in
                   apps/cli (Bun) ─┘ same core, local disk
 ```
 
+`packages/core/src/moodle/` holds one parser per thing the format expresses,
+each reading the minimum subset it needs:
+
+| Area          | Modules                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| Structure     | `backup-xml`, `course-xml`, `activity-xml`, `files-xml`                                           |
+| Activities    | `lesson-xml`, `book-xml`, `glossary-xml`, `feedback-xml`, `questions-xml`                         |
+| Grading       | `grades-xml`, `grading-xml`                                                                       |
+| People        | `users-xml`                                                                                       |
+| Cross-cutting | `links` (`$@…@$` tokens), `php-serialized`, `legacy-modules`, `availability`, `module-xml`, `xml` |
+
+Two rules keep that list from becoming a pile: the normalized model in
+`packages/core/src/model/backup.ts` is the only contract that crosses a
+package boundary, and XML library objects never escape `src/moodle`.
+
 Key boundaries (see ADRs for rationale):
 
 - **Portable core** (ADR-0004): Web-platform primitives only; the normalized
@@ -307,12 +423,34 @@ Key boundaries (see ADRs for rationale):
   lazy/streaming access deferred behind `ArchiveReader`.
 - **XML adapter** (ADR-0006): event-based parsing with input/text budgets;
   saxes is an implementation detail.
-- **Security** (ADR-0009): hostile input posture; textContent-only rendering;
-  no content execution in the app origin.
+- **Security** (ADR-0009): hostile input posture; textContent by default; a
+  single sanitization path for backup HTML (ADR-0012); no content execution in
+  the app origin.
+- **Sandboxed content** (ADR-0017, ADR-0020, ADR-0022): executable HTML runs
+  only in an opaque-origin iframe with an injected CSP, with assets inlined as
+  `data:` URIs; multi-page sites are navigated within that contract.
+- **Never guess a URL** (ADR-0019): `$@…@$` link tokens decode from rules read
+  in Moodle source, or not at all — an undecodable one loses its href rather
+  than resolving against MBZoo's own origin.
+- **Refusing parsers** (ADR-0021): the PHP `serialize()` reader supports the
+  scalar and array subset that appears and refuses objects and
+  back-references outright.
 
 Performance model today: parse runs in a Worker; only metadata XML is read
 eagerly; binary assets are never extracted unless requested. Large-file
 strategy is tracked as TASK-003 / Q-004..Q-007.
+
+## How claims get verified
+
+Parsers are written against Moodle source (REPO-005) because it is
+authoritative for what a backup _can_ contain — and then checked against a
+real backup, because the schema does not say what one _does_ contain. Real
+specimens come from institutional and public corpora, from Moodle's own test
+fixtures, and from courses generated in a real Moodle and backed up through
+`backup_controller`. They are recorded in `fixtures/manifest.yaml` with
+provenance and checksums, and never committed. That practice has already
+caught a bug a synthetic fixture could not: a lesson jump target whose page id
+collided with a Moodle constant.
 
 
 
@@ -330,15 +468,52 @@ url: /mbzoo/docs/PRIVACY.md
   File API and parsed inside a Web Worker on your machine. There is no upload
   path — no backend, no telemetry, no analytics.
 - The CLI reads local files only.
-- Course content may contain personal data (names, emails, submissions,
-  grades). MBZoo treats that data as yours alone: it stays in memory, and any
-  future export feature will require an explicit user action.
 - External resources referenced by course content are not fetched
-  automatically. If a future feature needs network access, it will be opt-in
-  and documented here first.
+  automatically. Course links that Moodle rewrote into `$@…@$` tokens are
+  decoded and offered as links, never requested (ADR-0019). If a future
+  feature needs network access, it will be opt-in and documented here first.
 
 This is a product property enforced by architecture (static deployment, no
 server code), not just a policy statement.
+
+## When a backup contains people
+
+Nothing leaves your device — **but the file does.** A course backup taken
+with _user data included_ carries a root `users.xml`, and it is not a list of
+names. One record holds:
+
+> username · email · first and last name · ID number · two phone numbers ·
+> institution · department · postal address · city · country · the last IP the
+> account logged in from · a free-text profile description · role assignments
+
+Forum posts, glossary entries, assignment submissions, quiz attempts and
+grades travel the same way when that box was ticked.
+
+So MBZoo says so as soon as such a file is opened: **how many people, and
+which kinds of data are actually populated** — a column that exists but is
+blank for everyone is not reported, because warning about phone numbers when
+nobody has one teaches people to ignore the warning.
+
+The list of names sits behind a disclosure that stays closed. Knowing a file
+names four hundred people is what everyone needs; reading their names is a
+deliberate act, and not one to perform by accident while screen-sharing.
+
+**Treat a backup with user data as personal data** before emailing it,
+uploading it, or committing it to a repository.
+
+## Exports
+
+Per-activity export (module XML, rendered content as a standalone HTML file,
+attached files as a ZIP) is a deliberate user action: nothing is written
+without a click, and the file is produced in your browser and handed to your
+own download folder. See [Activity support](/mbzoo/docs/guide/activity-support.md).
+
+## What this repository never contains
+
+Real institution or personal backups are never committed. Committed fixtures
+are synthetic, deterministic and checksummed in `fixtures/manifest.yaml`. Real
+specimens used to verify parsers are recorded there with their provenance and
+left out of the tree.
 
 
 
@@ -356,16 +531,57 @@ url: /mbzoo/docs/es/PRIVACY.md
   del navegador y se analizan dentro de un Web Worker en tu máquina. No existe
   ruta de subida: sin backend, sin telemetría, sin analíticas.
 - El CLI solo lee ficheros locales.
-- El contenido del curso puede contener datos personales (nombres, correos,
-  entregas, calificaciones). MBZoo trata esos datos como tuyos: permanecen en
-  memoria y cualquier futura función de exportación requerirá una acción
-  explícita del usuario.
 - Los recursos externos referenciados por el contenido del curso no se
-  descargan automáticamente. Si una función futura necesitara red, será
-  opcional y se documentará aquí primero.
+  descargan automáticamente. Los enlaces del curso que Moodle reescribió como
+  fichas `$@…@$` se descodifican y se ofrecen como enlaces, nunca se piden
+  (ADR-0019). Si una función futura necesitara red, será opcional y se
+  documentará aquí primero.
 
 Esto es una propiedad del producto, garantizada por la arquitectura
 (despliegue estático, sin código de servidor), no solo una declaración.
+
+## Cuando una copia contiene personas
+
+De tu dispositivo no sale nada, **pero el archivo sí**. Una copia de curso
+hecha _con datos de usuario_ lleva un `users.xml` en la raíz, y no es una
+lista de nombres. Un solo registro guarda:
+
+> nombre de usuario · correo · nombre y apellidos · número de identificación ·
+> dos teléfonos · institución · departamento · dirección postal · ciudad ·
+> país · la última IP desde la que entró la cuenta · una descripción libre de
+> perfil · asignaciones de rol
+
+Los mensajes de foro, las entradas de glosario, las entregas de tareas, los
+intentos de cuestionario y las calificaciones viajan igual cuando esa casilla
+estaba marcada.
+
+Por eso MBZoo lo dice nada más abrir un archivo así: **cuántas personas y qué
+tipos de dato están realmente rellenos** — una columna que existe pero está
+vacía para todos no se reporta, porque avisar de teléfonos cuando nadie tiene
+enseña a la gente a ignorar el aviso.
+
+La lista de nombres queda tras un desplegable que permanece cerrado. Saber que
+un fichero nombra a cuatrocientas personas es lo que todo el mundo necesita;
+leer sus nombres es un acto deliberado, y no de los que conviene hacer sin
+querer mientras compartes pantalla.
+
+**Trata una copia con datos de usuario como datos personales** antes de
+enviarla por correo, subirla o commitearla a un repositorio.
+
+## Exportaciones
+
+La exportación por actividad (XML del módulo, contenido renderizado como HTML
+independiente, archivos adjuntos en ZIP) es una acción deliberada: no se
+escribe nada sin un clic, y el fichero se genera en tu navegador y va a tu
+propia carpeta de descargas. Ver
+[Soporte de actividades](/mbzoo/docs/es/guide/activity-support.md).
+
+## Lo que este repositorio nunca contiene
+
+Las copias reales de instituciones o personas nunca se commitean. Los fixtures
+commiteados son sintéticos, deterministas y con checksum en
+`fixtures/manifest.yaml`. Los especímenes reales usados para verificar los
+parsers se registran ahí con su procedencia y se dejan fuera del árbol.
 
 [English](/mbzoo/docs/PRIVACY.md)
 
@@ -402,6 +618,45 @@ Copias legibles por máquinas de este sitio:
 **Copy Markdown**.
 
 [Versión en inglés](/mbzoo/docs/es/guide/research.md)
+
+## Especímenes
+
+El esquema dice lo que una copia _puede_ contener; solo un fichero real dice
+lo que una copia _contiene_. Por eso un parser escrito desde el fuente de
+Moodle no está terminado hasta ejecutarlo contra una copia real, y los
+especímenes vienen de cuatro sitios:
+
+| Fuente                                            | Para qué sirve                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Copias institucionales (nunca commiteadas)        | escala y formas del mundo real: cursos de 100+ actividades, exportaciones de eXeLearning, bancos de preguntas al azar    |
+| `saylordotorg/course_backups` (REPO-004)          | corpus público de cursos con mucha página/url/etiqueta, y enlaces `$@…@$`                                                |
+| Los propios fixtures de test de Moodle (REPO-005) | formas que el core mantiene vivas: un paquete IMS real, una sección delegada real                                        |
+| Un curso generado en un Moodle real               | lo que los corpus no traen: lección, consulta, base de datos, taller, rúbricas, y una copia hecha _con_ datos de usuario |
+
+Lo último cuesta unos diez minutos:
+
+```bash
+docker run -d --name mbzoo-spec -p 8123:8080 -e DB_TYPE=sqlite3 \
+  -e MOODLE_ADMIN=admin -e MOODLE_ADMIN_PASSWORD='…' erseco/alpine-moodle
+```
+
+Después se construye el curso con las APIs de Moodle desde un script CLI y se
+respalda con `backup_controller`, poniendo el ajuste `users` a un lado u otro.
+Dos cosas que morderán si no: un script CLI no tiene sesión, así que
+`add_moduleinfo()` necesita antes
+`\core\session\manager::set_user(get_admin())`; y un `add_moduleinfo()` que
+falla deja una transacción abierta que revierte todo lo creado después en la
+misma petición.
+
+Los especímenes se registran en `fixtures/manifest.yaml` con procedencia y
+checksums, y **nunca se commitean**: las copias reales de instituciones o
+personas no pertenecen a este repositorio, y un fichero regenerable no es
+material de fixture.
+
+Esta práctica ya se ha ganado el sueldo. Cinco parsers hechos desde el esquema
+pasaban todos los tests sintéticos; la primera lección real destapó un bug en
+todos ellos, donde un destino de salto cuyo id de página era 1 o 2 se leía
+como una constante de Moodle que pertenece a otro campo.
 
 
 
@@ -519,6 +774,42 @@ the indexes (drift-checked in CI).
 See [research/](https://github.com/ateeducacion/mbzoo/tree/main/research) in
 the repository, and `research/AGENTS.md` for the operational rules.
 
+## Specimens
+
+The schema tells you what a backup _can_ contain; only a real file tells you
+what one _does_. So a parser written from Moodle source is not finished until
+it has been run against a real backup, and specimens come from four places:
+
+| Source                                   | What it is good for                                                                                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Institutional backups (never committed)  | real-world scale and shapes — 100+ activity courses, eXeLearning exports, random quiz banks                           |
+| `saylordotorg/course_backups` (REPO-004) | a public corpus of page/url/label-heavy courses, and `$@…@$` links                                                    |
+| Moodle's own test fixtures (REPO-005)    | shapes core itself keeps working — a real IMS content package, a real delegated section                               |
+| A course generated in a real Moodle      | anything the corpora do not contain: lesson, choice, database, workshop, rubrics, and a backup taken _with_ user data |
+
+The last one is worth spelling out, because it costs about ten minutes:
+
+```bash
+docker run -d --name mbzoo-spec -p 8123:8080 -e DB_TYPE=sqlite3 \
+  -e MOODLE_ADMIN=admin -e MOODLE_ADMIN_PASSWORD='…' erseco/alpine-moodle
+```
+
+Then build the course with Moodle's own APIs from a CLI script and back it up
+through `backup_controller`, setting the `users` plan setting either way. Two
+things that will bite otherwise: a CLI script has no session, so
+`add_moduleinfo()` needs `\core\session\manager::set_user(get_admin())`
+first; and a failed `add_moduleinfo()` leaves an open transaction that rolls
+back everything created after it in the same request.
+
+Specimens are recorded in `fixtures/manifest.yaml` with provenance and
+checksums, and **never committed** — real institution or personal backups do
+not belong in this repository, and a regenerable file is not fixture material.
+
+This practice has already earned its keep. Five parsers built from the schema
+passed every synthetic test; the first real lesson tripped a bug in all of
+them, where a jump target whose page id was 1 or 2 was being read as a Moodle
+constant that belongs to a different field entirely.
+
 Machine-readable copies of this site (for agents):
 [llms.txt](https://ateeducacion.github.io/mbzoo/docs/llms.txt) (index) and
 [llms-full.txt](https://ateeducacion.github.io/mbzoo/docs/llms-full.txt)
@@ -545,6 +836,8 @@ Open, inspect and preview Moodle course backups right in your browser. Local-fir
 
 - **100% local**: Backups are parsed in your browser via a Web Worker. There is no server and no telemetry — privacy is a product property.
 - **Both real formats**: ZIP and TAR.GZ containers (tgz is Moodle's default since 2.9), with lazy metadata parsing and on-demand content extraction.
+- **Reads the whole course**: 22 of Moodle 5.3's 23 activity modules, plus three Moodle has retired — and the grade items, rubrics and gradebook that sit beside them.
+- **Tells you when a file names people**: A backup taken with user data carries names, emails and IP addresses. MBZoo says how many people and what kinds of data, before you share the file.
 - **Safe by design**: Hostile-input posture — sanitized HTML, sandboxed opaque-origin previews, no content execution in the app origin.
 - **Evidence-driven**: Every durable claim traces to a registered source, experiment or ADR. Machine-validated research indexes.
 
