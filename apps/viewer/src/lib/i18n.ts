@@ -201,6 +201,10 @@ const STRINGS = {
     'site.pagesHint':
       'Links inside the page work; this list also reaches pages the entry page never links to.',
     'embed.notPreviewable': 'This course embedded a file MBZoo cannot show inline.',
+    'embed.external': 'Embedded from another site',
+    'embed.externalHint':
+      'The course embedded this here. MBZoo never loads content from other sites, so it is offered as a link instead.',
+    'embed.externalOpen': 'Open in a new tab ↗',
     'scorm.experimental':
       'Experimental: MBZoo runs this SCORM package offline, with no attempt tracking and nothing saved.',
     'scorm.contents': 'Contents of this package',
@@ -488,6 +492,10 @@ const STRINGS = {
     'site.pagesHint':
       'Los enlaces dentro de la página funcionan; esta lista además llega a páginas que la portada no enlaza.',
     'embed.notPreviewable': 'Este curso incrusta un fichero que MBZoo no puede mostrar en línea.',
+    'embed.external': 'Incrustado desde otro sitio',
+    'embed.externalHint':
+      'El curso lo incrustaba aquí. MBZoo nunca carga contenido de otros sitios, así que se ofrece como enlace.',
+    'embed.externalOpen': 'Abrir en una pestaña nueva ↗',
     'scorm.experimental':
       'Experimental: MBZoo ejecuta este paquete SCORM sin conexión, sin registrar intentos y sin guardar nada.',
     'scorm.contents': 'Contenido de este paquete',

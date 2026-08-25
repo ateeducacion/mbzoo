@@ -246,17 +246,27 @@ describe('placeholderizeEmbeds', () => {
     expect(out).not.toContain('blob:')
   })
 
-  test('leaves anything that is not a resolved backup file alone', () => {
-    // Untouched here means still dropped by the sanitizer, which is the
-    // point: this must not become a way to load remote content (ADR-0009).
-    const remote = '<iframe src="https://evil.example/x"></iframe>'
-    expect(placeholderizeEmbeds(remote, register())).toBe(remote)
+  test('promotes a remote embed so it can be named rather than deleted', () => {
+    // The sanitizer removes an <iframe> outright, so a page whose only
+    // content is an embedded video reports itself empty. Promoting it lets
+    // MBZoo say where the content lives. It is still never loaded: the
+    // handle resolves to a link, and nothing is fetched (ADR-0009).
+    expect(placeholderizeEmbeds('<iframe src="https://evil.example/x"></iframe>', register())).toBe(
+      '<div data-mbz-embed="handle-1"></div>',
+    )
+  })
+
+  test('leaves anything that is neither a stored file nor a remote target', () => {
+    // Untouched here means still dropped by the sanitizer.
     const relative = '<object data="notes.pdf"></object>'
     expect(placeholderizeEmbeds(relative, register())).toBe(relative)
     const none = '<object type="application/pdf"></object>'
     expect(placeholderizeEmbeds(none, register())).toBe(none)
+    // A scheme that executes must never become a link MBZoo builds.
     const script = '<object data="javascript:alert(1)"></object>'
     expect(placeholderizeEmbeds(script, register())).toBe(script)
+    const protocolRelative = '<iframe src="//evil.example/x"></iframe>'
+    expect(placeholderizeEmbeds(protocolRelative, register())).toBe(protocolRelative)
   })
 
   test('a hostile target cannot break out of the attribute it is written into', () => {

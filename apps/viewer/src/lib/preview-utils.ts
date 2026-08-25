@@ -225,8 +225,15 @@ export function placeholderizeEmbeds(html: string, register: (url: string) => st
       const attr = tag.toLowerCase() === 'object' ? 'data' : 'src'
       const found = new RegExp(`\\b${attr}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(attrs)
       const url = (found?.[2] ?? found?.[3] ?? '').trim()
-      // Nothing but our own minted blob URLs.
-      if (!/^blob:[^"'\s<>]+$/.test(url)) return whole
+      // Two kinds are promoted, and nothing else. Our own minted blob URLs,
+      // which become a real preview; and absolute http(s) targets, which
+      // become a card naming where the content lives. The second is not a
+      // way to load remote content — nothing is ever fetched (ADR-0009) —
+      // it exists because dropping the element silently loses the fact that
+      // the author put something there at all.
+      const isFile = /^blob:[^"'\s<>]+$/.test(url)
+      const isExternal = /^https?:\/\/[^"'\s<>]+$/i.test(url)
+      if (!isFile && !isExternal) return whole
       // The placeholder carries an opaque handle, never the URL itself.
       // DOMPurify keeps `data-*` attributes, so a hostile backup can author
       // its own `data-mbz-embed` and have it survive sanitization; if that

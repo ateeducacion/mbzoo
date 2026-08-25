@@ -40,7 +40,7 @@ import {
   unzipPackage,
 } from './lib/epub-reader.ts'
 import { exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
-import { scanExternalRefs } from './lib/external-refs.ts'
+import { classifyProvider, scanExternalRefs } from './lib/external-refs.ts'
 import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
 import {
@@ -189,8 +189,16 @@ export class Renderer {
       // The attribute is backup-reachable, so it is only ever a lookup key.
       // The URL comes from our own map, never from the document.
       const url = this.embeds.get(holder.getAttribute('data-mbz-embed') ?? '')
-      const source = url === undefined ? undefined : this.blobSources.get(url)
-      if (url === undefined || !source) {
+      if (url === undefined) {
+        holder.remove()
+        continue
+      }
+      if (/^https?:\/\//i.test(url)) {
+        holder.replaceWith(externalEmbedCard(url))
+        continue
+      }
+      const source = this.blobSources.get(url)
+      if (!source) {
         holder.remove()
         continue
       }
@@ -410,18 +418,25 @@ export class Renderer {
       resolvedParts.push(this.blobUrl(data, rec.mimeType || guessMime(rec.fileName)))
     }
     resolvedParts.push(html.slice(cursor))
-    return this.safeHtml(
-      placeholderizeEmbeds(resolvedParts.join(''), (url) => {
-        const handle = crypto.randomUUID()
-        this.embeds.set(handle, url)
-        return handle
-      }),
-    )
+    return this.safeHtml(resolvedParts.join(''))
   }
 
   /** Sanitization plus link decoding — the single path for backup HTML. */
+  /**
+   * The one path backup HTML takes to the DOM (ADR-0012).
+   *
+   * Embeds are promoted before sanitizing rather than in resolveHtml,
+   * because several renderers — book chapters, rubric text, quiz stems —
+   * reach this without resolving files first, and an <iframe> the sanitizer
+   * deletes is content the reader never learns existed.
+   */
   private safeHtml(html: string): string {
-    return this.resolveBackupLinks(sanitizeHtml(html))
+    const promoted = placeholderizeEmbeds(html, (url) => {
+      const handle = crypto.randomUUID()
+      this.embeds.set(handle, url)
+      return handle
+    })
+    return this.resolveBackupLinks(sanitizeHtml(promoted))
   }
 
   /**
@@ -2983,6 +2998,48 @@ function notAvailable(container: HTMLElement): void {
   p.className = 'fallback-note'
   p.textContent = 'This item stores no additional content in the backup.'
   container.appendChild(p)
+}
+
+/**
+ * Card standing in for content the course embedded from another site.
+ *
+ * The embed is never loaded: MBZoo does not fetch backup-referenced remote
+ * content (ADR-0009). But deleting the element outright — which is what the
+ * sanitizer does to an <iframe> — loses the fact that the author put a video
+ * there, and a page whose only content was one embed then reports itself as
+ * empty, which is worse than showing nothing because it is untrue.
+ */
+function externalEmbedCard(url: string): HTMLElement {
+  const card = document.createElement('div')
+  card.className = 'file-card'
+  const head = document.createElement('div')
+  head.className = 'file-head'
+  const name = document.createElement('span')
+  name.textContent = t('embed.external')
+  const kind = document.createElement('span')
+  kind.className = 'type-chip'
+  kind.textContent = classifyProvider(url)
+  head.append(name, kind)
+  card.appendChild(head)
+
+  const note = document.createElement('p')
+  note.className = 'fallback-note'
+  note.textContent = t('embed.externalHint')
+  card.appendChild(note)
+
+  const link = document.createElement('a')
+  link.href = url
+  link.target = '_blank'
+  link.rel = 'noreferrer noopener nofollow'
+  link.className = 'button-link'
+  link.textContent = t('embed.externalOpen')
+  card.appendChild(link)
+
+  const shown = document.createElement('code')
+  shown.className = 'url-target'
+  shown.textContent = url
+  card.appendChild(shown)
+  return card
 }
 
 /** Download name for a file the course embedded rather than listed. */
