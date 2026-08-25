@@ -8,6 +8,15 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 const here = dirname(fileURLToPath(import.meta.url))
 const FIXTURE = join(here, '..', 'fixtures', 'files', 'demo-course-zip.mbz')
 
+/** Host of a request URL, or '' for anything unparseable. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return ''
+  }
+}
+
 function replaceTextEntry(
   entries: ReturnType<typeof unzipSync>,
   path: string,
@@ -705,7 +714,10 @@ test('a url activity offers the link without ever following it', async ({ page }
   await page.getByRole('button', { name: /Demo external link/ }).click()
 
   await expect(page.locator('#detail a[href="https://example.org/mbzoo"]')).toBeVisible()
-  expect(requests.filter((u) => u.includes('example.org'))).toHaveLength(0)
+  // Compare the host, not a substring: "example.org" appearing anywhere in a
+  // URL would also match https://elsewhere.test/?ref=example.org, so the
+  // substring form both over-matches and fails to assert what it claims.
+  expect(requests.filter((u) => hostOf(u) === 'example.org')).toHaveLength(0)
 })
 
 test('chat and wiki name their settings and say where the content went', async ({ page }) => {
