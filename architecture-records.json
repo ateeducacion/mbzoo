@@ -1,0 +1,10 @@
+{
+  "$schema": "./research/schemas/architecture-records.schema.json",
+  "prefix": "ADR",
+  "records_dir": "research/decisions/adr",
+  "id_pattern": "^ADR-\\d{4}$",
+  "statuses": ["Proposed", "Accepted", "Rejected", "Superseded"],
+  "issues_url": "https://github.com/ateeducacion/mbzoo/issues",
+  "repository_label": "`ateeducacion/mbzoo`",
+  "generated_indexes": ["research/indexes/adrs.yaml"]
+}

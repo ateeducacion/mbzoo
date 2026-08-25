@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MBZoo architecture-records configuration",
+  "type": "object",
+  "required": ["prefix", "records_dir", "id_pattern", "statuses"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "prefix": { "const": "ADR" },
+    "records_dir": { "type": "string" },
+    "id_pattern": { "type": "string" },
+    "statuses": { "type": "array", "items": { "type": "string" } },
+    "issues_url": { "type": "string" },
+    "repository_label": { "type": "string" },
+    "generated_indexes": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -111,3 +111,11 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Vite
+apps/viewer/dist/

@@ -1,0 +1,18 @@
+{
+  "name": "@mbzoo/cli",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "mbzoo": "./src/main.ts"
+  },
+  "scripts": {
+    "start": "bun run src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mbzoo/core": "workspace:*",
+    "fflate": "0.8.3"
+  }
+}

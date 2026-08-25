@@ -1,0 +1,45 @@
+metadata:
+  project: mbzoo
+  phase: bootstrap
+  started: 2026-08-24
+  rule: append-only
+
+decisions:
+  ADR-0001: { title: Primary implementation language, status: Accepted, date: 2026-08-24 }
+  ADR-0002: { title: Bun for repository tooling and CLI runtime, status: Accepted, date: 2026-08-24 }
+  ADR-0003: { title: Browser build strategy — Bun vs Vite, status: Accepted, date: 2026-08-24 }
+  ADR-0004: { title: Portable core with runtime adapters, status: Accepted, date: 2026-08-24 }
+  ADR-0005: { title: Archive abstraction and large-file strategy, status: Accepted, date: 2026-08-24 }
+  ADR-0006: { title: XML parsing strategy, status: Accepted, date: 2026-08-24 }
+  ADR-0007: { title: UI architecture — vanilla TypeScript first, status: Accepted, date: 2026-08-24 }
+  ADR-0008: { title: Testing strategy, status: Accepted, date: 2026-08-24 }
+  ADR-0009: { title: Untrusted-content security model, status: Accepted, date: 2026-08-24 }
+  ADR-0010: { title: Research, evidence and documentation workflow, status: Accepted, date: 2026-08-24 }
+  ADR-0011: { title: Monorepo package layout, status: Accepted, date: 2026-08-24 }
+
+tasks:
+  TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }
+  TASK-002: { title: Playwright matrix on Firefox/WebKit in CI, status: open, priority: medium }
+  TASK-003: { title: Large-file strategy spike (streaming TAR.GZ + lazy ZIP), status: open, priority: medium }
+  TASK-004: { title: Activity renderers (Page, Label, URL) behind capability model, status: open, priority: medium }
+  TASK-005: { title: Accessibility audit pass (axe + keyboard), status: open, priority: medium }
+
+risks:
+  RISK-001:
+    title: fflate materializes every entry in memory during unzip
+    severity: high
+    probability: certain-for-large-files
+    mitigation: documented limit in ADR-0005; TASK-003 tracks streaming/lazy access
+    status: accepted-for-bootstrap
+  RISK-002:
+    title: Section-to-activity mapping inferred from sectionid/sequence may miss course-format-specific nesting (e.g. flexsections)
+    severity: medium
+    probability: likely
+    mitigation: Q-002 kept open; parser emits warnings instead of failing
+    status: monitored
+  RISK-003:
+    title: zip.js currently unusable under Bun runtime (EXP-002); browser-only adoption would create untested-in-CI code paths
+    severity: medium
+    probability: observed
+    mitigation: single fflate path until large-file milestone re-evaluates (Q-004)
+    status: mitigated-by-decision

@@ -1,0 +1,19 @@
+{
+  "name": "@mbzoo/viewer",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mbzoo/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "8.2.2"
+  }
+}

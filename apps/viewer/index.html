@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Open, inspect and preview Moodle .mbz backups locally in your browser. No upload." />
+    <title>MBZoo — See what's inside your MBZ</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>MBZoo</h1>
+      <p class="tagline">See what's inside your MBZ.</p>
+      <p class="privacy-note">Backups are processed entirely in your browser — nothing is uploaded.</p>
+    </header>
+
+    <main>
+      <section id="dropzone" aria-labelledby="dz-label">
+        <h2 id="dz-label" class="visually-hidden">Open a Moodle backup</h2>
+        <input type="file" id="file-input" accept=".mbz,.gz,.zip" aria-describedby="dz-hint" />
+        <label for="file-input" id="drop-label">
+          <strong>Drop a <code>.mbz</code> file here</strong>
+          <span id="dz-hint">or choose a file — it never leaves your device</span>
+        </label>
+      </section>
+
+      <section id="status" role="status" aria-live="polite"></section>
+
+      <section id="course" hidden aria-labelledby="course-title">
+        <!-- biome-ignore lint/a11y/useHeadingContent: populated from parsed backup at runtime -->
+        <h2 id="course-title"></h2>
+        <p id="course-meta"></p>
+        <ol id="sections"></ol>
+      </section>
+    </main>
+
+    <footer>
+      <p>MBZoo is experimental bootstrap software. Current capability: archive detection, metadata parsing and course structure display for ZIP and TAR.GZ backups. See the repository README for what is implemented vs planned.</p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
