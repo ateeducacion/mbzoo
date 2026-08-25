@@ -11,7 +11,7 @@ vista del curso.
 | URL | ✅ | ✅ enlace externo | nunca se descarga automáticamente |
 | Recurso / Archivo | ✅ | ✅ vista integrada | PDF con canvas pdf.js, imágenes, texto, HTML en sandbox (ADR-0014) |
 | Carpeta (Folder) | ✅ | ✅ tarjetas de archivo | |
-| Página web con CSS+JS | ✅ | ✅ iframe en sandbox | origen opaco + CSP; el JS queda aislado de la app (ADR-0014). Un sitio de varias páginas (p. ej. una exportación de eXeLearning) se recorre desde la lista de páginas de MBZoo, no siguiendo los enlaces dentro del iframe (ADR-0020) |
+| Página web con CSS+JS | ✅ | ✅ iframe en sandbox | origen opaco + CSP; el JS queda aislado de la app (ADR-0014). Los enlaces dentro de un sitio de varias páginas (p. ej. una exportación de eXeLearning) navegan mediante una petición validada a MBZoo; la fila de páginas es un índice (ADR-0022) |
 | Libro (Book) | ✅ metadatos | ✅ capítulos con navegación | TOC + anterior/siguiente (ADR-0013) |
 | Foro | ✅ | ✅ resumen con tipo | tipo de foro y ajustes; los debates solo existen si la copia incluyó usuarios |
 | Lección | ✅ | ✅ páginas ramificadas | páginas, respuestas y a dónde salta cada una: todo viaja en una copia sin datos de usuario |
@@ -26,9 +26,10 @@ vista del curso.
 | Tarea (Assignment) | ✅ | ✅ resumen | fechas de entrega/cierre y tipos de entrega |
 | Encuesta (Feedback) | ✅ | ✅ elementos renderizados | etiquetas, preguntas y sus opciones en el orden del autor; las respuestas solo existen con datos de usuario |
 | Cuestionario (Quiz) | ✅ banco de preguntas | ✅ inspección navegable | preguntas con radios/checkboxes estilo Moodle; opción múltiple/verdadero-falso/respuesta corta/ensayo/relacionar; las preguntas al azar recorren el banco del que se sortean, indicando cuántas pide cada intento; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
-| SCORM | ✅ metadatos + paquete | ⏳ investigación | lanzar requiere un runtime (candidato: scorm-again, Q-012) |
+| SCORM | ✅ metadatos + estructura del curso | 🧪 reproducción experimental | los SCO se ejecutan en el sandbox de origen opaco con el runtime de scorm-again en el mismo documento; no se registra ni se guarda nada (ADR-0023) |
 | H5P | ✅ metadatos + paquete | ⏳ investigación | candidato: h5p-standalone (Q-013) |
-| eXeLearning .elp/.elpx | ✅ como archivos | ⏳ investigación | estudio de formato en Q-016 |
+| EPUB | ✅ | ✅ capítulo a capítulo | el spine se lee del OPF; los recursos se incrustan desde el paquete y se renderiza en el sandbox. Sin paginación ni marcadores (ADR-0024) |
+| eXeLearning .elp/.elpx | ✅ clasificado por su contenido | ✅ sitio exportado | un .elpx lleva el proyecto y su render; se muestra el render. Un .elp antiguo con solo content.data explica por qué no puede decodificarse (ADR-0025) |
 | Plugins desconocidos | ✅ | ✅ fallback de metadatos | nunca rompen la vista del curso |
 
 Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).

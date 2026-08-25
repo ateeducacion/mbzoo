@@ -82,6 +82,13 @@ export {
   resolveQuizSlots,
 } from './moodle/questions-xml.ts'
 export {
+  defaultLaunchSco,
+  isScorm2004,
+  type MoodleScorm,
+  parseScormXml,
+  type ScormSco,
+} from './moodle/scorm-xml.ts'
+export {
   type BackupUser,
   type BackupUsers,
   type PersonalDataKind,

@@ -17,21 +17,34 @@ import {
   backupLinkUrl,
   contentHashPath,
   decodeBackupLink,
+  defaultLaunchSco,
+  isScorm2004,
   legacyModule,
   matchFileRecord,
   parseActivityXml,
   parseBookXml,
   parseQuestionsXml,
   parseQuizQuestionIds,
+  parseScormXml,
   resolveQuizSlots,
 } from '@mbzoo/core'
 import DOMPurify from 'dompurify'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import {
+  composeChapter,
+  type EpubBook,
+  isEpubFileName,
+  readEpub,
+  unzipEpub,
+  unzipPackage,
+} from './lib/epub-reader.ts'
+import { exeSiteBook, isExeFileName, readExePackage } from './lib/exe-package.ts'
 import { scanExternalRefs } from './lib/external-refs.ts'
 import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
 import {
+  ALLOWED_URI_REGEXP,
   contentKind,
   decodeRefPath,
   formatBytes,
@@ -42,10 +55,12 @@ import {
   MAX_PDF_PAGES,
   pageNavScript,
   parseNavigationRequest,
+  placeholderizeEmbeds,
   resolveRelative,
   SANDBOX_CSP,
   splitRef,
 } from './lib/preview-utils.ts'
+import { runtimeScript, scormBootScript, scormToc, splitLaunch } from './lib/scorm-player.ts'
 
 // pdf.js renders PDFs onto canvas (ADR-0014): Chrome blocks blob-PDF iframes
 // inside sandboxed contexts.
@@ -72,6 +87,12 @@ export class Renderer {
   private readonly urls: string[] = []
   /** Listeners registered by a render, torn down on the next one. */
   private readonly cleanups: Array<() => void> = []
+  /**
+   * Handles minted for files a course embedded in its HTML, and the object
+   * URL each stands for. The handle travels through the sanitizer inside a
+   * `data-` attribute; the URL never does (ADR-0012).
+   */
+  private readonly embeds = new Map<string, string>()
   /** Bytes behind each managed blob: URL, so exports can re-inline them. */
   private readonly blobSources = new Map<string, { data: Uint8Array; mime: string }>()
 
@@ -97,6 +118,7 @@ export class Renderer {
   dispose(): void {
     for (const fn of this.cleanups) fn()
     this.cleanups.length = 0
+    this.embeds.clear()
     for (const u of this.urls) URL.revokeObjectURL(u)
     this.urls.length = 0
     this.blobSources.clear()
@@ -146,11 +168,45 @@ export class Renderer {
     container: HTMLElement,
   ): Promise<void> {
     await this.renderActivityBody(activity, parsedActivity, container)
+    // An embed promoted by placeholderizeEmbeds is inert markup until it is
+    // turned into a real preview, so that runs on the body before anything
+    // is appended after it.
+    await this.hydrateEmbeds(container)
     // What the activity is worth and how it is judged sit in sibling files,
     // not in the module payload, so they are appended for every module rather
     // than repeated in each renderer.
     await this.renderGradeItem(activity, container)
     await this.renderGradingForm(activity, container)
+  }
+
+  /**
+   * Turns each `<div data-mbz-embed>` left by placeholderizeEmbeds into the
+   * preview it stands for. The bytes come from the blob URL MBZoo minted for
+   * that file, so nothing is fetched and nothing is re-parsed from the page.
+   */
+  private async hydrateEmbeds(container: HTMLElement): Promise<void> {
+    for (const holder of [...container.querySelectorAll('[data-mbz-embed]')]) {
+      // The attribute is backup-reachable, so it is only ever a lookup key.
+      // The URL comes from our own map, never from the document.
+      const url = this.embeds.get(holder.getAttribute('data-mbz-embed') ?? '')
+      const source = url === undefined ? undefined : this.blobSources.get(url)
+      if (url === undefined || !source) {
+        holder.remove()
+        continue
+      }
+      const card = document.createElement('div')
+      card.className = 'file-card'
+      if (source.mime === 'application/pdf') {
+        await this.renderPdf(source.data, 'embedded.pdf', card)
+      } else {
+        const note = document.createElement('p')
+        note.className = 'fallback-note'
+        note.textContent = t('embed.notPreviewable')
+        card.appendChild(note)
+      }
+      addDownload(card, url, embeddedFileName(source.mime))
+      holder.replaceWith(card)
+    }
   }
 
   private async renderActivityBody(
@@ -272,6 +328,14 @@ export class Renderer {
       await this.renderAssign(activity, fields, contextId, container)
       return
     }
+    if (mod === 'exeweb') {
+      await this.renderExeweb(fields, contextId, container)
+      return
+    }
+    if (mod === 'scorm' || mod === 'exescorm') {
+      await this.renderScorm(activity, fields, contextId, container)
+      return
+    }
     if (mod === 'hvp' || mod === 'h5pactivity') {
       await this.renderH5pActivity(activity, fields, contextId, container)
       return
@@ -337,7 +401,13 @@ export class Renderer {
       resolvedParts.push(this.blobUrl(data, rec.mimeType || guessMime(rec.fileName)))
     }
     resolvedParts.push(html.slice(cursor))
-    return this.safeHtml(resolvedParts.join(''))
+    return this.safeHtml(
+      placeholderizeEmbeds(resolvedParts.join(''), (url) => {
+        const handle = crypto.randomUUID()
+        this.embeds.set(handle, url)
+        return handle
+      }),
+    )
   }
 
   /** Sanitization plus link decoding — the single path for backup HTML. */
@@ -519,6 +589,122 @@ export class Renderer {
   }
 
   /**
+   * Mounts a set of sandboxed HTML pages with MBZoo's own navigation chrome:
+   * a row of buttons, and the validated in-frame navigation bridge of
+   * ADR-0022. Shared by multi-file websites and by SCORM packages so the
+   * security-critical message handler exists exactly once.
+   */
+  private async mountNavigablePages(
+    pages: BackupFileRecord[],
+    entry: BackupFileRecord,
+    container: HTMLElement,
+    opts: {
+      label: string
+      hint: string
+      buttonLabel: (rec: BackupFileRecord) => string
+      buttonIndent?: (rec: BackupFileRecord) => number
+      headScripts?: (rec: BackupFileRecord) => string[]
+    },
+  ): Promise<void> {
+    const holder = document.createElement('div')
+    const pagePaths = new Set(pages.map(recordFullPath))
+
+    if (pages.length <= 1) {
+      container.appendChild(holder)
+      holder.appendChild(
+        await this.filePreview(entry, { headScripts: opts.headScripts?.(entry) ?? [] }),
+      )
+      return
+    }
+
+    const bar = document.createElement('div')
+    bar.className = 'site-pages'
+    const label = document.createElement('span')
+    label.className = 'site-pages-label'
+    label.textContent = `${opts.label} (${pages.length})`
+    bar.appendChild(label)
+
+    let current = entry
+    // Negative infinity, not 0: performance.now() counts from page load, so
+    // a 0 baseline would silently refuse a click made in the first 250 ms.
+    let lastNavigation = Number.NEGATIVE_INFINITY
+    // One token per rendered document, so a document the frame navigated
+    // itself to cannot pass the check by inheriting the WindowProxy.
+    let token = ''
+    // Object URLs minted by the page on display, revoked when it is
+    // replaced: only dispose() reclaims the rest, and it does not run while
+    // the reader stays on this activity (ADR-0022).
+    let pageUrls: string[] = []
+    const show = async (rec: BackupFileRecord, hash = ''): Promise<void> => {
+      current = rec
+      token = crypto.randomUUID()
+      for (const b of bar.querySelectorAll('button')) {
+        b.classList.toggle('selected', b.dataset.page === rec.filePath + rec.fileName)
+      }
+      const before = this.urls.length
+      const preview = await this.filePreview(rec, {
+        pageNav: true,
+        hash,
+        token,
+        pagePaths,
+        headScripts: opts.headScripts?.(rec) ?? [],
+      })
+      const minted = this.urls.slice(before)
+      holder.replaceChildren(preview)
+      this.revoke(pageUrls)
+      pageUrls = minted
+    }
+
+    // A page asks to navigate (ADR-0022). Every check below is load-bearing:
+    // the frame is hostile input.
+    const onMessage = (event: MessageEvent): void => {
+      const frame = holder.querySelector('iframe')
+      // Window identity, not event.origin: the frame is an opaque origin, so
+      // its origin is "null" and carries no authority at all. Identity alone
+      // is not enough either — see the token below.
+      if (!frame || event.source === null || event.source !== frame.contentWindow) return
+      // Rate first, so a frame posting in a loop cannot make us do the
+      // parsing and lookup work at its chosen frequency.
+      const now = performance.now()
+      if (now - lastNavigation < 250) return
+      const requested = parseNavigationRequest(event.data, token)
+      if (requested === undefined) return
+      const { hash } = splitRef(requested)
+      const target = decodeRefPath(resolveRelative(current.filePath, requested))
+      // Allowlist: only the pages mounted here. A "../" payload cannot escape
+      // it, because the resolved path has to equal one of these exactly.
+      const rec = pages.find((p) => recordFullPath(p) === target)
+      if (!rec) return
+      // Re-rendering the page already shown buys nothing and is the one
+      // request a hostile page can repeat with a fresh fragment each time.
+      if (rec === current) return
+      lastNavigation = now
+      void show(rec, hash)
+    }
+    window.addEventListener('message', onMessage)
+    this.cleanups.push(() => window.removeEventListener('message', onMessage))
+
+    for (const rec of pages) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'btn-outline'
+      button.dataset.page = rec.filePath + rec.fileName
+      button.textContent = opts.buttonLabel(rec)
+      const indent = opts.buttonIndent?.(rec) ?? 0
+      if (indent > 0) button.style.marginLeft = `${Math.min(indent, 4) * 0.75}rem`
+      button.addEventListener('click', () => void show(rec))
+      bar.appendChild(button)
+    }
+    container.appendChild(bar)
+    const hint = document.createElement('p')
+    hint.className = 'fallback-note site-pages-hint'
+    hint.textContent = opts.hint
+    container.appendChild(hint)
+    container.appendChild(holder)
+    await show(entry)
+  }
+
+  /**
    * Renders a multi-file website as a single sandboxed page; every file
    * stays reachable through the collapsed file list (ADR-0014).
    */
@@ -532,7 +718,6 @@ export class Renderer {
     note.textContent = `${contentKind('text/html', entry.fileName)} · ${records.length} files`
     container.appendChild(note)
 
-    const holder = document.createElement('div')
     // renderFileList drops the context predicate when the activity XML omits
     // contextid, which a crafted backup controls — records can then span the
     // whole archive. The navigable set is narrowed back to the entry's own
@@ -544,93 +729,12 @@ export class Renderer {
     const pages = sortRecords((owned.length > 0 ? owned : records).filter(isHtmlRecord))
     // Entry first: it is the page the author meant you to land on.
     pages.sort((a, b) => Number(b === entry) - Number(a === entry))
-    const pagePaths = new Set(pages.map(recordFullPath))
 
-    // Links between pages of the site are defused inside the frame
-    // (rewriteRelativeRefs), so the site is navigated from here instead.
-    if (pages.length > 1) {
-      const bar = document.createElement('div')
-      bar.className = 'site-pages'
-      const label = document.createElement('span')
-      label.className = 'site-pages-label'
-      label.textContent = `${t('site.pages')} (${pages.length})`
-      bar.appendChild(label)
-
-      let current = entry
-      // Negative infinity, not 0: performance.now() counts from page load, so
-      // a 0 baseline would silently refuse a click made in the first 250 ms.
-      let lastNavigation = Number.NEGATIVE_INFINITY
-      // One token per rendered document, so a document the frame navigated
-      // itself to cannot pass the check by inheriting the WindowProxy.
-      let token = ''
-      // Object URLs minted by the page on display, revoked when it is
-      // replaced: only dispose() reclaims the rest, and it does not run
-      // while the reader stays on this activity (ADR-0022).
-      let pageUrls: string[] = []
-      const show = async (rec: BackupFileRecord, hash = ''): Promise<void> => {
-        current = rec
-        token = crypto.randomUUID()
-        for (const b of bar.querySelectorAll('button')) {
-          b.classList.toggle('selected', b.dataset.page === rec.filePath + rec.fileName)
-        }
-        const before = this.urls.length
-        const preview = await this.filePreview(rec, { pageNav: true, hash, token, pagePaths })
-        const minted = this.urls.slice(before)
-        holder.replaceChildren(preview)
-        this.revoke(pageUrls)
-        pageUrls = minted
-      }
-
-      // A page of this site asks to navigate (ADR-0022). Every check below is
-      // load-bearing: the frame is hostile input.
-      const onMessage = (event: MessageEvent): void => {
-        const frame = holder.querySelector('iframe')
-        // Window identity, not event.origin: the frame is an opaque origin,
-        // so its origin is "null" and carries no authority at all. Identity
-        // alone is not enough either — see the token below.
-        if (!frame || event.source === null || event.source !== frame.contentWindow) return
-        // Rate first, so a frame posting in a loop cannot make us do the
-        // parsing and lookup work at its chosen frequency.
-        const now = performance.now()
-        if (now - lastNavigation < 250) return
-        const requested = parseNavigationRequest(event.data, token)
-        if (requested === undefined) return
-        const { hash } = splitRef(requested)
-        const target = decodeRefPath(resolveRelative(current.filePath, requested))
-        // Allowlist: only the HTML records of this very resource. A "../"
-        // payload cannot escape it, because the resolved path has to equal
-        // one of these entries exactly.
-        const rec = pages.find((p) => recordFullPath(p) === target)
-        if (!rec) return
-        // Re-rendering the page already shown buys nothing and is the one
-        // request a hostile page can repeat with a fresh fragment each time.
-        if (rec === current) return
-        lastNavigation = now
-        void show(rec, hash)
-      }
-      window.addEventListener('message', onMessage)
-      this.cleanups.push(() => window.removeEventListener('message', onMessage))
-
-      for (const rec of pages) {
-        const button = document.createElement('button')
-        button.type = 'button'
-        button.className = 'btn-outline'
-        button.dataset.page = rec.filePath + rec.fileName
-        button.textContent = rec.fileName
-        button.addEventListener('click', () => void show(rec))
-        bar.appendChild(button)
-      }
-      container.appendChild(bar)
-      const hint = document.createElement('p')
-      hint.className = 'fallback-note site-pages-hint'
-      hint.textContent = t('site.pagesHint')
-      container.appendChild(hint)
-      container.appendChild(holder)
-      await show(entry)
-    } else {
-      container.appendChild(holder)
-      holder.appendChild(await this.filePreview(entry))
-    }
+    await this.mountNavigablePages(pages, entry, container, {
+      label: t('site.pages'),
+      hint: t('site.pagesHint'),
+      buttonLabel: (rec) => rec.fileName,
+    })
 
     const details = document.createElement('details')
     details.className = 'advanced'
@@ -648,6 +752,7 @@ export class Renderer {
       if (bytes) {
         a.href = this.blobUrl(bytes, rec.mimeType || guessMime(rec.fileName))
         a.download = rec.fileName
+
         a.textContent = t('download')
       }
       li.append(name, a)
@@ -660,7 +765,13 @@ export class Renderer {
   /** Builds a preview card: inline when safe/possible, download otherwise. */
   async filePreview(
     rec: BackupFileRecord,
-    opts?: { pageNav?: boolean; hash?: string; token?: string; pagePaths?: ReadonlySet<string> },
+    opts?: {
+      pageNav?: boolean
+      hash?: string
+      token?: string
+      pagePaths?: ReadonlySet<string>
+      headScripts?: readonly string[]
+    },
   ): Promise<HTMLElement> {
     const card = document.createElement('div')
     card.className = 'file-card'
@@ -678,6 +789,22 @@ export class Renderer {
     if (!data) return card
 
     const mime = rec.mimeType || guessMime(rec.fileName)
+    if (isExeFileName(rec.fileName)) {
+      try {
+        await this.renderExePackage(data, card)
+      } finally {
+        addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      }
+      return card
+    }
+    if (isEpubFileName(rec.fileName)) {
+      try {
+        await this.renderEpub(data, card)
+      } finally {
+        addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      }
+      return card
+    }
     if (isH5pFileName(rec.fileName)) {
       try {
         await this.renderH5p(data, card)
@@ -709,7 +836,7 @@ export class Renderer {
       return card
     }
     if (mime === 'application/pdf') {
-      await this.renderPdf(data, rec, card)
+      await this.renderPdf(data, rec.fileName, card)
       addDownload(card, this.blobUrl(data, mime), rec.fileName)
       return card
     }
@@ -732,11 +859,7 @@ export class Renderer {
   }
 
   /** Draws PDF pages onto canvases with pdf.js (ADR-0014). */
-  private async renderPdf(
-    data: Uint8Array,
-    rec: BackupFileRecord,
-    card: HTMLElement,
-  ): Promise<void> {
+  private async renderPdf(data: Uint8Array, fileName: string, card: HTMLElement): Promise<void> {
     try {
       const doc = await pdfjs.getDocument({ data: data.slice() }).promise
       const pages = Math.min(doc.numPages, MAX_PDF_PAGES)
@@ -765,7 +888,7 @@ export class Renderer {
     } catch {
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      note.textContent = `Could not render “${rec.fileName}” inline — use Download.`
+      note.textContent = `Could not render “${fileName}” inline — use Download.`
       card.appendChild(note)
     }
   }
@@ -780,7 +903,13 @@ export class Renderer {
     data: Uint8Array,
     rec: BackupFileRecord,
     card: HTMLElement,
-    opts?: { pageNav?: boolean; hash?: string; token?: string; pagePaths?: ReadonlySet<string> },
+    opts?: {
+      pageNav?: boolean
+      hash?: string
+      token?: string
+      pagePaths?: ReadonlySet<string>
+      headScripts?: readonly string[]
+    },
   ): Promise<void> {
     let html = new TextDecoder().decode(data)
     const dir = rec.filePath.replace(/[^/]+$/, '')
@@ -790,6 +919,13 @@ export class Renderer {
     // goes last precisely so it lands as the first head child, ahead of the
     // script below — which would otherwise run before the policy did.
     if (opts?.pageNav && opts.token) html = injectHead(html, pageNavScript(opts.token))
+    // injectHead prepends, so the array is walked backwards and therefore
+    // reads in document order: a SCORM runtime has to be evaluated before the
+    // boot script that instantiates it, and both before the package's own
+    // scripts look for window.API (ADR-0023).
+    for (const script of [...(opts?.headScripts ?? [])].reverse()) {
+      html = injectHead(html, script)
+    }
     html = injectHead(html, PAGE_LINK_STYLE)
     html = injectCsp(html, SANDBOX_CSP)
     const frame = document.createElement('iframe')
@@ -809,6 +945,193 @@ export class Renderer {
     frame.sandbox.add('allow-popups')
     frame.sandbox.add('allow-popups-to-escape-sandbox')
     card.appendChild(frame)
+  }
+
+  /**
+   * mod_exeweb (ADR-0025): an eXeLearning site published straight into a
+   * Moodle activity. Its backup names the landing page explicitly in
+   * `entrypath`/`entryname`, which beats the filename heuristic
+   * `pickWebsiteEntry` has to use for a plain file resource.
+   */
+  private async renderExeweb(
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const introHtml = await this.resolveHtml(fields.get('intro'), 'mod_exeweb', 'intro', contextId)
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+    }
+
+    const records = [...this.ctx.backup.files.values()].filter(
+      (f) =>
+        f.component === 'mod_exeweb' &&
+        f.fileArea === 'content' &&
+        f.fileName !== '.' &&
+        f.fileSize > 0 &&
+        (contextId === '' || f.contextId === contextId),
+    )
+    if (records.length === 0) {
+      notAvailable(container)
+      return
+    }
+
+    const wantedPath = (fields.get('entrypath') ?? '').trim()
+    const wantedName = (fields.get('entryname') ?? '').trim()
+    const declared =
+      wantedName === ''
+        ? undefined
+        : (records.find(
+            (r) =>
+              r.fileName === wantedName &&
+              (wantedPath === '' ||
+                r.filePath === wantedPath ||
+                `${r.filePath}` === `/${wantedPath}`),
+          ) ?? records.find((r) => r.fileName === wantedName))
+    const entry = declared ?? pickWebsiteEntry(records)
+    if (!entry) {
+      for (const rec of sortRecords(records)) container.appendChild(await this.filePreview(rec))
+      return
+    }
+    await this.renderWebsite(records, entry, container)
+  }
+
+  /**
+   * SCORM package: the course structure Moodle already flattened into
+   * scorm.xml, plus experimental playback of the launchable SCOs
+   * (ADR-0023).
+   *
+   * The SCO and the runtime are composed into ONE document because a SCO
+   * finds its LMS with findAPI(window) and a nested frame on an opaque
+   * origin could not reach window.parent.API. Same sandbox, same CSP, no new
+   * iframe permission.
+   */
+  private async renderScorm(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const mod = activity.moduleName
+    const introHtml = await this.resolveHtml(fields.get('intro'), `mod_${mod}`, 'intro', contextId)
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+    }
+
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    if (!xml) {
+      notAvailable(container)
+      return
+    }
+    let scorm: Awaited<ReturnType<typeof parseScormXml>>
+    try {
+      scorm = await parseScormXml(new TextDecoder().decode(xml))
+    } catch {
+      notAvailable(container)
+      return
+    }
+
+    // The extracted package tree lives in the `content` file area at itemid
+    // 0; `package` holds the uploaded zip. The revision segment of a
+    // pluginfile URL is a cache-buster and is never an itemid.
+    const contentFiles = [...this.ctx.backup.files.values()].filter(
+      (f) =>
+        f.component === `mod_${mod}` &&
+        f.fileArea === 'content' &&
+        f.fileName !== '.' &&
+        f.fileSize > 0 &&
+        (contextId === '' || f.contextId === contextId),
+    )
+
+    const launchable = scormToc(scorm.scoes).filter((n) => n.sco.launch !== '')
+    const byPath = new Map(contentFiles.map((f) => [recordFullPath(f), f]))
+    const resolved = launchable.flatMap((node) => {
+      const { path } = splitLaunch(node.sco.launch, node.sco.parameters)
+      const rec = byPath.get(decodeRefPath(path.replace(/^\/+/, '')))
+      return rec ? [{ node, rec }] : []
+    })
+
+    if (resolved.length === 0) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t(contentFiles.length === 0 ? 'scorm.noContent' : 'scorm.noLaunchable')
+      container.appendChild(note)
+      this.appendScormPackageDownload(mod, contextId, container)
+      return
+    }
+
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t('scorm.experimental')
+    container.appendChild(chip)
+
+    const is2004 = isScorm2004(scorm.version)
+    const runtime = await loadScormRuntime(is2004)
+    if (!runtime) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('scorm.runtimeUnavailable')
+      container.appendChild(note)
+    }
+    const headScripts = runtime ? [runtimeScript(runtime), scormBootScript(is2004)] : []
+
+    const first = defaultLaunchSco(scorm.scoes)
+    const entry =
+      resolved.find((r) => first !== undefined && r.node.sco.identifier === first.identifier)
+        ?.rec ?? resolved[0]?.rec
+    if (!entry) {
+      notAvailable(container)
+      return
+    }
+    const depthOf = new Map(resolved.map((r) => [r.rec, r.node.depth]))
+    const titleOf = new Map(resolved.map((r) => [r.rec, r.node.sco.title || r.rec.fileName]))
+
+    await this.mountNavigablePages(
+      resolved.map((r) => r.rec),
+      entry,
+      container,
+      {
+        label: t('scorm.contents'),
+        hint: t('scorm.contentsHint'),
+        buttonLabel: (rec) => titleOf.get(rec) ?? rec.fileName,
+        buttonIndent: (rec) => depthOf.get(rec) ?? 0,
+        headScripts: () => headScripts,
+      },
+    )
+
+    this.appendScormPackageDownload(mod, contextId, container)
+  }
+
+  /** Offers the uploaded package itself, which lives in the `package` area. */
+  private appendScormPackageDownload(mod: string, contextId: string, container: HTMLElement): void {
+    const pkg = [...this.ctx.backup.files.values()].find(
+      (f) =>
+        f.component === `mod_${mod}` &&
+        f.fileArea === 'package' &&
+        f.fileName !== '.' &&
+        f.fileSize > 0 &&
+        (contextId === '' || f.contextId === contextId),
+    )
+    if (!pkg) return
+    const card = document.createElement('div')
+    card.className = 'file-card'
+    const head = document.createElement('div')
+    head.className = 'file-head'
+    const name = document.createElement('span')
+    name.textContent = `${pkg.fileName} (${formatBytes(pkg.fileSize)})`
+    head.appendChild(name)
+    card.appendChild(head)
+    container.appendChild(card)
+    void this.tryRead(contentHashPath(pkg.contentHash)).then((bytes) => {
+      if (!bytes) return
+      addDownload(card, this.blobUrl(bytes, pkg.mimeType || guessMime(pkg.fileName)), pkg.fileName)
+    })
   }
 
   /**
@@ -901,6 +1224,209 @@ export class Renderer {
     // allow-scripts only: opaque origin — no same-origin access to the app.
     frame.sandbox.add('allow-scripts')
     card.appendChild(frame)
+  }
+
+  /**
+   * eXeLearning package (ADR-0025). A `.elpx` carries both the re-importable
+   * project and a rendered site; when the site is there it is what a reader
+   * wants, and it renders through the same in-memory pipeline as an EPUB
+   * chapter. A legacy `.elp` has no site — its project data is a binary
+   * Twisted jelly stream this browser cannot decode — so MBZoo says what the
+   * file is instead of pretending.
+   */
+  private async renderExePackage(data: Uint8Array, card: HTMLElement): Promise<void> {
+    const note = (text: string): void => {
+      const p = document.createElement('p')
+      p.className = 'fallback-note'
+      p.textContent = text
+      card.appendChild(p)
+    }
+    let pkg: ReturnType<typeof readExePackage>
+    try {
+      pkg = readExePackage(unzipPackage(data))
+    } catch {
+      note(t('exe.invalid'))
+      return
+    }
+
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t(`exe.kind.${pkg.kind}`)
+    card.appendChild(chip)
+
+    if (pkg.kind === 'exe-site-modern' || pkg.kind === 'exe-site-legacy') {
+      this.renderZipPages(exeSiteBook(pkg), card, {
+        list: t('exe.pages'),
+        previous: t('epub.previous'),
+        next: t('epub.next'),
+        hint: t('exe.pagesHint'),
+      })
+      return
+    }
+    if (pkg.kind === 'elpx-source' && pkg.entry !== '') {
+      // A source package that also shipped its export.
+      this.renderZipPages(exeSiteBook(pkg), card, {
+        list: t('exe.pages'),
+        previous: t('epub.previous'),
+        next: t('epub.next'),
+        hint: t('exe.pagesHint'),
+      })
+      return
+    }
+    if (pkg.title !== '') {
+      const title = document.createElement('p')
+      title.className = 'website-note'
+      title.textContent = pkg.title
+      card.appendChild(title)
+    }
+    if (pkg.kind === 'elp-legacy-opaque') note(t('exe.opaque'))
+    else if (pkg.kind === 'unknown') note(t('exe.unknown'))
+    else note(t('exe.noSite'))
+
+    const list = document.createElement('details')
+    list.className = 'advanced'
+    const summary = document.createElement('summary')
+    summary.textContent = `${t('exe.files')} (${pkg.entries.size})`
+    list.appendChild(summary)
+    const ul = document.createElement('ul')
+    ul.className = 'resource-files'
+    for (const path of [...pkg.entries.keys()].sort()) {
+      const li = document.createElement('li')
+      li.textContent = path
+      ul.appendChild(li)
+    }
+    list.appendChild(ul)
+    card.appendChild(list)
+  }
+
+  /**
+   * EPUB reading (ADR-0024): the spine becomes a chapter row, and each
+   * chapter renders in the same opaque-origin sandbox with the same injected
+   * CSP as any other archive HTML. Nothing is fetched; every asset the
+   * chapter references is inlined from the package already in memory.
+   */
+  private async renderEpub(data: Uint8Array, card: HTMLElement): Promise<void> {
+    const fallback = (key: 'epub.invalid' | 'epub.empty'): void => {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t(key)
+      card.appendChild(note)
+    }
+    // A package is hostile input: neither unzipping nor reading the package
+    // document may reach the caller as a raw error.
+    let book: EpubBook
+    try {
+      book = readEpub(unzipEpub(data))
+    } catch {
+      fallback('epub.invalid')
+      return
+    }
+    if (book.chapters.length === 0) {
+      fallback('epub.empty')
+      return
+    }
+    this.renderZipPages(book, card, {
+      list: t('epub.chapters'),
+      previous: t('epub.previous'),
+      next: t('epub.next'),
+      hint: t('epub.hint'),
+    })
+  }
+
+  /**
+   * Renders the pages of an in-memory ZIP package — an EPUB's spine, an
+   * eXeLearning export's HTML — as one sandboxed document at a time, with
+   * MBZoo's own list and previous/next controls. Every asset is inlined from
+   * the package; nothing is fetched (ADR-0024, ADR-0025).
+   */
+  private renderZipPages(
+    book: EpubBook,
+    card: HTMLElement,
+    labels: { list: string; previous: string; next: string; hint: string },
+  ): void {
+    if (book.title !== '') {
+      const title = document.createElement('p')
+      title.className = 'website-note'
+      title.textContent = book.title
+      card.appendChild(title)
+    }
+
+    const holder = document.createElement('div')
+    const bar = document.createElement('div')
+    bar.className = 'site-pages'
+    const label = document.createElement('span')
+    label.className = 'site-pages-label'
+    label.textContent = `${labels.list} (${book.chapters.length})`
+    bar.appendChild(label)
+
+    let index = 0
+    let chapterUrls: string[] = []
+    const show = (next: number): void => {
+      index = Math.min(Math.max(next, 0), book.chapters.length - 1)
+      const chapter = book.chapters[index]
+      if (!chapter) return
+      for (const b of bar.querySelectorAll('button[data-chapter]')) {
+        b.classList.toggle('selected', b.getAttribute('data-chapter') === chapter.path)
+      }
+      let html: string
+      try {
+        html = composeChapter(book, chapter.path)
+      } catch {
+        return
+      }
+      html = retargetExternalLinks(html)
+      html = injectHead(html, PAGE_LINK_STYLE)
+      html = injectCsp(html, SANDBOX_CSP)
+      const before = this.urls.length
+      const frame = document.createElement('iframe')
+      frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+      frame.title = chapter.title
+      frame.className = 'html-frame'
+      // Same tokens as every other archive HTML preview (ADR-0014): opaque
+      // origin, and never allow-same-origin.
+      frame.sandbox.add('allow-scripts')
+      frame.sandbox.add('allow-popups')
+      frame.sandbox.add('allow-popups-to-escape-sandbox')
+      const minted = this.urls.slice(before)
+      holder.replaceChildren(frame)
+      this.revoke(chapterUrls)
+      chapterUrls = minted
+      prev.disabled = index === 0
+      next_.disabled = index === book.chapters.length - 1
+    }
+
+    for (const chapter of book.chapters) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'btn-outline'
+      button.setAttribute('data-chapter', chapter.path)
+      button.textContent = chapter.title
+      button.addEventListener('click', () => show(book.chapters.indexOf(chapter)))
+      bar.appendChild(button)
+    }
+    card.appendChild(bar)
+
+    const nav = document.createElement('div')
+    nav.className = 'site-pages'
+    const prev = document.createElement('button')
+    prev.type = 'button'
+    prev.className = 'btn-outline'
+    prev.textContent = labels.previous
+    prev.addEventListener('click', () => show(index - 1))
+    const next_ = document.createElement('button')
+    next_.type = 'button'
+    next_.className = 'btn-outline'
+    next_.textContent = labels.next
+    next_.addEventListener('click', () => show(index + 1))
+    nav.append(prev, next_)
+    card.appendChild(nav)
+
+    const hint = document.createElement('p')
+    hint.className = 'fallback-note site-pages-hint'
+    hint.textContent = labels.hint
+    card.appendChild(hint)
+    card.appendChild(holder)
+    show(0)
   }
 
   /** Rewrites relative src/href references to blob URLs of archive files. */
@@ -2327,6 +2853,33 @@ function sortRecords(records: BackupFileRecord[]): BackupFileRecord[] {
  */
 let playerAssetsPromise: Promise<PlayerAssets | undefined> | undefined
 
+/**
+ * Loads a SCORM runtime bundle on demand (TECH-015). The classic (non-ESM)
+ * build is required: it is an IIFE that self-assigns the constructor to a
+ * global, whereas the ESM build exports a binding and would have to be a
+ * deferred module — too late for a SCO that looks for the API while parsing.
+ * Only the flavor the package declares is fetched, so a 1.2 course never
+ * pays for the much larger 2004 bundle.
+ */
+let scorm12Promise: Promise<string | undefined> | undefined
+let scorm2004Promise: Promise<string | undefined> | undefined
+
+function loadScormRuntime(is2004: boolean): Promise<string | undefined> {
+  const load = async (mod: Promise<{ default: string }>): Promise<string | undefined> => {
+    try {
+      return (await mod).default
+    } catch {
+      return undefined
+    }
+  }
+  if (is2004) {
+    scorm2004Promise ??= load(import('scorm-again-classic/scorm2004.min.js?raw'))
+    return scorm2004Promise
+  }
+  scorm12Promise ??= load(import('scorm-again-classic/scorm12.min.js?raw'))
+  return scorm12Promise
+}
+
 function loadPlayerAssets(): Promise<PlayerAssets | undefined> {
   playerAssetsPromise ??= Promise.all([
     import('h5p-standalone/dist/frame.bundle.js?raw'),
@@ -2353,9 +2906,18 @@ function notAvailable(container: HTMLElement): void {
   container.appendChild(p)
 }
 
+/** Download name for a file the course embedded rather than listed. */
+function embeddedFileName(mime: string): string {
+  const ext = mime === 'application/pdf' ? 'pdf' : (mime.split('/').pop() ?? 'bin')
+  return `embedded.${ext}`
+}
+
 /** DOMPurify wrapper — the single sanitization point (ADR-0012). */
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true, svg: false } })
+  return DOMPurify.sanitize(html, {
+    USE_PROFILES: { html: true, svg: false },
+    ALLOWED_URI_REGEXP,
+  })
 }
 
 /** Assets larger than this stay out of an exported HTML file. */

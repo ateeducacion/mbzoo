@@ -32,7 +32,7 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     // Index 1 is the delegated section, which sits between the two numbered
     // ones in document order; "Resources" is index 2.
     expect(b.sections[2]?.activityIds).toEqual([
-      3003, 3005, 3008, 3009, 3010, 3011, 3016, 3017, 3018, 3020, 3023, 3024,
+      3003, 3005, 3008, 3009, 3010, 3011, 3016, 3017, 3018, 3020, 3023, 3024, 3027,
     ])
   })
 
@@ -44,7 +44,7 @@ describe('openBackup (synthetic ZIP fixture)', () => {
 
   test('indexes files.xml records', async () => {
     const b = await openBackup(Bun.file(FIXTURE))
-    expect(b.files.size).toBe(6)
+    expect(b.files.size).toBe(12)
     const names = [...b.files.values()].map((f) => f.fileName)
     expect(names).toContain('readme.txt')
     expect(names).toContain('dot.svg')

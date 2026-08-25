@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  ALLOWED_URI_REGEXP,
   decodeRefPath,
   formatBytes,
   guessMime,
@@ -8,6 +9,7 @@ import {
   injectHead,
   pageNavScript,
   parseNavigationRequest,
+  placeholderizeEmbeds,
   resolveRelative,
   SANDBOX_CSP,
   splitRef,
@@ -188,5 +190,86 @@ describe('pageNavScript', () => {
       SANDBOX_CSP,
     )
     expect(built.indexOf('Content-Security-Policy')).toBeLessThan(built.indexOf('<script'))
+  })
+})
+
+describe('ALLOWED_URI_REGEXP', () => {
+  const allows = (uri: string): boolean => ALLOWED_URI_REGEXP.test(uri)
+
+  test('lets through the schemes MBZoo needs, including its own blob URLs', () => {
+    expect(allows('blob:http://localhost/9f2c')).toBe(true)
+    expect(allows('https://example.org/x')).toBe(true)
+    expect(allows('mailto:someone@example.org')).toBe(true)
+    // Relative references must survive: course HTML is full of them.
+    expect(allows('../page.html')).toBe(true)
+    expect(allows('#section')).toBe(true)
+  })
+
+  test('still refuses the schemes that execute', () => {
+    // Widening the policy for blob: must not widen it for anything else —
+    // this is the single sanitization path (ADR-0012).
+    expect(allows('javascript:alert(1)')).toBe(false)
+    expect(allows('JaVaScRiPt:alert(1)')).toBe(false)
+    expect(allows('vbscript:msgbox(1)')).toBe(false)
+    expect(allows('data:text/html,<script>alert(1)</script>')).toBe(false)
+  })
+})
+
+describe('placeholderizeEmbeds', () => {
+  const BLOB = 'blob:http://localhost/9f2c-1'
+  const register = (): ((url: string) => string) => {
+    let n = 0
+    return () => `handle-${++n}`
+  }
+
+  test('promotes an embedded PDF the sanitizer would otherwise delete', () => {
+    expect(
+      placeholderizeEmbeds(
+        `<object data="${BLOB}" type="application/pdf">alt</object>`,
+        register(),
+      ),
+    ).toBe('<div data-mbz-embed="handle-1"></div>')
+    expect(placeholderizeEmbeds(`<embed src="${BLOB}" type="application/pdf">`, register())).toBe(
+      '<div data-mbz-embed="handle-1"></div>',
+    )
+    expect(placeholderizeEmbeds(`<iframe src="${BLOB}"></iframe>`, register())).toBe(
+      '<div data-mbz-embed="handle-1"></div>',
+    )
+  })
+
+  test('never writes the URL into the document', () => {
+    // DOMPurify keeps data-* attributes, so a backup can author its own
+    // data-mbz-embed. If the attribute held a URL, hydration would be
+    // reading an attacker-chosen one out of the DOM.
+    const out = placeholderizeEmbeds(`<object data="${BLOB}"></object>`, register())
+    expect(out).not.toContain(BLOB)
+    expect(out).not.toContain('blob:')
+  })
+
+  test('leaves anything that is not a resolved backup file alone', () => {
+    // Untouched here means still dropped by the sanitizer, which is the
+    // point: this must not become a way to load remote content (ADR-0009).
+    const remote = '<iframe src="https://evil.example/x"></iframe>'
+    expect(placeholderizeEmbeds(remote, register())).toBe(remote)
+    const relative = '<object data="notes.pdf"></object>'
+    expect(placeholderizeEmbeds(relative, register())).toBe(relative)
+    const none = '<object type="application/pdf"></object>'
+    expect(placeholderizeEmbeds(none, register())).toBe(none)
+    const script = '<object data="javascript:alert(1)"></object>'
+    expect(placeholderizeEmbeds(script, register())).toBe(script)
+  })
+
+  test('a hostile target cannot break out of the attribute it is written into', () => {
+    const evil = '<object data="blob:x&quot; onload=&quot;alert(1)"></object>'
+    expect(placeholderizeEmbeds(evil, register())).toBe(evil)
+    const spaced = '<object data="blob:http://x/a b"></object>'
+    expect(placeholderizeEmbeds(spaced, register())).toBe(spaced)
+  })
+
+  test('keeps surrounding content and handles several embeds', () => {
+    const html = `<p>before</p><object data="${BLOB}"></object><p>after</p>`
+    expect(placeholderizeEmbeds(html, register())).toBe(
+      '<p>before</p><div data-mbz-embed="handle-1"></div><p>after</p>',
+    )
   })
 })

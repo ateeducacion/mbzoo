@@ -40,6 +40,128 @@ function mutatedFixture(
   }
 }
 
+/**
+ * A Page whose content embeds a stored image through @@PLUGINFILE@@ — the
+ * shape every real course uses and that the synthetic fixture never had.
+ */
+/**
+ * A Page that embeds a stored PDF with <object>, the way a teacher does it
+ * from the HTML source view. Moodle stores page content with noclean, so the
+ * markup survives into the backup verbatim.
+ */
+/**
+ * A Page that authors its own `data-mbz-embed` attribute. DOMPurify keeps
+ * `data-*` attributes, so this survives sanitization — the placeholder MBZoo
+ * mints must therefore never be something a backup can forge.
+ */
+function forgedEmbedFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="forge-text"&gt;Body.&lt;/p&gt;' +
+          '&lt;div id="forged" data-mbz-embed="javascript:window.__mbzooXss=true"&gt;&lt;/div&gt;' +
+          '&lt;div id="forged2" data-mbz-embed="blob:http://127.0.0.1/anything"&gt;&lt;/div&gt;</content>',
+      ),
+    )
+  }, 'forged-embed.mbz')
+}
+
+function pagePdfFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  const pdf = Buffer.from(
+    'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0MSA+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDIwIDQwIFRkIChNQlpPTyBFTUJFRCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQxIDAwMDAwIG4gCjAwMDAwMDAzMzIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MDIKJSVFT0YK',
+    'base64',
+  )
+  return mutatedFixture((entries) => {
+    const bytes = new Uint8Array(pdf)
+    const hash = createHash('sha1').update(bytes).digest('hex')
+    entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
+
+    replaceTextEntry(entries, 'files.xml', (xml) => {
+      const record = `  <file>
+    <contenthash>${hash}</contenthash>
+    <contextid>104</contextid>
+    <component>mod_page</component>
+    <filearea>content</filearea>
+    <itemid>0</itemid>
+    <filepath>/</filepath>
+    <filename>notes.pdf</filename>
+    <userid>2</userid>
+    <filesize>${bytes.byteLength}</filesize>
+    <mimetype>application/pdf</mimetype>
+    <status>0</status>
+    <timecreated>1700000000</timecreated>
+    <timemodified>1700000000</timemodified>
+    <source>$@NULL@$</source>
+    <author>$@NULL@$</author>
+    <license>$@NULL@$</license>
+    <sortorder>0</sortorder>
+    <repositorytype>$@NULL@$</repositorytype>
+    <repositoryid>$@NULL@$</repositoryid>
+    <reference>$@NULL@$</reference>
+  </file>`
+      return xml.replace('</files>', `${record}\n</files>`)
+    })
+
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="pdf-text"&gt;See the notes below.&lt;/p&gt;' +
+          '&lt;object data="@@PLUGINFILE@@/notes.pdf" type="application/pdf"&gt;fallback&lt;/object&gt;' +
+          '&lt;iframe id="remote" src="https://evil.example/x"&gt;&lt;/iframe&gt;</content>',
+      ),
+    )
+  }, 'page-pdf.mbz')
+}
+
+function pageImageFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  // 1x1 red PNG.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  return mutatedFixture((entries) => {
+    const bytes = new Uint8Array(png)
+    const hash = createHash('sha1').update(bytes).digest('hex')
+    entries[`files/${hash.slice(0, 2)}/${hash}`] = bytes
+
+    replaceTextEntry(entries, 'files.xml', (xml) => {
+      const record = `  <file>
+    <contenthash>${hash}</contenthash>
+    <contextid>104</contextid>
+    <component>mod_page</component>
+    <filearea>content</filearea>
+    <itemid>0</itemid>
+    <filepath>/</filepath>
+    <filename>diagram.png</filename>
+    <userid>2</userid>
+    <filesize>${bytes.byteLength}</filesize>
+    <mimetype>image/png</mimetype>
+    <status>0</status>
+    <timecreated>1700000000</timecreated>
+    <timemodified>1700000000</timemodified>
+    <source>$@NULL@$</source>
+    <author>$@NULL@$</author>
+    <license>$@NULL@$</license>
+    <sortorder>0</sortorder>
+    <repositorytype>$@NULL@$</repositorytype>
+    <repositoryid>$@NULL@$</repositoryid>
+    <reference>$@NULL@$</reference>
+  </file>`
+      return xml.replace('</files>', `${record}\n</files>`)
+    })
+
+    replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
+      xml.replace(
+        /<content>[\s\S]*?<\/content>/,
+        '<content>&lt;p id="page-text"&gt;Body text.&lt;/p&gt;' +
+          '&lt;img id="page-img" src="@@PLUGINFILE@@/diagram.png" alt="diagram"&gt;' +
+          '&lt;a id="page-link" href="@@PLUGINFILE@@/diagram.png"&gt;download&lt;/a&gt;</content>',
+      ),
+    )
+  }, 'page-image.mbz')
+}
+
 function hostilePageFixture(): { name: string; mimeType: string; buffer: Buffer } {
   return mutatedFixture((entries) => {
     replaceTextEntry(entries, 'activities/page_3004/page.xml', (xml) =>
@@ -115,7 +237,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('3 sections')
-  expect(meta).toContain('26 activities')
+  expect(meta).toContain('27 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -622,6 +744,175 @@ test('a forged navigation request cannot leave the resource (ADR-0022)', async (
 
   await expect(page.frameLocator('.html-frame').locator('#site-marker')).toBeVisible()
   await expect(page.locator('.site-pages button.selected')).toHaveText('index.html')
+})
+
+test('an image embedded in a Page renders (@@PLUGINFILE@@)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', pageImageFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await expect(page.locator('#page-text')).toBeVisible()
+  // resolveHtml swaps @@PLUGINFILE@@ for a managed blob: URL before the HTML
+  // is sanitized, so the sanitizer has to let blob: through or the reference
+  // is deleted and the reader gets a broken image.
+  const img = page.locator('#page-img')
+  await expect(img).toHaveAttribute('src', /^blob:/)
+  const loaded = await img.evaluate(
+    (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+  )
+  expect(loaded).toBe(true)
+  // The same applies to a link pointing at a stored file.
+  await expect(page.locator('#page-link')).toHaveAttribute('href', /^blob:/)
+})
+
+test('a PDF embedded in a Page renders instead of vanishing', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', pagePdfFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await expect(page.locator('#pdf-text')).toBeVisible()
+  // DOMPurify unwraps <object> and drops <iframe> with its subtree, so the
+  // reference has to be promoted before sanitizing or there is nothing left
+  // to render. It comes back as a real pdf.js canvas.
+  await expect(page.locator('.activity-content canvas')).toBeVisible()
+  await expect(page.locator('[data-mbz-embed]')).toHaveCount(0)
+
+  // An embed pointing anywhere but a resolved backup file stays dropped —
+  // this must not become a way to load remote content (ADR-0009).
+  await expect(page.locator('#remote')).toHaveCount(0)
+  expect(requests.filter((u) => u.includes('evil.example'))).toEqual([])
+})
+
+test('a SCORM package plays inside the opaque-origin sandbox (ADR-0023)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo SCORM package/ }).click()
+
+  // The table of contents comes from scorm.xml, where Moodle already
+  // flattened the package manifest — MBZoo never reads imsmanifest.xml.
+  const items = page.locator('.site-pages button')
+  await expect(items).toHaveCount(2)
+  await expect(items.first()).toHaveText('First step')
+  await expect(items.nth(1)).toHaveText('Second step')
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#sco-title')).toHaveText('First step')
+  // The SCO finds the API with the ADL findAPI(window) walk and drives it.
+  // Runtime and SCO share one document precisely so that walk succeeds.
+  await expect(frame.locator('#sco-api')).toHaveText('api-found')
+  await expect(frame.locator('#sco-value')).toHaveText('completed')
+
+  // The sandbox is unchanged: opaque origin, no same-origin access.
+  const sandbox = await page.locator('.html-frame').getAttribute('sandbox')
+  expect(sandbox).toContain('allow-scripts')
+  expect(sandbox).not.toContain('allow-same-origin')
+
+  // Nothing the runtime does may reach the network (ADR-0009).
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+
+  // Second item, through MBZoo's own chrome.
+  await items.nth(1).click()
+  await expect(page.frameLocator('.html-frame').locator('#sco-title')).toHaveText('Second step')
+})
+
+test('a link between SCOs navigates through MBZoo (ADR-0022 + ADR-0023)', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo SCORM package/ }).click()
+
+  const frame = page.frameLocator('.html-frame')
+  await expect(frame.locator('#sco-title')).toHaveText('First step')
+  // The same validated bridge the multi-page site uses, reused unchanged.
+  await expect(frame.locator('#sco-next')).toHaveAttribute('data-mbz-page', 'sco2.html')
+  await frame.locator('#sco-next').click()
+  await expect(page.frameLocator('.html-frame').locator('#sco-title')).toHaveText('Second step')
+})
+
+test('an EPUB is read chapter by chapter in the sandbox (ADR-0024)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo folder/ }).click()
+
+  // The folder holds several packages, so everything is scoped to this card.
+  const card = page.locator('.file-card', { hasText: 'demo-book.epub' })
+  // The chapter row comes from the OPF spine, in reading order.
+  const chapters = card.locator('button[data-chapter]')
+  await expect(chapters).toHaveCount(2)
+  await expect(chapters.first()).toHaveText('First chapter')
+
+  const frame = card.frameLocator('.html-frame')
+  await expect(frame.locator('#chapter-title')).toHaveText('First chapter')
+  // The chapter's relative stylesheet and image are inlined from the package,
+  // so the chapter renders styled with nothing fetched.
+  await expect(frame.locator('#chapter-title')).toHaveCSS('color', 'rgb(0, 0, 255)')
+  const imgOk = await frame
+    .locator('#chapter-img')
+    .evaluate(
+      (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+    )
+  expect(imgOk).toBe(true)
+
+  // A link to another chapter is defused: no unprocessed document may be
+  // reachable from the frame (the ADR-0020 rule).
+  await expect(frame.locator('#chapter-link')).not.toHaveAttribute('href', /./)
+
+  // Next moves through the spine.
+  await card.getByRole('button', { name: 'Next →' }).click()
+  await expect(card.frameLocator('.html-frame').locator('#chapter-title')).toHaveText(
+    'Second chapter',
+  )
+
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+})
+
+test('an eXeLearning package shows its exported site (ADR-0025)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo folder/ }).click()
+
+  // A .elpx carries both the re-importable project and the render; the
+  // render is what a reader wants, and it is recognised by the site's own
+  // marker files rather than by the extension.
+  const card = page.locator('.file-card', { hasText: 'demo-project.elpx' })
+  await expect(card.getByText('eXeLearning exported site')).toBeVisible()
+
+  const pages = card.locator('button[data-chapter]')
+  await expect(pages.first()).toHaveText('Demo eXeLearning site')
+
+  const frame = card.frameLocator('.html-frame')
+  await expect(frame.locator('#exe-title')).toHaveText('Demo eXeLearning site')
+  // Its relative stylesheet and image are inlined straight from the package.
+  await expect(frame.locator('#exe-title')).toHaveCSS('color', 'rgb(128, 0, 128)')
+
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+})
+
+test('a backup cannot forge an embed placeholder into a link', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', forgedEmbedFixture())
+  await page.getByRole('button', { name: /About this demo/ }).click()
+
+  await expect(page.locator('#forge-text')).toBeVisible()
+  // Both forged placeholders name something MBZoo never minted, so they
+  // resolve to nothing and are removed rather than becoming a download link.
+  await expect(page.locator('#forged')).toHaveCount(0)
+  await expect(page.locator('#forged2')).toHaveCount(0)
+  await expect(page.locator('.activity-content a[href^="javascript:"]')).toHaveCount(0)
+  expect(await page.evaluate(() => (window as unknown as Record<string, unknown>).__mbzooXss)).toBe(
+    undefined,
+  )
 })
 
 test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({ page }) => {

@@ -200,6 +200,40 @@ const STRINGS = {
     'site.pages': 'Pages in this site',
     'site.pagesHint':
       'Links inside the page work; this list also reaches pages the entry page never links to.',
+    'embed.notPreviewable': 'This course embedded a file MBZoo cannot show inline.',
+    'scorm.experimental':
+      'Experimental: MBZoo runs this SCORM package offline, with no attempt tracking and nothing saved.',
+    'scorm.contents': 'Contents of this package',
+    'scorm.contentsHint':
+      'Each entry is a launchable item from the package manifest, indented to match its place in the course structure.',
+    'scorm.noContent':
+      'This backup stores the SCORM package but not its extracted contents, so there is nothing to play.',
+    'scorm.noLaunchable': 'This SCORM package declares no launchable item.',
+    'scorm.runtimeUnavailable':
+      'The SCORM runtime could not be loaded, so the package is shown without one.',
+    'epub.chapters': 'Chapters',
+    'epub.previous': '← Previous',
+    'epub.next': 'Next →',
+    'epub.hint':
+      'Chapters are opened from this list; links between them inside the page are inactive.',
+    'epub.invalid': 'This file is not a readable EPUB package.',
+    'epub.empty': 'This EPUB declares no readable chapters.',
+    'exe.pages': 'Pages in this package',
+    'exe.pagesHint':
+      'Pages are opened from this list; links between them inside the page are inactive.',
+    'exe.files': 'Files in this package',
+    'exe.invalid': 'This file is not a readable eXeLearning package.',
+    'exe.noSite':
+      'This package carries the editable project but no exported site, so there is nothing to display.',
+    'exe.opaque':
+      'This legacy project stores its content as a binary Twisted jelly stream, which cannot be decoded in a browser.',
+    'exe.unknown': 'This archive does not match any eXeLearning layout MBZoo recognises.',
+    'exe.kind.exe-site-modern': 'eXeLearning exported site',
+    'exe.kind.exe-site-legacy': 'eXeLearning exported site (legacy layout)',
+    'exe.kind.elpx-source': 'eXeLearning project (.elpx)',
+    'exe.kind.elp-legacy-xml': 'eXeLearning legacy project (.elp)',
+    'exe.kind.elp-legacy-opaque': 'eXeLearning legacy project (.elp)',
+    'exe.kind.unknown': 'Unrecognised archive',
     'examples.label': 'Try an example:',
     'home.title': 'MBZoo home',
     'home.dropHint': 'Drop another .mbz anywhere — or click to browse',
@@ -453,6 +487,41 @@ const STRINGS = {
     'site.pages': 'Páginas de este sitio',
     'site.pagesHint':
       'Los enlaces dentro de la página funcionan; esta lista además llega a páginas que la portada no enlaza.',
+    'embed.notPreviewable': 'Este curso incrusta un fichero que MBZoo no puede mostrar en línea.',
+    'scorm.experimental':
+      'Experimental: MBZoo ejecuta este paquete SCORM sin conexión, sin registrar intentos y sin guardar nada.',
+    'scorm.contents': 'Contenido de este paquete',
+    'scorm.contentsHint':
+      'Cada entrada es un elemento lanzable del manifiesto del paquete, sangrado según su lugar en la estructura del curso.',
+    'scorm.noContent':
+      'Este backup guarda el paquete SCORM pero no su contenido extraído, así que no hay nada que reproducir.',
+    'scorm.noLaunchable': 'Este paquete SCORM no declara ningún elemento lanzable.',
+    'scorm.runtimeUnavailable':
+      'No se ha podido cargar el runtime de SCORM, así que el paquete se muestra sin él.',
+    'epub.chapters': 'Capítulos',
+    'epub.previous': '← Anterior',
+    'epub.next': 'Siguiente →',
+    'epub.hint':
+      'Los capítulos se abren desde esta lista; los enlaces entre ellos dentro de la página no navegan.',
+    'epub.invalid': 'Este fichero no es un paquete EPUB legible.',
+    'epub.empty': 'Este EPUB no declara ningún capítulo legible.',
+    'exe.pages': 'Páginas de este paquete',
+    'exe.pagesHint':
+      'Las páginas se abren desde esta lista; los enlaces entre ellas dentro de la página no navegan.',
+    'exe.files': 'Ficheros de este paquete',
+    'exe.invalid': 'Este fichero no es un paquete de eXeLearning legible.',
+    'exe.noSite':
+      'Este paquete lleva el proyecto editable pero no el sitio exportado, así que no hay nada que mostrar.',
+    'exe.opaque':
+      'Este proyecto antiguo guarda su contenido como un flujo binario Twisted jelly, que no se puede decodificar en un navegador.',
+    'exe.unknown':
+      'Este archivo no coincide con ninguna estructura de eXeLearning que MBZoo reconozca.',
+    'exe.kind.exe-site-modern': 'Sitio exportado de eXeLearning',
+    'exe.kind.exe-site-legacy': 'Sitio exportado de eXeLearning (estructura antigua)',
+    'exe.kind.elpx-source': 'Proyecto de eXeLearning (.elpx)',
+    'exe.kind.elp-legacy-xml': 'Proyecto antiguo de eXeLearning (.elp)',
+    'exe.kind.elp-legacy-opaque': 'Proyecto antiguo de eXeLearning (.elp)',
+    'exe.kind.unknown': 'Archivo no reconocido',
     'examples.label': 'Prueba con un ejemplo:',
     'home.title': 'Inicio de MBZoo',
     'home.dropHint': 'Arrastra otro .mbz a cualquier parte — o haz clic para buscarlo',

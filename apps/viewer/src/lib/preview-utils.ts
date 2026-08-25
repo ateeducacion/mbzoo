@@ -35,6 +35,23 @@ export const H5P_CSP =
   "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
   "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
+/**
+ * URI schemes backup HTML may keep after sanitization. This is DOMPurify's
+ * own default list plus `blob:`.
+ *
+ * `blob:` is not a concession to the backup — it is how MBZoo's own content
+ * reaches the reader. resolveHtml replaces every `@@PLUGINFILE@@` token with
+ * a managed blob URL *before* sanitizing (the refs are URL-encoded in backup
+ * HTML, so they must be matched on the raw text), and DOMPurify's default
+ * policy rejects `blob:` on every attribute. Without this, every image a
+ * teacher embedded in a Page arrived with no `src` at all.
+ *
+ * It grants a hostile backup nothing: a `blob:` URL only resolves if this
+ * origin minted it, and the ones we mint hold that backup's own files.
+ */
+export const ALLOWED_URI_REGEXP =
+  /^(?:(?:https?|mailto|ftp|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i
+
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
@@ -47,6 +64,16 @@ export function guessMime(name: string): string {
     txt: 'text/plain',
     md: 'text/plain',
     html: 'text/html',
+    htm: 'text/html',
+    xhtml: 'application/xhtml+xml',
+    css: 'text/css',
+    js: 'text/javascript',
+    xml: 'application/xml',
+    epub: 'application/epub+zip',
+    otf: 'font/otf',
+    ttf: 'font/ttf',
+    woff: 'font/woff',
+    woff2: 'font/woff2',
     json: 'application/json',
     pdf: 'application/pdf',
     png: 'image/png',
@@ -171,6 +198,44 @@ export function resolveRelative(dir: string, ref: string): string {
     else out.push(part)
   }
   return out.join('/')
+}
+
+/**
+ * Rewrites `<object>`, `<embed>` and `<iframe>` elements that point at a file
+ * MBZoo has already resolved into an inert placeholder the sanitizer keeps.
+ *
+ * Moodle stores Page content with `noclean`, so whatever a teacher pasted in
+ * the HTML source view travels verbatim into the backup — embedding a PDF
+ * with `<object>` is the common way to do it. DOMPurify's html profile drops
+ * `<iframe>` with its whole subtree, removes `<embed>`, and unwraps
+ * `<object>`, so the reference is gone before anything can act on it. This
+ * runs on the raw string *before* the single sanitize call (ADR-0012): it
+ * only deletes markup and substitutes a `<div>` carrying a data attribute,
+ * and its output still goes through sanitizeHtml before reaching innerHTML.
+ * The trust boundary does not move.
+ *
+ * Only `blob:` targets are promoted — those are the ones MBZoo minted itself
+ * from `@@PLUGINFILE@@`. An embed pointing anywhere else keeps being dropped,
+ * so this cannot become a way to load remote content (ADR-0009).
+ */
+export function placeholderizeEmbeds(html: string, register: (url: string) => string): string {
+  return html.replace(
+    /<(object|embed|iframe)\b([^>]*)>(?:[\s\S]*?<\/\1\s*>)?/gi,
+    (whole, tag: string, attrs: string) => {
+      const attr = tag.toLowerCase() === 'object' ? 'data' : 'src'
+      const found = new RegExp(`\\b${attr}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(attrs)
+      const url = (found?.[2] ?? found?.[3] ?? '').trim()
+      // Nothing but our own minted blob URLs.
+      if (!/^blob:[^"'\s<>]+$/.test(url)) return whole
+      // The placeholder carries an opaque handle, never the URL itself.
+      // DOMPurify keeps `data-*` attributes, so a hostile backup can author
+      // its own `data-mbz-embed` and have it survive sanitization; if that
+      // attribute held a URL, hydration would be reading an attacker-chosen
+      // one straight out of the DOM. A handle it cannot guess resolves to
+      // nothing, so the worst it can do is have its placeholder removed.
+      return `<div data-mbz-embed="${register(url)}"></div>`
+    },
+  )
 }
 
 /** Human label for a stored file: what kind of content is it? */
