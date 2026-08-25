@@ -56,6 +56,8 @@ let worker: Worker | undefined
 let requestId = 0
 let currentBackup: ParsedBackup | undefined
 let renderer: Renderer | undefined
+/** Whether the personal-data banner was folded with "Understood" this session. */
+let personalDataDismissed = false
 
 interface TreeEntry {
   readonly id: number
@@ -358,9 +360,11 @@ function stepActivity(delta: -1 | 1): void {
  * device, that is the most important thing it can tell you about a file —
  * before anyone emails it, uploads it or commits it to a repository.
  *
- * So the disclosure leads and the list follows, closed: knowing a file names
- * 400 people is the part everyone needs; reading their names is a deliberate
- * act, and not one to perform by accident while screen-sharing.
+ * So the disclosure leads as a banner, and the list follows, closed: knowing
+ * a file names 400 people is the part everyone needs; reading their names is
+ * a deliberate act, and not one to perform by accident while screen-sharing.
+ * "Understood" folds the banner into a one-line pill that still names the
+ * count and the kinds, so the fact never leaves the screen.
  */
 async function renderUserDisclosure(): Promise<void> {
   const box = document.getElementById('personal-data')
@@ -379,29 +383,49 @@ async function renderUserDisclosure(): Promise<void> {
   if (users.length === 0) return
 
   box.hidden = false
+  const n = users.length
+
+  const banner = document.createElement('div')
+  banner.className = 'personal-data-banner'
+  const icon = document.createElement('span')
+  icon.className = 'personal-data-icon'
+  icon.setAttribute('aria-hidden', 'true')
+  icon.textContent = '🪪'
+  banner.appendChild(icon)
+  const body = document.createElement('div')
+  body.className = 'personal-data-body'
+  banner.appendChild(body)
+
   const title = document.createElement('div')
   title.className = 'personal-data-title'
-  title.textContent = `⚠ ${t('users.title', { n: users.length })}`
-  box.appendChild(title)
+  title.textContent = t('users.title', { n })
+  body.appendChild(title)
 
   if (personalData.length > 0) {
     const kinds = document.createElement('p')
     kinds.className = 'personal-data-kinds'
     kinds.textContent = `${t('users.includes')} ${personalData
       .map((kind) => t(`users.kind.${kind}`))
-      .join(' · ')}`
-    box.appendChild(kinds)
+      .join(' · ')}.`
+    body.appendChild(kinds)
   }
 
   const note = document.createElement('p')
   note.className = 'personal-data-note'
   note.textContent = t('users.note')
-  box.appendChild(note)
+  body.appendChild(note)
 
+  const actions = document.createElement('div')
+  actions.className = 'personal-data-actions'
+  body.appendChild(actions)
+
+  // The "view" action is the <details> summary itself, so opening the list
+  // stays a native, keyboard-reachable toggle rather than a second control.
   const details = document.createElement('details')
-  details.className = 'advanced personal-data-list'
+  details.className = 'personal-data-list'
   const summary = document.createElement('summary')
-  summary.textContent = t('users.reveal', { n: users.length })
+  summary.className = 'personal-data-reveal'
+  summary.textContent = t('users.reveal', { n })
   details.appendChild(summary)
   const list = document.createElement('ul')
   list.className = 'user-list'
@@ -426,7 +450,61 @@ async function renderUserDisclosure(): Promise<void> {
     list.appendChild(li)
   }
   details.appendChild(list)
-  box.appendChild(details)
+  actions.appendChild(details)
+
+  const dismiss = document.createElement('button')
+  dismiss.type = 'button'
+  dismiss.className = 'personal-data-dismiss'
+  dismiss.textContent = t('users.dismiss')
+  actions.appendChild(dismiss)
+
+  const pill = document.createElement('button')
+  pill.type = 'button'
+  pill.className = 'personal-data-pill'
+  pill.hidden = true
+  const pillIcon = document.createElement('span')
+  pillIcon.className = 'personal-data-pill-icon'
+  pillIcon.setAttribute('aria-hidden', 'true')
+  pillIcon.textContent = '🪪'
+  pill.appendChild(pillIcon)
+  const pillCount = document.createElement('span')
+  pillCount.className = 'personal-data-pill-count'
+  pillCount.textContent = t('users.pill', { n })
+  pill.appendChild(pillCount)
+  if (personalData.length > 0) {
+    const pillKinds = document.createElement('span')
+    pillKinds.className = 'personal-data-pill-kinds'
+    pillKinds.textContent = personalData.map((kind) => t(`users.kindShort.${kind}`)).join(' · ')
+    pill.appendChild(pillKinds)
+  }
+  const pillMore = document.createElement('span')
+  pillMore.className = 'personal-data-pill-more'
+  pillMore.textContent = t('users.pillDetails')
+  pill.appendChild(pillMore)
+
+  const setCollapsed = (collapsed: boolean): void => {
+    personalDataDismissed = collapsed
+    // Folding away must also fold the names: re-expanding leads with the
+    // disclosure again, and reading the list stays a deliberate act.
+    if (collapsed) details.open = false
+    banner.hidden = collapsed
+    pill.hidden = !collapsed
+    pill.setAttribute('aria-expanded', String(!collapsed))
+    box.dataset.state = collapsed ? 'collapsed' : 'expanded'
+  }
+  dismiss.addEventListener('click', () => {
+    setCollapsed(true)
+    pill.focus()
+  })
+  pill.addEventListener('click', () => {
+    setCollapsed(false)
+    summary.focus()
+  })
+
+  box.append(banner, pill)
+  // Remembered for this page session only, never persisted: nothing derived
+  // from a backup is written to storage.
+  setCollapsed(personalDataDismissed)
 }
 
 /**
