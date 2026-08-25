@@ -189,9 +189,25 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     if (owner !== undefined && Number.isFinite(owner)) delegated.set(owner, section)
   }
 
+  // Course formats can nest sections (flexsections `parent`, ADR-0030), so
+  // the list is a tree: each section renders its activities, then the
+  // sections that name it as parent, indented one level.
+  const childrenOf = new Map<number, (typeof backup.sections)[number][]>()
   for (const section of backup.sections) {
-    if (section.delegatedTo) continue
+    if (section.delegatedTo || section.parentId === undefined) continue
+    const siblings = childrenOf.get(section.parentId) ?? []
+    siblings.push(section)
+    childrenOf.set(section.parentId, siblings)
+  }
+
+  const renderSection = (
+    section: (typeof backup.sections)[number],
+    depth: number,
+    into: HTMLElement,
+  ): void => {
     const li = document.createElement('li')
+    li.dataset.depth = String(depth)
+    if (depth > 0) li.classList.add('nested-section')
     const heading = document.createElement('h3')
     // An unnamed section serializes its name as Moodle's NULL sentinel, so it
     // reaches us empty. Moodle labels section 0 "General" (REPO-005,
@@ -252,9 +268,21 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
       into.appendChild(item)
     }
     for (const activityId of section.activityIds) addActivity(activityId, ul)
-    if (ul.children.length === 0) li.classList.add('empty-section')
+    const children = childrenOf.get(section.id) ?? []
+    if (ul.children.length === 0 && children.length === 0) li.classList.add('empty-section')
     li.appendChild(ul)
-    sectionsList.appendChild(li)
+    if (children.length > 0) {
+      const nested = document.createElement('ul')
+      nested.className = 'section-children'
+      for (const child of children) renderSection(child, depth + 1, nested)
+      li.appendChild(nested)
+    }
+    into.appendChild(li)
+  }
+
+  for (const section of backup.sections) {
+    if (section.delegatedTo || section.parentId !== undefined) continue
+    renderSection(section, 0, sectionsList)
   }
   searchInput.value = ''
 }

@@ -664,6 +664,44 @@ test("a resource sharing a folder shows its own file, not a neighbour's", async 
   await expect(page.frameLocator('.html-frame').locator('#which')).toHaveText('orientaciones-page')
 })
 
+/**
+ * The shape every Saylor backup has (REPO-004, 111 of 111): course format
+ * flexsections, with each section naming its parent by section *number*.
+ * Here "Resources" (number 2) is made a child of "Introduction" (number 1).
+ */
+function flexsectionsFixture(): { name: string; mimeType: string; buffer: Buffer } {
+  return mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'course/course.xml', (xml) =>
+      xml.replace('<format>topics</format>', '<format>flexsections</format>'),
+    )
+    replaceTextEntry(entries, 'sections/section_2002/section.xml', (xml) =>
+      xml.replace(
+        '</section>',
+        `  <course_format_options id="1"><format>flexsections</format><name>parent</name><value>1</value></course_format_options>
+</section>`,
+      ),
+    )
+  }, 'flexsections.mbz')
+}
+
+test('a flexsections course shows its sections nested, not flattened (ADR-0030)', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', flexsectionsFixture())
+
+  const top = page.locator('#sections > li')
+  const intro = top.filter({ has: page.locator('> h3', { hasText: 'Introduction' }) })
+  await expect(intro).toHaveCount(1)
+  // "Resources" is no longer a sibling: it hangs under Introduction, one level in.
+  const nested = intro.locator('.section-children > li[data-depth="1"]')
+  await expect(nested.locator('> h3')).toHaveText('Resources')
+  await expect(top.filter({ has: page.locator('> h3', { hasText: 'Resources' }) })).toHaveCount(0)
+  // Its activities still open from there.
+  await nested.getByRole('button', { name: /Synthetic guide/ }).click()
+  await expect(page.locator('#detail-title')).toContainText('Synthetic guide')
+})
+
 function websiteFixture(): { name: string; mimeType: string; buffer: Buffer } {
   const html = `<!doctype html>
 <html><head><link rel="stylesheet" href="site.css"></head>

@@ -59,6 +59,7 @@ export async function parseMoodleBackupXml(
           idNumber: '',
           summary: '',
           originalWwwroot: '',
+          format: '',
           source: { xmlPath: p },
         }
       } else if (p.endsWith('/contents/sections/section')) {
@@ -68,6 +69,7 @@ export async function parseMoodleBackupXml(
           name: '',
           summary: '',
           activityIds: [],
+          formatOptions: new Map<string, string>(),
           source: { xmlPath: p },
         })
       } else if (p.endsWith('/contents/activities/activity')) {

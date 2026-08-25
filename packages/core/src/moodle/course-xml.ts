@@ -17,6 +17,7 @@ export async function parseCourseXml(
     shortname: '',
     idNumber: '',
     summary: '',
+    format: '',
     // Site provenance only exists in moodle_backup.xml; keep it on the model.
     originalWwwroot: fallback.originalWwwroot,
     source: { xmlPath: 'course/course.xml' },
@@ -40,6 +41,7 @@ export async function parseCourseXml(
       else if (field === 'shortname') out.shortname = value
       else if (field === 'idnumber') out.idNumber = value
       else if (field === 'summary') out.summary = value
+      else if (field === 'format') out.format = value
       else if (field === 'startdate') {
         const n = Number(value)
         if (Number.isFinite(n)) out.startDate = n
@@ -62,6 +64,12 @@ export async function parseSectionXml(xml: string): Promise<{
   component: string
   /** Instance id of the owning activity — not its course-module id. */
   itemId: number
+  /**
+   * `<course_format_options>` name → value, whatever the format. flexsections
+   * keeps its nesting here as `parent` = the parent's section *number*
+   * (verified on REPO-004: 111 of 111 Saylor backups; backup_stepslib.php:493).
+   */
+  formatOptions: Map<string, string>
 }> {
   let id: number | undefined
   let number: number | undefined
@@ -69,10 +77,17 @@ export async function parseSectionXml(xml: string): Promise<{
   let sequence: number[] = []
   let component = ''
   let itemId = Number.NaN
+  const formatOptions = new Map<string, string>()
+  let optionName = ''
+  let optionValue = ''
   const path: string[] = []
   let text = ''
   await parseXmlEvents(xml, (ev) => {
     if (ev.type === 'open') {
+      if (ev.name === 'course_format_options') {
+        optionName = ''
+        optionValue = ''
+      }
       if (path.length === 0 && ev.name === 'section') {
         const idAttr = ev.attributes.id
         if (idAttr !== undefined) {
@@ -88,7 +103,12 @@ export async function parseSectionXml(xml: string): Promise<{
       return
     }
     const value = leafValue(text)
-    if (path.length === 2 && path[0] === 'section') {
+    if (path.length === 3 && path[1] === 'course_format_options') {
+      if (path[2] === 'name') optionName = value
+      else if (path[2] === 'value') optionValue = value
+    } else if (path.length === 2 && path[1] === 'course_format_options') {
+      if (optionName !== '') formatOptions.set(optionName, optionValue)
+    } else if (path.length === 2 && path[0] === 'section') {
       const field = path[1]
       if (field === 'number') {
         const n = Number(text)
@@ -105,11 +125,9 @@ export async function parseSectionXml(xml: string): Promise<{
           .map((s) => Number(s.trim()))
           .filter((n) => Number.isFinite(n))
       }
-    } else if (path.length === 1 && path[0] === 'section' && ev.name === 'section') {
-      // Root element close; nothing to read from text.
     }
     path.pop()
     text = ''
   })
-  return { id, number, name, sequence, component, itemId }
+  return { id, number, name, sequence, component, itemId, formatOptions }
 }

@@ -22,6 +22,8 @@ export interface CourseInfo {
   readonly idNumber: string
   summary: string
   readonly startDate?: number | undefined
+  /** Course format plugin (`topics`, `weeks`, `flexsections`, …), '' when unknown. */
+  format: string
   /**
    * Site the backup was taken from (<original_wwwroot>), '' when absent.
    * The only way to turn a `$@…@$` link token back into a real URL, since
@@ -43,6 +45,17 @@ export interface SectionInfo {
    * belongs under the activity named here. Undefined for an ordinary section.
    */
   delegatedTo?: { component: string; activityId: number } | undefined
+  /**
+   * Section this one nests under, or undefined at the top level. Set for a
+   * flexsections `parent` (ADR-0030) and for a delegated section, whose
+   * parent is the section holding the activity that owns it. Course formats
+   * are the one place Moodle stores hierarchy outside the section list, and
+   * flattening it silently misreads a course (REPO-004: 111 of 111 Saylor
+   * backups nest up to three levels deep).
+   */
+  parentId?: number | undefined
+  /** Raw `<course_format_options>` name → value, kept for formats not modelled. */
+  readonly formatOptions: ReadonlyMap<string, string>
   readonly source: SourceInfo
 }
 

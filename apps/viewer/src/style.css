@@ -1785,3 +1785,15 @@ audio.media-preview {
   font-style: normal;
   color: var(--faint);
 }
+
+/* Nested sections (flexsections parents, ADR-0030): one indent per level,
+   with a rule so depth reads at a glance even when headings wrap. */
+.section-children {
+  list-style: none;
+  margin: 4px 0 0 10px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(0, 0, 0, 0.08);
+}
+.nested-section > h3 {
+  font-size: 0.92em;
+}
