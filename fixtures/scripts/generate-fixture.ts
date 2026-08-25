@@ -434,6 +434,73 @@ function onePixelPng(): Uint8Array {
 }
 
 /**
+ * Synthetic legacy eXeLearning 2.x project (.elp): a `contentv3.xml` object
+ * graph — Package -> root Node -> idevices + a child Node — plus one image
+ * an iDevice references. This is the shape MBZoo reads to show legacy content
+ * instead of a file list (ADR-0033).
+ */
+function legacyElpBytes(): Uint8Array {
+  const contentv3 = `${XML_HEADER}<instance class="exe.engine.package.Package" reference="0">
+  <dictionary>
+    <string role="key" value="_title"></string><unicode value="Proyecto eXe antiguo"></unicode>
+    <string role="key" value="_author"></string><unicode value="Autor de ejemplo"></unicode>
+    <string role="key" value="_description"></string><unicode value="Un .elp legacy sintético."></unicode>
+    <string role="key" value="_nodeIdDict"></string>
+    <dictionary>
+      <unicode role="key" value="0"></unicode>
+      <instance class="exe.engine.node.Node" reference="4">
+        <dictionary>
+          <string role="key" value="_title"></string><unicode value="Portada"></unicode>
+          <string role="key" value="idevices"></string>
+          <list>
+            <instance class="exe.engine.jsidevice.JsIdevice" reference="7">
+              <dictionary>
+                <string role="key" value="fields"></string>
+                <list>
+                  <instance class="exe.engine.field.TextAreaField" reference="8">
+                    <dictionary>
+                      <string role="key" value="content_w_resourcePaths"></string>
+                      <unicode value="&lt;p id=&quot;elp-body&quot;&gt;Contenido del iDevice con &lt;img id=&quot;elp-img&quot; src=&quot;dot.png&quot;&gt;.&lt;/p&gt;"></unicode>
+                    </dictionary>
+                  </instance>
+                </list>
+              </dictionary>
+            </instance>
+          </list>
+          <string role="key" value="children"></string>
+          <list>
+            <instance class="exe.engine.node.Node" reference="9">
+              <dictionary>
+                <string role="key" value="_title"></string><unicode value="Segunda página"></unicode>
+                <string role="key" value="idevices"></string>
+                <list>
+                  <instance class="exe.engine.freetextidevice.FreeTextIdevice" reference="10">
+                    <dictionary>
+                      <string role="key" value="content"></string>
+                      <unicode value="&lt;p id=&quot;elp-child&quot;&gt;Texto de la segunda página.&lt;/p&gt;"></unicode>
+                    </dictionary>
+                  </instance>
+                </list>
+                <string role="key" value="children"></string><list></list>
+              </dictionary>
+            </instance>
+          </list>
+        </dictionary>
+      </instance>
+    </dictionary>
+    <string role="key" value="root"></string><reference key="4"></reference>
+  </dictionary>
+</instance>
+`
+  const files: Zippable = {
+    'contentv3.xml': strToU8(contentv3),
+    'content.data': new Uint8Array([0, 1, 2, 3]),
+    'dot.png': onePixelPng(),
+  }
+  return zipSync(files, { level: 6, mtime: FIXED_MTIME })
+}
+
+/**
  * Synthetic eXeLearning 4 package. A real `.elpx` carries BOTH the
  * re-importable project (`content.xml`) and the rendered site, and is
  * recognised by the site's own marker files rather than by its extension —
@@ -1184,6 +1251,15 @@ async function main(): Promise<void> {
       filearea: 'content',
       mimetype: 'image/png',
       itemId: '28',
+    },
+    {
+      filepath: '',
+      filename: 'demo-legacy.elp',
+      content: legacyElpBytes(),
+      component: 'mod_folder',
+      contextId: '120',
+      filearea: 'content',
+      mimetype: 'application/zip',
     },
     {
       filepath: '',

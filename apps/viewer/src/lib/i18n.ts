@@ -237,6 +237,8 @@ const STRINGS = {
     'exe.kind.exe-site-legacy': 'eXeLearning exported site (legacy layout)',
     'exe.kind.elpx-source': 'eXeLearning project (.elpx)',
     'exe.kind.elp-legacy-xml': 'eXeLearning legacy project (.elp)',
+    'exe.legacyNote': 'Legacy eXeLearning project — content shown, interactive parts do not run.',
+    'exe.untitledNode': 'Untitled page',
     'exe.kind.elp-legacy-opaque': 'eXeLearning legacy project (.elp)',
     'exe.kind.unknown': 'Unrecognised archive',
     'examples.label': 'Try an example:',
@@ -531,6 +533,9 @@ const STRINGS = {
     'exe.kind.exe-site-legacy': 'Sitio exportado de eXeLearning (estructura antigua)',
     'exe.kind.elpx-source': 'Proyecto de eXeLearning (.elpx)',
     'exe.kind.elp-legacy-xml': 'Proyecto antiguo de eXeLearning (.elp)',
+    'exe.legacyNote':
+      'Proyecto antiguo de eXeLearning — se muestra el contenido; las partes interactivas no se ejecutan.',
+    'exe.untitledNode': 'Página sin título',
     'exe.kind.elp-legacy-opaque': 'Proyecto antiguo de eXeLearning (.elp)',
     'exe.kind.unknown': 'Archivo no reconocido',
     'examples.label': 'Prueba con un ejemplo:',

@@ -980,6 +980,27 @@ test('an EPUB is read chapter by chapter in the sandbox (ADR-0024)', async ({ pa
   expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
 })
 
+test('a legacy .elp shows its content, not just a file list (ADR-0033)', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo folder/ }).click()
+
+  const card = page.locator('.file-card', { hasText: 'demo-legacy.elp' })
+  await expect(card.getByText(/eXeLearning legacy|antiguo de eXeLearning/)).toBeVisible()
+  // The node tree is walked from contentv3.xml: titles and iDevice HTML.
+  await expect(card.locator('.elp-node-title').first()).toHaveText('Portada')
+  await expect(card.locator('#elp-body')).toContainText('Contenido del iDevice')
+  await expect(card.locator('#elp-child')).toContainText('Texto de la segunda página')
+  // The iDevice image is resolved from the package, not fetched.
+  const img = card.locator('#elp-img')
+  await expect(img).toHaveAttribute('src', /^blob:/)
+  expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(1)
+  expect(requests.filter((u) => /^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(u))).toEqual([])
+})
+
 test('an eXeLearning package shows its exported site (ADR-0025)', async ({ page }) => {
   const requests: string[] = []
   page.on('request', (r) => requests.push(r.url()))

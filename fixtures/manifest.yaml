@@ -4,8 +4,8 @@
 # If a checksum changes unexpectedly, treat it as a parser/generator regression.
 fixtures:
   demo-course-zip.mbz:
-    sha256: d52782094da5cd9e8078d49b4121510d0553bb31812d127a865e5c88386ced43
-    bytes: 36380
+    sha256: d65a09acfa9a65a37f8396595b3336201322a9a34c8b80688627af2da92be402
+    bytes: 37428
     format: zip
     synthetic: true
     contains_user_data: false
@@ -16,14 +16,14 @@ fixtures:
       activities: [page, label, page(content), quiz(2 questions), glossary(2 entries), resource, assign, supermodule(unknown-plugin), h5pactivity(synthetic .h5p: nested libs, string versions, content/ image), feedback(label + multichoice + pagebreak + textarea), lesson(branching: content page + question page), choice(2 options), forum(qanda, no discussions), data(2 fields), workshop(instructions + example), imscp(PHP-serialized TOC), url, folder(text + 8-bit WAV tone), chat, wiki, survey(retired 5.0), assignment(retired 4.2), subsection(delegated section owning a page), scorm(SCORM 1.2: organization + 2 launchable SCOs, one loading a script dynamically and by XHR, content tree + package zip), hvp(mod_hvp: hvp.xml + libraries/content areas, no .h5p)]
       embedded: [lesson page image + question image, both via @@PLUGINFILE@@ in per-row file areas]
       grading: [assign grade item (max/pass/weight), assign rubric (2 criteria), course gradebook (2 categories, 2 letters)]
-      packages: [epub(EPUB 3: 2-chapter spine + relative css/image), elpx(eXeLearning 4: content.xml + exported 2-page site)]
-      files_indexed: 23
+      packages: [epub(EPUB 3: 2-chapter spine + relative css/image), elpx(eXeLearning 4: content.xml + exported 2-page site), elp(eXeLearning 2.x legacy: contentv3.xml, 2 nodes)]
+      files_indexed: 24
     expected_parser_result:
       course_fullname: Demo Course for MBZoo
       course_shortname: DEMO-101
       warnings: []
   demo-course-users.mbz:
-    sha256: 86c6b848018f65ebfa4af3c74978922d477e5c5cbfaa676e623a87a9ccb80fde
+    sha256: 48a7de4e16637523c042c37b99f091878ce9c28b778cc27a8f5d8a6260324ac4
     bytes: 4315
     format: zip
     synthetic: true

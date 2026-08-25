@@ -18,11 +18,13 @@ import {
   contentHashPath,
   decodeBackupLink,
   defaultLaunchSco,
+  flattenElp,
   isScorm2004,
   legacyModule,
   matchFileRecord,
   parseActivityXml,
   parseBookXml,
+  parseElpXml,
   parseQuestionsXml,
   parseQuizQuestionIds,
   parseScormXml,
@@ -1370,6 +1372,86 @@ export class Renderer {
    * Twisted jelly stream this browser cannot decode — so MBZoo says what the
    * file is instead of pretending.
    */
+  /**
+   * Renders a legacy .elp project from its contentv3.xml mirror (ADR-0033):
+   * the node tree with each iDevice's authored HTML, sanitized (ADR-0012)
+   * and with image references resolved from the package. Scripts are stripped
+   * by the sanitizer, so interactive iDevices (MathJax, quizzes) show their
+   * text but do not run — a faithful read, not a re-execution.
+   */
+  private async renderElpProject(
+    entries: ReturnType<typeof unzipPackage>,
+    card: HTMLElement,
+  ): Promise<boolean> {
+    let xmlKey: string | undefined
+    for (const key of entries.keys()) {
+      if (/(^|\/)contentv[23]\.xml$/i.test(key)) {
+        xmlKey = key
+        break
+      }
+    }
+    const bytes = xmlKey === undefined ? undefined : entries.get(xmlKey)
+    if (!bytes) return false
+    let project: Awaited<ReturnType<typeof parseElpXml>>
+    try {
+      project = await parseElpXml(new TextDecoder().decode(bytes))
+    } catch {
+      return false
+    }
+    if (!project.root) return false
+
+    if (project.title !== '') {
+      const title = document.createElement('p')
+      title.className = 'website-note'
+      title.textContent = project.title
+      card.appendChild(title)
+    }
+    const meta = [project.author, project.description].filter((x) => x !== '').join(' · ')
+    if (meta !== '') {
+      const sub = document.createElement('p')
+      sub.className = 'fallback-note'
+      sub.textContent = meta
+      card.appendChild(sub)
+    }
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t('exe.legacyNote')
+    card.appendChild(chip)
+
+    // Images sit in the package by filename; resolve every relative ref once.
+    const byName = new Map<string, Uint8Array>()
+    for (const [path, data] of entries) {
+      const name = path.split('/').pop() ?? path
+      if (name !== '' && !byName.has(name)) byName.set(name, data)
+    }
+    const resolveImages = (html: string): string =>
+      html.replace(/(<img\b[^>]*?\ssrc=)(["'])([^"']+)\2/gi, (whole, pre, q, ref) => {
+        const name = decodeRefPath(String(ref)).split(/[\\/]/).pop() ?? ''
+        const data = byName.get(name)
+        if (!data || /^(https?:|data:)/i.test(String(ref))) return whole
+        return `${pre}${q}${this.blobUrl(data, guessMime(name))}${q}`
+      })
+
+    const holder = document.createElement('div')
+    holder.className = 'activity-content elp-project'
+    for (const { node, depth } of flattenElp(project.root)) {
+      const heading = document.createElement(depth === 0 ? 'h3' : 'h4')
+      heading.className = 'elp-node-title'
+      heading.style.marginLeft = `${Math.min(depth, 5) * 0.75}rem`
+      heading.textContent = node.title || t('exe.untitledNode')
+      holder.appendChild(heading)
+      for (const block of node.blocks) {
+        const body = document.createElement('div')
+        body.className = 'elp-block'
+        body.style.marginLeft = `${Math.min(depth, 5) * 0.75}rem`
+        body.innerHTML = this.safeHtml(resolveImages(block))
+        holder.appendChild(body)
+      }
+    }
+    card.appendChild(holder)
+    return true
+  }
+
   private async renderExePackage(data: Uint8Array, card: HTMLElement): Promise<void> {
     const note = (text: string): void => {
       const p = document.createElement('p')
@@ -1408,6 +1490,12 @@ export class Renderer {
         hint: t('exe.pagesHint'),
       })
       return
+    }
+    if (pkg.kind === 'elp-legacy-xml') {
+      const rendered = await this.renderElpProject(pkg.entries, card)
+      if (rendered) return
+      // Fell through: the XML mirror was absent or unreadable — show the file
+      // list below, like any other package without a render.
     }
     if (pkg.title !== '') {
       const title = document.createElement('p')

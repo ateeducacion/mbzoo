@@ -18,6 +18,7 @@ export {
 export { type BackupXmlResult, parseMoodleBackupXml } from './moodle/backup-xml.ts'
 export { type BookChapter, type MoodleBook, parseBookXml } from './moodle/book-xml.ts'
 export { parseCourseXml, parseSectionXml } from './moodle/course-xml.ts'
+export { type ElpNode, flattenElp, type MoodleElp, parseElpXml } from './moodle/elp-xml.ts'
 export {
   type FeedbackChoiceStyle,
   type FeedbackItem,

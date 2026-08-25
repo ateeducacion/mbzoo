@@ -128,3 +128,7 @@ adrs:
     title: A SCO travels with its package as a virtual filesystem, XHR included
     status: Accepted
     date: 2026-08-25
+  ADR-0033:
+    title: Legacy .elp projects are rendered from their contentv3.xml mirror
+    status: Accepted
+    date: 2026-08-25
