@@ -4,8 +4,8 @@
 # If a checksum changes unexpectedly, treat it as a parser/generator regression.
 fixtures:
   demo-course-zip.mbz:
-    sha256: 136d9f735799f30f334754ee8175e4272ca1ff807ede4417b8bda919fdfdd5f9
-    bytes: 27649
+    sha256: 2c10523e3b0f34876347dd00f5e372a15794a2e04f84d2773a16614095c38f30
+    bytes: 29843
     format: zip
     synthetic: true
     contains_user_data: false

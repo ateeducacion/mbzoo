@@ -82,17 +82,17 @@ export {
   resolveQuizSlots,
 } from './moodle/questions-xml.ts'
 export {
-  type BackupUser,
-  type BackupUsers,
-  type PersonalDataKind,
-  parseUsersXml,
-} from './moodle/users-xml.ts'
-export {
   defaultLaunchSco,
   isScorm2004,
   type MoodleScorm,
   parseScormXml,
   type ScormSco,
 } from './moodle/scorm-xml.ts'
+export {
+  type BackupUser,
+  type BackupUsers,
+  type PersonalDataKind,
+  parseUsersXml,
+} from './moodle/users-xml.ts'
 export { leafValue, MAX_XML_BYTES, parseXmlEvents, type XmlEvent } from './moodle/xml.ts'
 export { type BackupSession, openBackup, openBackupSession } from './open-backup.ts'

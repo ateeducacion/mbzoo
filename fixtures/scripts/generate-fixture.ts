@@ -803,6 +803,35 @@ async function main(): Promise<void> {
       filearea: 'content',
       mimetype: 'application/epub+zip',
     },
+    // SCORM stores the uploaded archive in `package` and the extracted tree
+    // in `content`, both at itemid 0 (mod/scorm/locallib.php:239,284).
+    {
+      filepath: '',
+      filename: 'imsmanifest.xml',
+      content: scormManifest(),
+      component: 'mod_scorm',
+      contextId: '127',
+      filearea: 'content',
+      mimetype: 'application/xml',
+    },
+    {
+      filepath: '',
+      filename: 'sco1.html',
+      content: scormScoHtml(1, 'First step'),
+      component: 'mod_scorm',
+      contextId: '127',
+      filearea: 'content',
+      mimetype: 'text/html',
+    },
+    {
+      filepath: '',
+      filename: 'sco2.html',
+      content: scormScoHtml(2, 'Second step'),
+      component: 'mod_scorm',
+      contextId: '127',
+      filearea: 'content',
+      mimetype: 'text/html',
+    },
     {
       filepath: '',
       filename: 'demo-scorm.zip',
