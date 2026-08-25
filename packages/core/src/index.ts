@@ -9,9 +9,20 @@ export {
   matchFileRecord,
   parseActivityXml,
 } from './moodle/activity-xml.ts'
+export {
+  type AvailabilityCondition,
+  type AvailabilitySummary,
+  humanizeAvailability,
+} from './moodle/availability.ts'
 export { type BackupXmlResult, parseMoodleBackupXml } from './moodle/backup-xml.ts'
+export { type BookChapter, type MoodleBook, parseBookXml } from './moodle/book-xml.ts'
 export { parseCourseXml, parseSectionXml } from './moodle/course-xml.ts'
 export { fileKey, NULL_SENTINEL, parseFilesXml } from './moodle/files-xml.ts'
+export { type GlossaryEntry, parseGlossaryXml } from './moodle/glossary-xml.ts'
+export {
+  type ActivitySettings,
+  parseModuleXml,
+} from './moodle/module-xml.ts'
 export {
   parseQuestionsXml,
   parseQuizQuestionIds,

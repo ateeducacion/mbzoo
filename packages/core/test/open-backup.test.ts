@@ -18,8 +18,8 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     const b = await openBackup(Bun.file(FIXTURE))
     expect(b.sections.map((s) => s.number)).toEqual([1, 2])
     expect(b.sections[0]?.name).toBe('Introduction')
-    expect(b.sections[0]?.activityIds).toEqual([3001, 3002, 3004])
-    expect(b.sections[1]?.activityIds).toEqual([3003, 3005])
+    expect(b.sections[0]?.activityIds).toEqual([3001, 3002, 3004, 3006, 3007])
+    expect(b.sections[1]?.activityIds).toEqual([3003, 3005, 3008, 3009, 3010])
   })
 
   test('exposes unknown third-party modules instead of dropping them', async () => {

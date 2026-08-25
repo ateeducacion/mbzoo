@@ -14,6 +14,7 @@ import { MbzParseError, type ParsedBackup, type SectionInfo } from './model/back
 import { parseMoodleBackupXml } from './moodle/backup-xml.ts'
 import { parseCourseXml, parseSectionXml } from './moodle/course-xml.ts'
 import { parseFilesXml } from './moodle/files-xml.ts'
+import { parseModuleXml } from './moodle/module-xml.ts'
 
 const HEAD_BYTES = 8
 
@@ -89,6 +90,25 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
       continue
     }
     sectionDetails.set(ref.id, await parseSectionXml(decoder.decode(bytes)))
+  }
+
+  // Per-activity module.xml settings (visible/completion/availability…).
+  for (const activity of activities) {
+    if (!Number.isFinite(activity.id) || activity.moduleName === '') continue
+    const bytes = await safeReadEntry(
+      reader,
+      `activities/${activity.moduleName}_${activity.id}/module.xml`,
+    )
+    if (!bytes) continue
+    try {
+      const settings = await parseModuleXml(decoder.decode(bytes))
+      ;(activity as { settings?: unknown }).settings = settings
+    } catch {
+      warnings.push({
+        code: 'module-xml-malformed',
+        message: `Could not parse module.xml for ${activity.moduleName} #${activity.id}`,
+      })
+    }
   }
 
   // files.xml index (Q-003); missing files.xml is a warning, not an error.

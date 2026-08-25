@@ -6,21 +6,30 @@
  * through sandboxed contexts (iframe/embed/img) or offered as download.
  */
 
-import type { ActivityInfo, BackupFileRecord, ParsedBackup, QuizQuestion } from '@mbzoo/core'
+import type {
+  ActivityInfo,
+  BackupFileRecord,
+  BookChapter,
+  ParsedBackup,
+  QuizQuestion,
+} from '@mbzoo/core'
 import {
   contentHashPath,
   matchFileRecord,
   parseActivityXml,
+  parseBookXml,
   parseQuestionsXml,
   parseQuizQuestionIds,
 } from '@mbzoo/core'
 import DOMPurify from 'dompurify'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import { scanExternalRefs } from './lib/external-refs.ts'
 import { t } from './lib/i18n.ts'
 import {
   contentKind,
   formatBytes,
+  formatDate,
   guessMime,
   injectCsp,
   MAX_PDF_PAGES,
@@ -101,6 +110,18 @@ export class Renderer {
       await this.renderQuiz(activity, fields, contextId, container)
       return
     }
+    if (mod === 'book') {
+      await this.renderBook(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'glossary') {
+      await this.renderGlossary(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'assign') {
+      await this.renderAssign(activity, fields, contextId, container)
+      return
+    }
     // Known module families without a dedicated body renderer: show the
     // intro (if any) plus an advanced/metadata disclosure (ADR-0013).
     await this.renderIntroPlusMetadata(mod, fields, contextId, container)
@@ -118,12 +139,16 @@ export class Renderer {
    * Replaces @@PLUGINFILE@@ references with managed blob URLs and returns
    * sanitized HTML (ADR-0012).
    */
+  /** Keeps the raw HTML of the last resolveHtml call for ref scanning. */
+  private lastRawHtml = ''
+
   async resolveHtml(
     html: string | undefined,
     componentName: string,
     fileArea: string,
     contextId: string,
   ): Promise<string> {
+    this.lastRawHtml = html ?? ''
     if (!html) return ''
     // Replace over the RAW text: refs are URL-encoded in backup HTML
     // (e.g. @@PLUGINFILE@@/My%20File.jpg) and must be matched verbatim.
@@ -181,6 +206,7 @@ export class Renderer {
     } else if (!introHtml) {
       notAvailable(container)
     }
+    this.renderExternalPanel(this.lastRawHtml, container)
   }
 
   private async renderUrl(fields: Map<string, string>, container: HTMLElement): Promise<void> {
@@ -435,12 +461,42 @@ export class Renderer {
       if (!rec) continue
       const bytes = await this.tryRead(contentHashPath(rec.contentHash))
       if (!bytes) continue
-      const url = this.blobUrl(bytes, rec.mimeType || guessMime(rec.fileName))
+      let payload: Uint8Array = bytes
+      const mime = rec.mimeType || guessMime(rec.fileName)
+      // Resolve url(...) references inside CSS so background images load too.
+      if (mime === 'text/css' || /\.css$/i.test(rec.fileName)) {
+        payload = new TextEncoder().encode(
+          await this.resolveCssUrls(new TextDecoder().decode(bytes), rec.filePath),
+        )
+      }
+      const url = this.blobUrl(payload, mime)
       const quote = raw.includes('"') ? '"' : "'"
       const attr = /src=/i.test(raw) ? 'src' : 'href'
       html = html.replace(raw, ` ${attr}=${quote}${url}${quote}`)
     }
     return html
+  }
+
+  /** Rewrites url(...) in a CSS file to blob URLs of sibling assets. */
+  private async resolveCssUrls(css: string, cssDir: string): Promise<string> {
+    const refs = [...css.matchAll(/url\((['"]?)([^)'"#]+)\1\)/g)]
+    let out = css
+    for (const m of refs) {
+      const ref = (m[2] ?? '').trim()
+      if (!ref || /^(data:|blob:|https?:)/i.test(ref)) continue
+      const target = resolveRelative(cssDir, ref)
+      const fileName = target.split('/').pop() ?? ''
+      const rec =
+        matchFileRecord(this.ctx.backup.files, { fileName }) ??
+        (await this.findByPathSuffix(target))
+      if (!rec) continue
+      const bytes = await this.tryRead(contentHashPath(rec.contentHash))
+      if (!bytes) continue
+      out = out
+        .split(m[0])
+        .join(`url('${this.blobUrl(bytes, rec.mimeType || guessMime(rec.fileName))}')`)
+    }
+    return out
   }
 
   private async findByPathSuffix(path: string): Promise<BackupFileRecord | undefined> {
@@ -470,6 +526,7 @@ export class Renderer {
       note.textContent = t('noRenderer', { mod })
       container.appendChild(note)
     }
+    this.renderExternalPanel(this.lastRawHtml, container)
     container.appendChild(this.buildAdvanced(fields))
   }
 
@@ -513,6 +570,14 @@ export class Renderer {
     notice.textContent = t('quiz.inspectOnly')
     container.appendChild(notice)
 
+    container.appendChild(
+      this.buildSummary([
+        ['availableFrom', fields.get('timeopen')],
+        ['dueDate', fields.get('timeclose')],
+        ['timeLimit', fields.get('timelimit')],
+      ]),
+    )
+
     let questionIds: number[] = []
     const quizXml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
     if (quizXml) {
@@ -545,7 +610,17 @@ export class Renderer {
     next.type = 'button'
     next.className = 'btn-outline'
     next.textContent = `${t('next')} ›`
-    nav.append(prev, counter, next)
+    const reveal = document.createElement('button')
+    reveal.type = 'button'
+    reveal.className = 'btn-outline'
+    reveal.textContent = t('reveal')
+    let shown = false
+    reveal.addEventListener('click', () => {
+      shown = !shown
+      card.classList.toggle('reveal', shown)
+      reveal.textContent = shown ? t('hide') : t('reveal')
+    })
+    nav.append(prev, counter, next, reveal)
     container.appendChild(nav)
 
     const card = document.createElement('div')
@@ -562,6 +637,311 @@ export class Renderer {
     prev.addEventListener('click', () => showQuestion(index - 1))
     next.addEventListener('click', () => showQuestion(index + 1))
     showQuestion(0)
+  }
+
+  /** Glossary: concept/definition entries from glossary.xml. */
+  private async renderGlossary(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_glossary', 'intro')
+    const { parseGlossaryXml } = await import('@mbzoo/core')
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const entries = xml ? await parseGlossaryXml(new TextDecoder().decode(xml)) : []
+    if (entries.length === 0) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('glossaryEmpty')
+      container.appendChild(note)
+      return
+    }
+    const head = document.createElement('div')
+    head.className = 'q-answers-title'
+    head.textContent = `${entries.length} ${t('entries')}`
+    container.appendChild(head)
+    const list = document.createElement('dl')
+    list.className = 'glossary-list'
+    for (const e of entries) {
+      const dt = document.createElement('dt')
+      dt.textContent = e.concept
+      const dd = document.createElement('dd')
+      dd.innerHTML = sanitizeHtml(e.definition)
+      list.append(dt, dd)
+    }
+    container.appendChild(list)
+  }
+
+  /** Assign: intro + friendly summary (dates, submission types). */
+  private async renderAssign(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_assign', 'intro')
+    // Submission plugins live deeper than the generic field capture; scan
+    // the raw module XML for enabled plugin types (documented shape, REPO-005).
+    const xmlBytes = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const submissionTypes: string[] = []
+    if (xmlBytes) {
+      const raw = new TextDecoder().decode(xmlBytes)
+      const block = /<submissionplugins>[\s\S]*?<\/submissionplugins>/.exec(raw)?.[0] ?? ''
+      const seen = new Set<string>()
+      for (const m of block.matchAll(/<plugin[\s\S]*?<\/plugin>/g)) {
+        const type = /<type>(\w+)<\/type>/.exec(m[0])?.[1]
+        const enabled = /<enabled>(\d)<\/enabled>/.exec(m[0])?.[1]
+        if (type && enabled === '1' && !seen.has(type)) {
+          seen.add(type)
+          submissionTypes.push(
+            type === 'file' ? 'File' : type === 'onlinetext' ? 'Online text' : type,
+          )
+        }
+      }
+    }
+    container.appendChild(
+      this.buildSummary([
+        ['availableFrom', fields.get('allowsubmissionsfromdate')],
+        ['dueDate', fields.get('duedate')],
+        ['cutoffDate', fields.get('cutoffdate')],
+      ]),
+    )
+    if (submissionTypes.length > 0) {
+      const row = document.createElement('p')
+      row.className = 'summary-row'
+      const label = document.createElement('b')
+      label.textContent = `${t('submissionTypes')}: `
+      row.appendChild(label)
+      row.appendChild(document.createTextNode(submissionTypes.join(', ')))
+      container.appendChild(row)
+    }
+  }
+
+  /** Intro + advanced shell shared by summary-style renderers. */
+  private async renderIntroPlusMetadataShell(
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+    componentName: string,
+    fileArea: string,
+  ): Promise<void> {
+    const introHtml = await this.resolveHtml(
+      fields.get('intro'),
+      componentName,
+      fileArea,
+      contextId,
+    )
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+    }
+  }
+
+  /** Key/value summary grid with human dates for known time fields. */
+  private buildSummary(pairs: Array<[string, string | undefined]>): HTMLElement {
+    const lang = navigator.language
+    const grid = document.createElement('div')
+    grid.className = 'summary-grid'
+    const labels: Record<string, string> = {
+      availableFrom: t('availableFrom'),
+      dueDate: t('dueDate'),
+      cutoffDate: t('cutoffDate'),
+      timeLimit: t('timeLimit'),
+    }
+    for (const [key, raw] of pairs) {
+      if (!raw) continue
+      const n = Number(raw)
+      let value = ''
+      if (key === 'timeLimit') {
+        if (!Number.isFinite(n) || n <= 0) continue
+        value = `${Math.round(n / 60)} ${t('minutes')}`
+      } else {
+        if (!Number.isFinite(n) || n <= 0) continue
+        value = formatDate(n, lang)
+      }
+      const item = document.createElement('div')
+      item.className = 'summary-item'
+      const k = document.createElement('span')
+      k.className = 'summary-key'
+      k.textContent = labels[key] ?? key
+      const v = document.createElement('b')
+      v.textContent = value
+      item.append(k, v)
+      grid.appendChild(item)
+    }
+    return grid
+  }
+
+  /** Book: TOC + chapter navigation with sanitized chapter HTML. */
+  private async renderBook(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const introHtml = await this.resolveHtml(fields.get('intro'), 'mod_book', 'intro', contextId)
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+    }
+
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    if (!xml) {
+      notAvailable(container)
+      return
+    }
+    const book = await parseBookXml(new TextDecoder().decode(xml))
+    if (book.chapters.length === 0) {
+      notAvailable(container)
+      return
+    }
+
+    // Table of contents.
+    const toc = document.createElement('ol')
+    toc.className = 'book-toc'
+    book.chapters.forEach((ch, i) => {
+      const li = document.createElement('li')
+      li.className = ch.subchapter ? 'book-sub' : ''
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'book-toc-item'
+      b.textContent = ch.title || `Chapter ${i + 1}`
+      b.addEventListener('click', () => showChapter(i))
+      li.appendChild(b)
+      toc.appendChild(li)
+    })
+    container.appendChild(toc)
+
+    const nav = document.createElement('div')
+    nav.className = 'quiz-nav'
+    const prev = document.createElement('button')
+    prev.type = 'button'
+    prev.className = 'btn-outline'
+    prev.textContent = `‹ ${t('prev')}`
+    const counter = document.createElement('span')
+    counter.className = 'quiz-counter'
+    const next = document.createElement('button')
+    next.type = 'button'
+    next.className = 'btn-outline'
+    next.textContent = `${t('next')} ›`
+    nav.append(prev, counter, next)
+    container.appendChild(nav)
+
+    const chapterBox = document.createElement('div')
+    chapterBox.className = 'book-chapter'
+    container.appendChild(chapterBox)
+
+    const showChapter = (i: number): void => {
+      const idx = Math.max(0, Math.min(book.chapters.length - 1, i))
+      const ch = book.chapters[idx] as BookChapter
+      counter.textContent = `${idx + 1} ${t('quiz.of')} ${book.chapters.length}`
+      prev.toggleAttribute('disabled', idx === 0)
+      next.toggleAttribute('disabled', idx === book.chapters.length - 1)
+      for (const b of toc.querySelectorAll('.book-toc-item')) b.classList.remove('selected')
+      toc.querySelectorAll('.book-toc-item')[idx]?.classList.add('selected')
+      chapterBox.replaceChildren()
+      const title = document.createElement('h4')
+      title.textContent = ch.title
+      const body = document.createElement('div')
+      body.className = 'activity-content'
+      body.innerHTML = sanitizeHtml(ch.content)
+      chapterBox.append(title, body)
+      // Chapter images resolve from mod_book/chapters filearea.
+      void this.resolveChapterImages(body, ch, contextId)
+      for (const panel of chapterBox.querySelectorAll('.external-panel'))
+        chapterBox.appendChild(panel)
+    }
+    showChapter(0)
+  }
+
+  /** Rewrites @@PLUGINFILE@@ images inside chapter HTML (mod_book scope). */
+  private async resolveChapterImages(
+    body: HTMLElement,
+    ch: BookChapter,
+    contextId: string,
+  ): Promise<void> {
+    const html = await this.resolveHtml(ch.content, 'mod_book', 'chapters', contextId)
+    body.innerHTML = html
+  }
+
+  /** Moodle settings panel: visibility, groups, completion, availability. */
+  renderSettingsPanel(activity: ActivityInfo, container: HTMLElement): void {
+    const s = activity.settings
+    if (!s) return
+    const details = document.createElement('details')
+    details.className = 'advanced settings-panel'
+    const summary = document.createElement('summary')
+    summary.textContent = `Moodle settings${s.visible ? '' : ' · HIDDEN'}`
+    details.appendChild(summary)
+    const grid = document.createElement('div')
+    grid.className = 'summary-grid'
+    const add = (k: string, v: string): void => {
+      const item = document.createElement('div')
+      item.className = 'summary-item'
+      const key = document.createElement('span')
+      key.className = 'summary-key'
+      key.textContent = k
+      const val = document.createElement('b')
+      val.textContent = v
+      item.append(key, val)
+      grid.appendChild(item)
+    }
+    add('Visible', s.visible ? 'yes' : 'no')
+    if (s.idNumber) add('ID number', s.idNumber)
+    if (s.groupMode !== 'none') add('Groups', s.groupMode)
+    if (s.completion !== 'none') add('Completion', s.completion)
+    if (s.completionExpected > 0) {
+      add('Completion due', formatDate(s.completionExpected, navigator.language))
+    }
+    details.appendChild(grid)
+    if (s.availability.kind === 'tree') {
+      const list = document.createElement('ul')
+      list.className = 'availability-list'
+      for (const c of s.availability.conditions) {
+        const li = document.createElement('li')
+        li.textContent = `🔒 ${c.text}`
+        list.appendChild(li)
+      }
+      details.appendChild(list)
+    }
+    container.appendChild(details)
+  }
+
+  /** External references panel: detected and listed, never fetched. */
+  renderExternalPanel(rawHtml: string, container: HTMLElement): void {
+    const refs = scanExternalRefs(rawHtml)
+    if (refs.length === 0) return
+    const details = document.createElement('details')
+    details.className = 'advanced external-panel'
+    const summary = document.createElement('summary')
+    const providers = new Map<string, number>()
+    for (const ref of refs) providers.set(ref.provider, (providers.get(ref.provider) ?? 0) + 1)
+    summary.textContent = `External content (${refs.length})`
+    details.appendChild(summary)
+    const list = document.createElement('ul')
+    list.className = 'external-list'
+    for (const [provider, count] of [...providers.entries()].sort((a, b) => b[1] - a[1])) {
+      const li = document.createElement('li')
+      li.textContent = `${provider}: ${count}`
+      list.appendChild(li)
+    }
+    details.appendChild(list)
+    const urls = document.createElement('ul')
+    urls.className = 'external-urls'
+    for (const ref of refs.slice(0, 20)) {
+      const li = document.createElement('li')
+      const code = document.createElement('code')
+      code.textContent = `[${ref.provider}] ${ref.url.slice(0, 120)}`
+      li.appendChild(code)
+      urls.appendChild(li)
+    }
+    details.appendChild(urls)
+    container.appendChild(details)
   }
 
   private questionBankCache: Map<number, QuizQuestion> | undefined
@@ -591,40 +971,62 @@ export class Renderer {
     body.innerHTML = sanitizeHtml(q.questionText)
     el.appendChild(body)
 
-    if (q.answers.length > 0) {
-      const list = document.createElement('ol')
-      list.className = 'q-answers'
-      for (const a of q.answers) {
-        const li = document.createElement('li')
-        li.className =
-          a.fraction >= 1
-            ? 'q-correct'
-            : a.fraction > 0
-              ? 'q-partial'
-              : a.fraction < 0
-                ? 'q-penalty'
-                : 'q-neutral'
-        const text = document.createElement('span')
-        text.innerHTML = sanitizeHtml(a.text)
-        const mark = document.createElement('em')
-        mark.className = 'q-fraction'
-        mark.textContent =
-          a.fraction >= 1
-            ? `✓ ${t('quiz.correct')}`
-            : a.fraction > 0
-              ? `~ ${t('quiz.partial')}`
-              : a.fraction < 0
-                ? `✗ ${t('quiz.wrong')}`
-                : ''
-        li.append(text, ' ', mark)
-        list.appendChild(li)
-      }
-      const title = document.createElement('div')
-      title.className = 'q-answers-title'
-      title.textContent = t('quiz.answers')
-      el.append(title, list)
+    const type = q.qtype.toLowerCase()
+    if (type === 'essay') {
+      const ta = document.createElement('textarea')
+      ta.className = 'q-input'
+      ta.rows = 5
+      ta.placeholder = '…'
+      el.appendChild(ta)
+      return el
     }
-    el.appendChild(this.buildAdvanced(new Map()))
+    if (type === 'shortanswer' || type === 'numerical') {
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.className = 'q-input'
+      el.appendChild(input)
+      return el
+    }
+    if (q.answers.length === 0) return el
+
+    const multi = q.answers.filter((a) => a.fraction > 0).length > 1
+    const list = document.createElement('ul')
+    list.className = 'q-answers moodle-inputs'
+    q.answers.forEach((a, i) => {
+      const li = document.createElement('li')
+      li.className =
+        a.fraction >= 1
+          ? 'q-correct'
+          : a.fraction > 0
+            ? 'q-partial'
+            : a.fraction < 0
+              ? 'q-penalty'
+              : 'q-neutral'
+      const label = document.createElement('label')
+      const input = document.createElement('input')
+      input.type = multi ? 'checkbox' : 'radio'
+      input.name = `q-${q.id}`
+      input.value = String(i)
+      const text = document.createElement('span')
+      text.innerHTML = sanitizeHtml(a.text)
+      label.append(input, text)
+      const mark = document.createElement('em')
+      mark.className = 'q-fraction'
+      mark.textContent =
+        a.fraction >= 1
+          ? `✓ ${t('quiz.correct')}`
+          : a.fraction > 0
+            ? `~ ${t('quiz.partial')}`
+            : a.fraction < 0
+              ? `✗ ${t('quiz.wrong')}`
+              : ''
+      li.append(label, mark)
+      list.appendChild(li)
+    })
+    const title = document.createElement('div')
+    title.className = 'q-answers-title'
+    title.textContent = t('quiz.answers')
+    el.append(title, list)
     return el
   }
 }

@@ -90,3 +90,13 @@ export function contentKind(mime: string, fileName: string): string {
   if (m.startsWith('text/') || ext === 'json' || ext === 'xml' || ext === 'md') return 'Text'
   return 'File'
 }
+
+/** Formats a Moodle unix timestamp for the UI language. */
+export function formatDate(ts: number, lang: string): string {
+  if (!Number.isFinite(ts) || ts <= 0) return ''
+  return new Date(ts * 1000).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}

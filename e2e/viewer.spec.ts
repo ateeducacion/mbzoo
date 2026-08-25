@@ -97,7 +97,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('2 sections')
-  expect(meta).toContain('5 activities')
+  expect(meta).toContain('10 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -155,4 +155,55 @@ test('isolates executable HTML resources and blocks network access', async ({ pa
   await expect(page.locator('body')).not.toHaveAttribute('data-mbzoo-sandbox-escape', '1')
   await expect(page.locator('.html-frame')).toHaveAttribute('sandbox', 'allow-scripts')
   expect(probeRequests).toEqual([])
+})
+
+test('quiz navigation, glossary entries and assignment summary', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  // Quiz: Moodle-like inputs + navigation + reveal answers.
+  await page.getByRole('button', { name: /Self-assessment quiz/ }).click()
+  await expect(page.locator('.quiz-nav')).toBeVisible()
+  await expect(page.locator('.quiz-counter')).toHaveText(/1 .* 2/)
+  await expect(page.locator('.quiz-card input[type="radio"]')).toHaveCount(2)
+  await page.locator('.quiz-nav .btn-outline').nth(1).click()
+  await expect(page.locator('.quiz-counter')).toContainText('2')
+  await page.getByRole('button', { name: /Reveal answers/ }).click()
+  await expect(page.locator('.quiz-card .q-correct').first()).toBeVisible()
+
+  // Glossary: entries rendered.
+  await page.getByRole('button', { name: /Demo glossary/ }).click()
+  await expect(page.locator('.glossary-list dt').first()).toHaveText('MBZ')
+  await expect(page.locator('.glossary-list dd').first()).toContainText('Moodle Backup')
+
+  // Assignment: intro + dates + submission type.
+  await page.getByRole('button', { name: /Demo assignment/ }).click()
+  await expect(page.locator('#detail .activity-intro')).toContainText('Upload a short report')
+  const summary = page.locator('.summary-grid')
+  await expect(summary).toContainText('Due')
+  await expect(page.locator('.summary-row')).toContainText('File')
+})
+
+test('book chapters, hidden activity indicator and availability', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+
+  // Book: TOC + chapter navigation.
+  await page.getByRole('button', { name: /Demo book/ }).click()
+  await expect(page.locator('.book-toc-item')).toHaveCount(3)
+  await expect(page.locator('.book-chapter .activity-content')).toContainText('demo book')
+  await page.locator('.book-toc li').nth(2).locator('.book-toc-item').click()
+  await expect(page.locator('.book-chapter .activity-content')).toContainText('Subchapter body')
+
+  // Hidden activity: struck through in the tree.
+  const hidden = page.locator('.hidden-activity .name')
+  await expect(hidden).toHaveText(/Restricted page/)
+
+  // Settings panel with human availability.
+  await page.getByRole('button', { name: /Restricted page/ }).click()
+  await expect(page.locator('.settings-panel summary')).toContainText('HIDDEN')
+  const panel = page.locator('.settings-panel')
+  await expect(panel).toContainText('Available from')
+  await expect(panel).toContainText('Member of group #7')
+  await expect(panel).toContainText('RESTRICTED-1')
 })

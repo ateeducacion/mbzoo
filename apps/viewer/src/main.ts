@@ -171,7 +171,12 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
       button.dataset.search = `${activity.title} ${activity.moduleName}`.toLowerCase()
       const name = document.createElement('span')
       name.className = 'name'
-      name.textContent = activity.title || `(unnamed ${activity.moduleName})`
+      if (activity.settings && !activity.settings.visible) {
+        name.textContent = `⊘ ${activity.title || `(unnamed ${activity.moduleName})`}`
+        item.classList.add('hidden-activity')
+      } else {
+        name.textContent = activity.title || `(unnamed ${activity.moduleName})`
+      }
       const badge = document.createElement('span')
       badge.className = `mod-badge ${badgeTone(activity.moduleName)}`.trim()
       badge.textContent = activity.moduleName
@@ -222,6 +227,7 @@ async function openActivity(activityId: number, sectionName: string): Promise<vo
   setStatus(`${t('loading.activity')} “${head.textContent}”…`)
   try {
     await renderer.renderActivity(activity, body)
+    renderer.renderSettingsPanel(activity, body)
     setStatus('')
   } catch (e) {
     setStatus(e instanceof Error ? e.message : 'Could not render this item.', 'error')

@@ -66,18 +66,36 @@ sources:
     url: https://github.com/101arrowz/fflate
     accessed: 2026-08-24
     license: MIT
+  REPO-006:
+    title: "cloudpedagogy/cloudpedagogy-moodle-course-auditor"
+    kind: external-repository
+    url: https://github.com/cloudpedagogy/cloudpedagogy-moodle-course-auditor
+    accessed: 2026-08-25
+    license: MIT
   TECH-006:
     title: saxes
     kind: technology
     url: https://github.com/lddubeau/saxes
     accessed: 2026-08-24
     license: ISC
+  REPO-007:
+    title: "cloudpedagogy/cloudpedagogy-moodle-file-extractor"
+    kind: external-repository
+    url: https://github.com/cloudpedagogy/cloudpedagogy-moodle-file-extractor
+    accessed: 2026-08-25
+    license: MIT
   TECH-007:
     title: Biome
     kind: technology
     url: https://biomejs.dev
     accessed: 2026-08-24
     license: MIT OR Apache-2.0
+  REPO-008:
+    title: "cloudpedagogy/cloudpedagogy-moodle-course-comparator (+ content-mapper, book-qa)"
+    kind: external-repository
+    url: https://github.com/cloudpedagogy/cloudpedagogy-moodle-course-comparator
+    accessed: 2026-08-25
+    license: "[PENDING: verification required — README contains a placeholder licence notice]"
   TECH-008:
     title: Playwright
     kind: technology

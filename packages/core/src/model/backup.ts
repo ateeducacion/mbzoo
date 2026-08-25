@@ -37,10 +37,14 @@ export interface SectionInfo {
 /** Capability flags for an activity module. */
 export type ActivityCapability = 'inspect' | 'render' | 'launch' | 'export'
 
+import type { ActivitySettings } from '../moodle/module-xml.ts'
+
 export interface ActivityInfo {
   readonly id: number
   /** Moodle section id this activity belongs to (from <activity><sectionid>). */
   readonly sectionId: number
+  /** module.xml settings: visibility, completion, availability, groups. */
+  readonly settings?: ActivitySettings | undefined
   /** Moodle mod name, e.g. "page", "forum", unknown third-party names pass through. */
   readonly moduleName: string
   title: string

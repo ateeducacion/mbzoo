@@ -136,6 +136,41 @@ function moodleBackupXml(): string {
           <title>Synthetic guide (resource)</title>
           <directory>activities/resource_3005</directory>
         </activity>
+        <activity>
+          <moduleid>3006</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>quiz</modulename>
+          <title>Self-assessment quiz</title>
+          <directory>activities/quiz_3006</directory>
+        </activity>
+        <activity>
+          <moduleid>3007</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>glossary</modulename>
+          <title>Demo glossary</title>
+          <directory>activities/glossary_3007</directory>
+        </activity>
+        <activity>
+          <moduleid>3008</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>assign</modulename>
+          <title>Demo assignment</title>
+          <directory>activities/assign_3008</directory>
+        </activity>
+        <activity>
+          <moduleid>3009</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>book</modulename>
+          <title>Demo book</title>
+          <directory>activities/book_3009</directory>
+        </activity>
+        <activity>
+          <moduleid>3010</moduleid>
+          <sectionid>2002</sectionid>
+          <modulename>page</modulename>
+          <title>Restricted page</title>
+          <directory>activities/page_3010</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -229,9 +264,15 @@ ${specFiles.map(fileRecord).join('\n')}
   add('moodle_backup.xml', moodleBackupXml())
   add('files.xml', filesXml)
   add('course/course.xml', courseXml())
-  add('sections/section_2001/section.xml', sectionXml(2001, 1, 'Introduction', '3001,3002,3004'))
+  add(
+    'sections/section_2001/section.xml',
+    sectionXml(2001, 1, 'Introduction', '3001,3002,3004,3006,3007'),
+  )
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
-  add('sections/section_2002/section.xml', sectionXml(2002, 2, 'Resources', '3003,3005'))
+  add(
+    'sections/section_2002/section.xml',
+    sectionXml(2002, 2, 'Resources', '3003,3005,3008,3009,3010'),
+  )
   add('sections/section_2002/inforef.xml', `${XML_HEADER}<inforef/>`)
   add('activities/page_3001/page.xml', activityXml('page', 'Welcome page'))
   add('activities/page_3001/module.xml', activityXml('page', 'Welcome page'))
@@ -253,6 +294,126 @@ ${specFiles.map(fileRecord).join('\n')}
     <contentformat>1</contentformat>
   </page>
 </activity>
+`,
+  )
+  add(
+    'activities/quiz_3006/quiz.xml',
+    `${XML_HEADER}<activity id="6" moduleid="6" modulename="quiz" contextid="106">
+  <quiz id="6">
+    <name>Self-assessment quiz</name>
+    <intro>&lt;p&gt;Two-question demo quiz.&lt;/p&gt;</intro>
+    <timeopen>1700000000</timeopen>
+    <timeclose>1800000000</timeclose>
+    <timelimit>1800</timelimit>
+    <question_instances>
+      <question_instance><slot>1</slot><questionid>4001</questionid></question_instance>
+      <question_instance><slot>2</slot><questionid>4002</questionid></question_instance>
+    </question_instances>
+  </quiz>
+</activity>
+`,
+  )
+  add(
+    'activities/glossary_3007/glossary.xml',
+    `${XML_HEADER}<activity id="7" moduleid="7" modulename="glossary" contextid="107">
+  <glossary id="7">
+    <name>Demo glossary</name>
+    <intro>&lt;p&gt;Key terms.&lt;/p&gt;</intro>
+    <entries>
+      <entry id="9001">
+        <concept>MBZ</concept>
+        <definition>&lt;p&gt;Moodle Backup: the course archive format.&lt;/p&gt;</definition>
+      </entry>
+      <entry id="9002">
+        <concept>Contenthash</concept>
+        <definition>&lt;p&gt;SHA1 of file contents used by the pool.&lt;/p&gt;</definition>
+      </entry>
+    </entries>
+  </glossary>
+</activity>
+`,
+  )
+  add(
+    'activities/assign_3008/assign.xml',
+    `${XML_HEADER}<activity id="8" moduleid="8" modulename="assign" contextid="108">
+  <assign id="8">
+    <name>Demo assignment</name>
+    <intro>&lt;p&gt;Upload a short report.&lt;/p&gt;</intro>
+    <allowsubmissionsfromdate>1700000000</allowsubmissionsfromdate>
+    <duedate>1701000000</duedate>
+    <cutoffdate>1702000000</cutoffdate>
+    <submissionplugins>
+      <plugin><type>file</type><enabled>1</enabled></plugin>
+      <plugin><type>onlinetext</type><enabled>0</enabled></plugin>
+    </submissionplugins>
+  </assign>
+</activity>
+`,
+  )
+  add(
+    'activities/book_3009/book.xml',
+    `${XML_HEADER}<activity id="9" moduleid="9" modulename="book" contextid="109">
+  <book id="9">
+    <name>Demo book</name>
+    <intro>&lt;p&gt;Three chapters.&lt;/p&gt;</intro>
+    <chapters>
+      <chapter id="9101"><parent>0</parent><weight>1</weight><subchapter>0</subchapter><title>Introduction</title><content>&lt;p&gt;Welcome to the &lt;b&gt;demo book&lt;/b&gt;.&lt;/p&gt;</content></chapter>
+      <chapter id="9102"><parent>0</parent><weight>2</weight><subchapter>0</subchapter><title>Concepts</title><content>&lt;p&gt;Chapter two body.&lt;/p&gt;</content></chapter>
+      <chapter id="9103"><parent>9102</parent><weight>3</weight><subchapter>1</subchapter><title>Example</title><content>&lt;p&gt;Subchapter body.&lt;/p&gt;</content></chapter>
+    </chapters>
+  </book>
+</activity>
+`,
+  )
+  add(
+    'activities/page_3010/page.xml',
+    `${XML_HEADER}<activity id="10" moduleid="10" modulename="page" contextid="110">
+  <page id="10">
+    <name>Restricted page</name>
+    <intro></intro>
+    <content>&lt;p&gt;Only visible with the right conditions.&lt;/p&gt;</content>
+  </page>
+</activity>
+`,
+  )
+  add(
+    'activities/page_3010/module.xml',
+    `${XML_HEADER}<module id="10" moduleid="10" sectionid="2002" modulename="page" contextid="110">
+  <visible>0</visible>
+  <idnumber>RESTRICTED-1</idnumber>
+  <groupmode>1</groupmode>
+  <completion>2</completion>
+  <availability>{"op":"&amp;","c":[{"type":"date","d":"&gt;=","t":1800000000},{"type":"group","id":7}]}</availability>
+</module>
+`,
+  )
+  add(
+    'questions.xml',
+    `${XML_HEADER}<question_categories>
+  <question_category id="1">
+    <name>Default</name>
+    <questions>
+      <question id="4001">
+        <qtype>multichoice</qtype>
+        <name>Pool layout</name>
+        <questiontext>&lt;p&gt;Where does MBZoo look for a file with contenthash &lt;code&gt;ab12…&lt;/code&gt;?&lt;/p&gt;</questiontext>
+        <answers>
+          <answer id="1"><answertext>files/ab/ab12…</answertext><fraction>1.0000000</fraction></answer>
+          <answer id="2"><answertext>files/ab/cd/ab12…</answertext><fraction>0.0000000</fraction></answer>
+        </answers>
+      </question>
+      <question id="4002">
+        <qtype>truefalse</qtype>
+        <name>Container formats</name>
+        <questiontext>&lt;p&gt;A .mbz can be a TAR.GZ archive.&lt;/p&gt;</questiontext>
+        <answers>
+          <answer id="3"><answertext>True</answertext><fraction>1.0000000</fraction></answer>
+          <answer id="4"><answertext>False</answertext><fraction>0.0000000</fraction></answer>
+        </answers>
+      </question>
+    </questions>
+  </question_category>
+</question_categories>
 `,
   )
   add(

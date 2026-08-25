@@ -20,3 +20,15 @@ tasks:
     title: Accessibility audit pass (axe + keyboard + SR announcements)
     status: open
     priority: medium
+  TASK-006:
+    title: File context graph (ContentAssociation with confidence)
+    status: open
+    priority: medium
+  TASK-007:
+    title: Explorer filters + content/activity distinction (REPO-008 mapper ideas)
+    status: open
+    priority: low
+  TASK-008:
+    title: Content QA tab (headings, alt, links) for Page/Book/Label
+    status: open
+    priority: low

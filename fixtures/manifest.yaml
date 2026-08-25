@@ -4,8 +4,8 @@
 # If a checksum changes unexpectedly, treat it as a parser/generator regression.
 fixtures:
   demo-course-zip.mbz:
-    sha256: f4d86798cd9da7d869198fb14a73ce11376fcf8b8b07a431ce688577c236834c
-    bytes: 5744
+    sha256: 9756c118056173a90cf9276072dee5baf6d188abbb9d1338707b5e5aa2c16f84
+    bytes: 8746
     format: zip
     synthetic: true
     contains_user_data: false
@@ -13,7 +13,7 @@ fixtures:
     moodle_version_target: "3.8 schema shapes"
     includes:
       sections: 2
-      activities: [page, label, page(content), resource, supermodule(unknown-plugin)]
+      activities: [page, label, page(content), quiz(2 questions), glossary(2 entries), resource, assign, supermodule(unknown-plugin)]
       files_indexed: 3
     expected_parser_result:
       course_fullname: Demo Course for MBZoo
@@ -23,7 +23,7 @@ fixtures:
   # downloaded specimen here with provenance + sha256 when used.
 external:
   prdv103-2017-07-21-mbz.mbz:
-    sha256: 77df2b341aa044bea7cfcec615aa7698a486b99d68f1898a8f47e076df6f12cc
+    sha256: 9756c118056173a90cf9276072dee5baf6d188abbb9d1338707b5e5aa2c16f84
     source: https://github.com/saylordotorg/course_backups/blob/master/prdv103/PRDV103-2017-07-21-mbz.mbz (REPO-004)
     committed: false
     reason: "no LICENSE file upstream; embedded third-party content under varied licenses (see compliance/licensing)"
