@@ -73,6 +73,8 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
     sections: sectionRefs,
     activities,
     includesUserData,
+    moodleRelease,
+    backupDate,
   } = await parseMoodleBackupXml(backupXml, warnings)
 
   // Richer course metadata lives in course/course.xml (verified on REPO-004).
@@ -146,6 +148,8 @@ async function parseBackupFrom(reader: ArchiveReader): Promise<ParsedBackup> {
   return {
     format: reader.format,
     includesUserData,
+    moodleRelease,
+    backupDate,
     course,
     sections,
     activities,

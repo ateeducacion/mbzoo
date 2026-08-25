@@ -119,6 +119,13 @@ export interface ParsedBackup {
    * so their absence is expected — not a gap — when this is false.
    */
   readonly includesUserData: boolean
+  /**
+   * Moodle release the backup was taken on (<information><moodle_release>,
+   * e.g. "4.4 (Build: 20240422)"); '' when absent.
+   */
+  readonly moodleRelease: string
+  /** Unix time the backup was taken (<information><backup_date>); undefined when absent. */
+  readonly backupDate?: number | undefined
   readonly course: CourseInfo
   readonly sections: SectionInfo[]
   readonly activities: ActivityInfo[]

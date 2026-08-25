@@ -18,6 +18,7 @@ function applyI18nDom(): void {
   }
 }
 
+import { renderCourseSummary } from './course-summary.ts'
 import { type Crumb, type DetailNavigation, renderDetail } from './detail-panel.ts'
 import { Renderer } from './renderers.ts'
 import './style.css'
@@ -40,7 +41,7 @@ const errorCard = document.getElementById('error') as HTMLElement
 const errorMsg = document.getElementById('error-msg') as HTMLElement
 const status = document.getElementById('status') as HTMLElement
 const courseSection = document.getElementById('course') as HTMLElement
-const courseTitle = document.getElementById('course-title') as HTMLElement
+const courseTitle = document.getElementById('course-title-button') as HTMLButtonElement
 const courseSub = document.getElementById('course-sub') as HTMLElement
 const courseMeta = document.getElementById('course-meta') as HTMLElement
 const fileNameEl = document.getElementById('file-name') as HTMLElement
@@ -55,6 +56,7 @@ const dropOverlay = document.getElementById('drop-overlay') as HTMLElement
 let worker: Worker | undefined
 let requestId = 0
 let currentBackup: ParsedBackup | undefined
+let currentFacts: { fileSize: number; elapsedMs: number } | undefined
 let renderer: Renderer | undefined
 /** Whether the personal-data banner was folded with "Understood" this session. */
 let personalDataDismissed = false
@@ -148,6 +150,7 @@ function badgeTone(moduleName: string): string {
 
 function render(backup: ParsedBackup, fileName: string, fileSize: number, elapsedMs: number): void {
   currentBackup = backup
+  currentFacts = { fileSize, elapsedMs }
   renderer?.dispose()
   renderer = new Renderer({ backup, readEntry })
 
@@ -304,23 +307,21 @@ function clearSelection(): void {
   }
 }
 
-/** The pane's resting state: nothing selected, course-level information only. */
+/**
+ * The pane's resting state: nothing selected, the backup at a glance
+ * (mockup 3a). Reached on open, from the course title and from the
+ * breadcrumb's Course crumb.
+ */
 function showCourseHome(): void {
+  if (!currentBackup || !currentFacts) return
   openSeq++
   currentActivityId = undefined
   clearSelection()
   detail.hidden = false
-  const home = document.createElement('div')
-  home.className = 'course-home'
-  const empty = document.createElement('p')
-  empty.className = 'fallback-note'
-  empty.textContent = t('detail.empty')
-  home.appendChild(empty)
-  detail.replaceChildren(home)
-  // The course gradebook has no better home than the panel that is otherwise
-  // blank until something is selected. It lands inside `home`, so an activity
-  // opened before it resolves is not handed a gradebook it never asked for.
-  void renderCourseGradebook(home)
+  // renderCourseSummary swaps the pane synchronously and only appends the
+  // gradebook later if its root is still attached, so an activity opened
+  // before gradebook.xml resolves is never handed a summary it did not ask for.
+  void renderCourseSummary(currentBackup, currentFacts, detail, { readEntry, badgeTone })
 }
 
 /** Brings a section heading into view and puts keyboard focus on it. */
@@ -507,77 +508,6 @@ async function renderUserDisclosure(): Promise<void> {
   setCollapsed(personalDataDismissed)
 }
 
-/**
- * Course-wide gradebook: the category tree, its aggregation and the grade
- * letters. Authored structure — the marks themselves never travel without
- * user data.
- */
-async function renderCourseGradebook(container: HTMLElement): Promise<void> {
-  let bytes: Uint8Array
-  try {
-    bytes = await readEntry('gradebook.xml')
-  } catch {
-    return
-  }
-  const { parseGradebookXml } = await import('@mbzoo/core')
-  const book = await parseGradebookXml(new TextDecoder().decode(bytes))
-  if (book.categories.length === 0 && book.items.length === 0) return
-
-  const details = document.createElement('details')
-  details.className = 'advanced course-gradebook'
-  const summary = document.createElement('summary')
-  summary.textContent = t('gradebook.title')
-  details.appendChild(summary)
-
-  const byCategory = new Map<number, typeof book.items>()
-  for (const item of book.items) {
-    byCategory.set(item.categoryId, [...(byCategory.get(item.categoryId) ?? []), item])
-  }
-
-  const list = document.createElement('ul')
-  list.className = 'gradebook-tree'
-  for (const category of [...book.categories].sort((a, b) => a.depth - b.depth)) {
-    const li = document.createElement('li')
-    li.style.marginLeft = `${Math.max(0, category.depth - 1) * 14}px`
-    const name = document.createElement('strong')
-    name.textContent = category.name || t('gradebook.courseTotal')
-    const how = document.createElement('em')
-    how.className = 'gradebook-aggregation'
-    how.textContent = t(`gradebook.aggregation.${category.aggregation}`)
-    li.append(name, ' ', how)
-    const items = byCategory.get(category.id) ?? []
-    if (items.length > 0) {
-      const sub = document.createElement('ul')
-      sub.className = 'gradebook-items'
-      for (const item of [...items].sort((a, b) => a.sortOrder - b.sortOrder)) {
-        const row = document.createElement('li')
-        const label = document.createElement('span')
-        label.textContent =
-          item.name || t(`gradebook.itemType.${item.itemType === 'course' ? 'course' : 'activity'}`)
-        const out = document.createElement('em')
-        out.className = 'gradebook-max'
-        out.textContent = item.kind === 'value' ? `/ ${item.max}` : t(`grade.kind.${item.kind}`)
-        row.append(label, ' ', out)
-        sub.appendChild(row)
-      }
-      li.appendChild(sub)
-    }
-    list.appendChild(li)
-  }
-  details.appendChild(list)
-
-  if (book.letters.length > 0) {
-    const letters = document.createElement('p')
-    letters.className = 'gradebook-letters'
-    letters.textContent = [...book.letters]
-      .sort((a, b) => b.lowerBoundary - a.lowerBoundary)
-      .map((l) => `${l.letter} ≥ ${l.lowerBoundary}`)
-      .join(' · ')
-    details.appendChild(letters)
-  }
-  container.appendChild(details)
-}
-
 async function openActivity(activityId: number): Promise<void> {
   if (!currentBackup || !renderer) return
   const activity = currentBackup.activities.find((a) => a.id === activityId)
@@ -678,6 +608,9 @@ async function handleBlob(blob: Blob, name: string): Promise<void> {
     show('error')
   }
 }
+
+// The course title is the way back to the summary once an activity is open.
+courseTitle.addEventListener('click', showCourseHome)
 
 // Logo always returns to the landing page.
 homeBtn.addEventListener('click', () => {
