@@ -112,7 +112,7 @@ function badgeTone(moduleName: string): string {
   if (m === 'resource' || m === 'folder' || m === 'assign' || m === 'book') return 't-purple'
   if (m === 'url') return 't-red'
   if (m === 'label') return 't-orange'
-  if (m === 'scorm' || m === 'h5p' || m === 'hvp') return 't-teal'
+  if (m === 'scorm' || m === 'h5p' || m === 'hvp' || m === 'h5pactivity') return 't-teal'
   return ''
 }
 

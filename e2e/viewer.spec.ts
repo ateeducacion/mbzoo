@@ -106,7 +106,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('2 sections')
-  expect(meta).toContain('10 activities')
+  expect(meta).toContain('11 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -239,9 +239,46 @@ test('example link opens the demo course with all activity types', async ({ page
     'assign',
     'book',
     'supermodule',
+    'h5pactivity',
   ]) {
     await expect(page.locator(`.mod-badge`, { hasText: mod }).first()).toBeVisible()
   }
+})
+
+test('plays the synthetic H5P package inside the opaque-origin sandbox', async ({ page }) => {
+  const probeRequests: string[] = []
+  page.on('request', (request) => {
+    if (/^https?:/.test(request.url()) && !request.url().startsWith('http://127.0.0.1')) {
+      probeRequests.push(request.url())
+    }
+  })
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo H5P content/ }).click()
+
+  await expect(page.locator('.h5p-note')).toContainText(/Experimental|experimental/)
+  await expect(page.locator('.h5p-frame')).toHaveAttribute('sandbox', 'allow-scripts')
+
+  // The synthetic text library rendered its content inside the frame.
+  const frame = page.frameLocator('.h5p-frame')
+  await expect(frame.locator('.h5p-mbzoo-text')).toContainText('Synthetic H5P', { timeout: 15000 })
+
+  // The nested dependency loaded before the content type that needs it, and
+  // its string version ("1.8") resolved (REPO-009: both broke real packages).
+  await expect(frame.locator('.h5p-mbzoo-text')).toHaveAttribute('data-dependency', 'base-loaded')
+
+  // A content/ image assigned with new Image() through H5P.getPath() resolves
+  // to an in-frame blob and actually decodes.
+  const image = frame.locator('img.h5p-mbzoo-image')
+  await expect(image).toBeVisible()
+  expect(await image.evaluate((el: HTMLImageElement) => el.src)).toMatch(/^blob:/)
+  expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(16)
+
+  expect(pageErrors).toEqual([])
+  expect(probeRequests).toEqual([])
 })
 
 test('steps are hidden on mobile', async ({ page }) => {

@@ -26,6 +26,7 @@ import DOMPurify from 'dompurify'
 import * as pdfjs from 'pdfjs-dist'
 import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { scanExternalRefs } from './lib/external-refs.ts'
+import { buildPlayerHtml, isH5pFileName, type PlayerAssets, unzipH5p } from './lib/h5p-player.ts'
 import { t } from './lib/i18n.ts'
 import {
   contentKind,
@@ -173,6 +174,10 @@ export class Renderer {
     }
     if (mod === 'assign') {
       await this.renderAssign(activity, fields, contextId, container)
+      return
+    }
+    if (mod === 'hvp' || mod === 'h5pactivity') {
+      await this.renderH5pActivity(activity, fields, contextId, container)
       return
     }
     // Known module families without a dedicated body renderer: show the
@@ -390,6 +395,14 @@ export class Renderer {
     if (!data) return card
 
     const mime = rec.mimeType || guessMime(rec.fileName)
+    if (isH5pFileName(rec.fileName)) {
+      try {
+        await this.renderH5p(data, card)
+      } finally {
+        addDownload(card, this.blobUrl(data, mime), rec.fileName)
+      }
+      return card
+    }
     if (mime.startsWith('image/')) {
       const img = document.createElement('img')
       img.src = this.blobUrl(data, mime)
@@ -490,6 +503,98 @@ export class Renderer {
     frame.sandbox.add('allow-scripts')
     frame.sandbox.add('allow-popups')
     frame.sandbox.add('allow-popups-to-escape-sandbox')
+    card.appendChild(frame)
+  }
+
+  /**
+   * H5P activity: intro plus experimental playback of the stored .h5p
+   * package (ADR-0018); falls back to the download card when the package
+   * cannot be played.
+   */
+  private async renderH5pActivity(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    const mod = activity.moduleName
+    const introHtml = await this.resolveHtml(fields.get('intro'), `mod_${mod}`, 'intro', contextId)
+    if (introHtml) {
+      const el = document.createElement('div')
+      el.className = 'activity-intro'
+      el.innerHTML = introHtml
+      container.appendChild(el)
+      this.renderExternalPanel(this.lastRawHtml, container)
+    }
+
+    const records = [...this.ctx.backup.files.values()].filter(
+      (f) =>
+        isH5pFileName(f.fileName) &&
+        f.fileSize > 0 &&
+        (f.component === `mod_${mod}` || (contextId !== '' && f.contextId === contextId)),
+    )
+    const record =
+      records.find((f) => f.component === `mod_${mod}` && f.contextId === contextId) ?? records[0]
+    if (!record) {
+      notAvailable(container)
+      return
+    }
+    const data = await this.tryRead(contentHashPath(record.contentHash))
+    if (!data) {
+      notAvailable(container)
+      return
+    }
+    const card = document.createElement('div')
+    card.className = 'file-card'
+    container.appendChild(card)
+    try {
+      await this.renderH5p(data, card)
+    } finally {
+      // Download stays available even when playback fails (ADR-0018).
+      addDownload(
+        card,
+        this.blobUrl(data, record.mimeType || guessMime(record.fileName)),
+        record.fileName,
+      )
+    }
+  }
+
+  /**
+   * Experimental H5P playback (ADR-0018): unzips the package in memory and
+   * boots h5p-standalone inside an opaque-origin sandboxed iframe with the
+   * ADR-0014 CSP; every package path is served by an in-frame shim.
+   */
+  private async renderH5p(data: Uint8Array, card: HTMLElement): Promise<void> {
+    const fallback = (key: 'h5p.invalid' | 'h5p.playerUnavailable'): void => {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t(key)
+      card.appendChild(note)
+    }
+    const assets = await loadPlayerAssets()
+    if (!assets) {
+      fallback('h5p.playerUnavailable')
+      return
+    }
+    // A package is hostile input: unzipping and building the player page both
+    // reject malformed input, and neither may reach the caller as a raw error.
+    let html: string
+    try {
+      html = buildPlayerHtml(unzipH5p(data), assets)
+    } catch {
+      fallback('h5p.invalid')
+      return
+    }
+    const chip = document.createElement('p')
+    chip.className = 'h5p-note'
+    chip.textContent = t('h5p.experimental')
+    card.appendChild(chip)
+    const frame = document.createElement('iframe')
+    frame.src = this.blobUrl(new TextEncoder().encode(html), 'text/html')
+    frame.title = t('h5p.frameTitle')
+    frame.className = 'html-frame h5p-frame'
+    // allow-scripts only: opaque origin — no same-origin access to the app.
+    frame.sandbox.add('allow-scripts')
     card.appendChild(frame)
   }
 
@@ -1164,6 +1269,26 @@ function sortRecords(records: BackupFileRecord[]): BackupFileRecord[] {
   return [...records].sort((a, b) =>
     (a.filePath + a.fileName).localeCompare(b.filePath + b.fileName),
   )
+}
+
+/**
+ * Player assets are raw texts inlined into the generated player page; opaque
+ * origins cannot load blob URLs minted by the application origin (ADR-0017),
+ * so they cannot be emitted as separate files. Imported dynamically so the
+ * ~190 KB H5P core stays out of the main bundle for the majority of visitors
+ * who never open an H5P (ADR-0018); it is still bundled, never fetched from a
+ * network origin, and resolved once per session.
+ */
+let playerAssetsPromise: Promise<PlayerAssets | undefined> | undefined
+
+function loadPlayerAssets(): Promise<PlayerAssets | undefined> {
+  playerAssetsPromise ??= Promise.all([
+    import('h5p-standalone/dist/frame.bundle.js?raw'),
+    import('h5p-standalone/dist/styles/h5p.css?raw'),
+  ])
+    .then(([core, css]) => ({ coreJs: core.default, css: css.default }))
+    .catch(() => undefined)
+  return playerAssetsPromise
 }
 
 function addDownload(card: HTMLElement, url: string, name: string): void {

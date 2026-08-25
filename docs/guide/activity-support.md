@@ -17,7 +17,7 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
 | Quiz | ✅ metadata + question bank | 🔜 inspection-first | faithful execution requires Moodle's Question Engine — not a goal; practice mode is a separate idea (prompt §6) |
 | SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
-| H5P | ✅ metadata + package file | ⏳ research | h5p-standalone candidate (Q-013) |
+| H5P (mod_h5pactivity / .h5p files) | ✅ metadata + package | ⚠️ experimental playback | sandboxed player, self-contained packages; see ADR-0018 — unsupported content types fall back to download |
 | eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |
 | Unknown third-party plugins | ✅ | ✅ metadata fallback | never break the course view |
 

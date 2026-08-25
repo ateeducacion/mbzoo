@@ -13,8 +13,9 @@ course/section/activity explorer.
 
 Implemented content support includes sanitized Page/Label HTML, URL activities,
 Resource/File/Folder previews, PDF/image/text previews, sandboxed HTML files,
-and metadata fallback for unknown modules. Dedicated Book/Forum/Glossary/
-Assignment/Quiz experiences, SCORM/H5P launchers, eXeLearning inspection,
+experimental H5P playback in the opaque-origin sandbox (ADR-0018), and metadata
+fallback for unknown modules. Dedicated Book/Forum/Glossary/
+Assignment/Quiz experiences, SCORM launchers, eXeLearning inspection,
 whole-backup re-packaging and multi-gigabyte streaming/lazy access remain
 planned or under research. Do not advertise planned capabilities as existing.
 
@@ -78,7 +79,9 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
 2. Never execute backup-provided JavaScript in the MBZoo application origin.
    Page/Label HTML is sanitized (ADR-0012); executable HTML-file previews use
    the opaque-origin sandbox + injected CSP from ADR-0014.
-3. SCORM/H5P launchers are not implemented. Any new executable-content surface,
+3. SCORM launchers are not implemented. H5P playback is experimental only
+   (ADR-0018): it must stay inside the opaque-origin sandbox and must not gain
+   new iframe permissions. Any new executable-content surface,
    iframe permission, postMessage bridge or network capability requires an
    evidence-backed security/architecture decision and threat-model review.
 4. Nothing may upload user data anywhere. No telemetry, analytics or automatic

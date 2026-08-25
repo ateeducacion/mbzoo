@@ -103,6 +103,10 @@ const STRINGS = {
       'Showing the first {n} of {total} characters — use Export ▾ for the whole file.',
     'footer.note':
       'MBZoo is experimental software — see the README for what is implemented vs planned.',
+    'h5p.experimental': 'Experimental H5P playback — runs sandboxed, offline.',
+    'h5p.invalid': 'This .h5p package could not be read — use Download.',
+    'h5p.playerUnavailable': 'The H5P player could not be loaded — use Download.',
+    'h5p.frameTitle': 'H5P content preview',
   },
   es: {
     'landing.title': 'Mira qué hay dentro de tu',
@@ -203,6 +207,10 @@ const STRINGS = {
       'Mostrando los primeros {n} de {total} caracteres: usa Exportar ▾ para el archivo completo.',
     'footer.note':
       'MBZoo es software experimental: consulta el README para ver qué está implementado.',
+    'h5p.experimental': 'Reproducción H5P experimental: se ejecuta aislada y sin conexión.',
+    'h5p.invalid': 'No se pudo leer este paquete .h5p: usa Descargar.',
+    'h5p.playerUnavailable': 'No se pudo cargar el reproductor H5P: usa Descargar.',
+    'h5p.frameTitle': 'Vista previa de contenido H5P',
   },
 } as const
 

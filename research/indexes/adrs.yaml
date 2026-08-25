@@ -68,3 +68,7 @@ adrs:
     title: Sandboxed previews — inline data: assets and author links in a new tab
     status: Accepted
     date: 2026-08-25
+  ADR-0018:
+    title: Experimental H5P playback — h5p-standalone inside the opaque-origin sandbox
+    status: Accepted
+    date: 2026-08-25

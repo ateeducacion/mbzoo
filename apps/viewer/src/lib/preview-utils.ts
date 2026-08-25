@@ -21,6 +21,20 @@ export const SANDBOX_CSP =
   "script-src blob: data: 'unsafe-inline'; media-src blob: data:; font-src blob: data:; " +
   "connect-src 'none'; frame-src 'none'; form-action 'none'"
 
+/**
+ * CSP injected into the experimental H5P player page (ADR-0018). Same
+ * default-deny model as SANDBOX_CSP but deliberately narrower: the player's
+ * own shim mints every package asset as a blob inside the frame, so data: is
+ * only needed for CSS-embedded images and fonts. Kept as a separate constant
+ * on purpose — SANDBOX_CSP widening for archive HTML must not silently widen
+ * what backup-provided H5P code may load. `preview-utils.test.ts` locks the
+ * invariants both must keep.
+ */
+export const H5P_CSP =
+  "default-src 'none'; img-src blob: data:; style-src blob: 'unsafe-inline'; " +
+  "script-src blob: 'unsafe-inline'; media-src blob:; font-src blob: data:; " +
+  "connect-src 'none'; frame-src 'none'; form-action 'none'"
+
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`

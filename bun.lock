@@ -37,6 +37,8 @@
       "dependencies": {
         "@mbzoo/core": "workspace:*",
         "dompurify": "3.4.14",
+        "fflate": "0.8.3",
+        "h5p-standalone": "^3.8.2",
         "pdfjs-dist": "^6.2.108",
       },
       "devDependencies": {
@@ -48,6 +50,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@zip.js/zip.js": "2.8.59",
+        "fflate": "0.8.3",
         "saxes": "6.0.0",
       },
     },
@@ -366,6 +369,8 @@
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
     "get-east-asian-width": ["get-east-asian-width@1.6.0", "", {}, "sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA=="],
+
+    "h5p-standalone": ["h5p-standalone@3.8.2", "", {}, "sha512-r7eQtTzBk/dbaQZ+tA9XD5FeSmyMxlypRZXudiheCnC8zAT0/zNgUvO4MZtZaznwfYVo98o7do5uxLTUQrxxwg=="],
 
     "hast-util-from-parse5": ["hast-util-from-parse5@8.0.3", "", { "dependencies": { "@types/hast": "^3.0.0", "@types/unist": "^3.0.0", "devlop": "^1.0.0", "hastscript": "^9.0.0", "property-information": "^7.0.0", "vfile": "^6.0.0", "vfile-location": "^5.0.0", "web-namespaces": "^2.0.0" } }, "sha512-3kxEVkEKt0zvcZ3hCRYI8rqrgwtlIOFMWkbclACvjlDw8Li9S2hk/d51OI0nr/gIpdMHNepwgOKqZ/sy0Clpyg=="],
 
