@@ -162,8 +162,16 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
   for (const section of backup.sections) {
     const li = document.createElement('li')
     const heading = document.createElement('h3')
+    // An unnamed section serializes its name as Moodle's NULL sentinel, so it
+    // reaches us empty. Moodle labels section 0 "General" (REPO-005,
+    // format_topics section0name) and numbers the rest.
     heading.textContent =
-      section.name || (section.number >= 0 ? `Section ${section.number}` : 'Section')
+      section.name ||
+      (section.number === 0
+        ? t('section.general')
+        : section.number > 0
+          ? `${t('section.numbered')} ${section.number}`
+          : t('section.unnamed'))
     li.appendChild(heading)
     const ul = document.createElement('ul')
     ul.className = 'activity-list'

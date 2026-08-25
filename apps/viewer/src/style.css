@@ -1045,11 +1045,11 @@ footer a {
   border-radius: 8px;
   padding: 16px 20px;
 }
-.quiz-card .q-answers.moodle-inputs {
+.q-answers.moodle-inputs {
   list-style: none;
   padding-left: 0;
 }
-.quiz-card .q-answers.moodle-inputs li {
+.q-answers.moodle-inputs li {
   border: 1px solid var(--boost-border);
   border-radius: 6px;
   padding: 8px 12px;
@@ -1058,14 +1058,14 @@ footer a {
   align-items: baseline;
   gap: 8px;
 }
-.quiz-card .q-answers.moodle-inputs label {
+.q-answers.moodle-inputs label {
   display: flex;
   align-items: baseline;
   gap: 8px;
   cursor: pointer;
   flex: 1;
 }
-.quiz-card .q-answers.moodle-inputs input {
+.q-answers.moodle-inputs input {
   accent-color: var(--boost-blue);
 }
 .quiz-card.reveal .q-correct {
@@ -1396,10 +1396,16 @@ footer a {
   content: " ↗";
   font-size: 0.85em;
 }
+/* Still the author's link text, so it is not struck through — it is marked
+   as a link that leads nowhere, and the tooltip names the code. */
 .mbz-link-dead {
   color: var(--muted);
-  text-decoration: line-through;
+  text-decoration: underline dotted;
   cursor: help;
+}
+.mbz-link-dead::after {
+  content: " ⚠";
+  font-size: 0.85em;
 }
 
 /* Multi-page sites: navigated from MBZoo because in-frame links to sibling
@@ -1422,4 +1428,53 @@ footer a {
 }
 .site-pages-hint {
   margin-top: 0;
+}
+
+/* match questions: the pairs are the answer, so they read as a definition
+   list rather than as options to pick. */
+.q-match-list {
+  margin: 6px 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 12px;
+}
+.q-match-list dt {
+  font-weight: 600;
+  color: var(--ink);
+}
+.q-match-list dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+.quiz-card .q-match-list dd {
+  visibility: hidden;
+}
+.quiz-card.reveal .q-match-list dd {
+  visibility: visible;
+}
+
+/* Feedback questionnaire: items in author order, read-only. */
+.feedback-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.feedback-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: #fdfcfa;
+}
+.feedback-item.feedback-label {
+  border: none;
+  background: none;
+  padding: 4px 0;
+}
+.feedback-pagebreak {
+  border: none;
+  border-top: 1px dashed var(--line-2);
+  margin: 4px 0;
 }

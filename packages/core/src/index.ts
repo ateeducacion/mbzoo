@@ -17,6 +17,12 @@ export {
 export { type BackupXmlResult, parseMoodleBackupXml } from './moodle/backup-xml.ts'
 export { type BookChapter, type MoodleBook, parseBookXml } from './moodle/book-xml.ts'
 export { parseCourseXml, parseSectionXml } from './moodle/course-xml.ts'
+export {
+  type FeedbackChoiceStyle,
+  type FeedbackItem,
+  type MoodleFeedback,
+  parseFeedbackXml,
+} from './moodle/feedback-xml.ts'
 export { fileKey, NULL_SENTINEL, parseFilesXml } from './moodle/files-xml.ts'
 export { type GlossaryEntry, parseGlossaryXml } from './moodle/glossary-xml.ts'
 export {
@@ -33,10 +39,11 @@ export {
   parseQuestionsXml,
   parseQuizQuestionIds,
   type QuizAnswer,
+  type QuizMatchPair,
   type QuizQuestion,
   type QuizSlotPlan,
   randomQuestionPool,
   resolveQuizSlots,
 } from './moodle/questions-xml.ts'
-export { MAX_XML_BYTES, parseXmlEvents, type XmlEvent } from './moodle/xml.ts'
+export { leafValue, MAX_XML_BYTES, parseXmlEvents, type XmlEvent } from './moodle/xml.ts'
 export { type BackupSession, openBackup, openBackupSession } from './open-backup.ts'

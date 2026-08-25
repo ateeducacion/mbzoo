@@ -5,7 +5,7 @@
  * (text-wrapper variants accepted). [PENDING: verification required —
  * no committed fixture had a populated glossary; shape from REPO-005.]
  */
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, parseXmlEvents } from './xml.ts'
 
 export interface GlossaryEntry {
   readonly concept: string
@@ -41,16 +41,16 @@ export async function parseGlossaryXml(xml: string): Promise<GlossaryEntry[]> {
         if (current.concept) entries.push(current)
         current = undefined
       } else if (leaf === 'concept' && !conceptDone) {
-        current.concept = text.trim()
+        current.concept = leafValue(text)
         conceptDone = true
       } else if (leaf === 'text' && parent === 'concept' && !conceptDone) {
-        current.concept = text.trim()
+        current.concept = leafValue(text)
         conceptDone = true
       } else if (leaf === 'definition' && !definitionDone) {
-        current.definition = text.trim()
+        current.definition = leafValue(text)
         definitionDone = true
       } else if (leaf === 'text' && parent === 'definition' && !definitionDone) {
-        current.definition = text.trim()
+        current.definition = leafValue(text)
         definitionDone = true
       }
     }

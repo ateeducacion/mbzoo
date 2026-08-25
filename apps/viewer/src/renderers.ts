@@ -175,6 +175,10 @@ export class Renderer {
       await this.renderGlossary(activity, fields, contextId, container)
       return
     }
+    if (mod === 'feedback') {
+      await this.renderFeedback(activity, fields, contextId, container)
+      return
+    }
     if (mod === 'assign') {
       await this.renderAssign(activity, fields, contextId, container)
       return
@@ -285,7 +289,12 @@ export class Renderer {
         el.setAttribute('title', t('link.original', { url }))
         el.classList.add('mbz-link-original')
       } else {
-        el.setAttribute('title', t('link.unresolved'))
+        // Still a link the author wrote: say so, and name the code, rather
+        // than leaving text that silently stopped being a link.
+        el.setAttribute(
+          'title',
+          link ? t('link.unresolvedCode', { code: link.code }) : t('link.unresolved'),
+        )
         el.classList.add('mbz-link-dead')
       }
     }
@@ -914,6 +923,132 @@ export class Renderer {
   }
 
   /** Glossary: concept/definition entries from glossary.xml. */
+  /** Feedback questionnaire: every item, in author order (read-only). */
+  private async renderFeedback(
+    activity: ActivityInfo,
+    fields: Map<string, string>,
+    contextId: string,
+    container: HTMLElement,
+  ): Promise<void> {
+    await this.renderIntroPlusMetadataShell(fields, contextId, container, 'mod_feedback', 'intro')
+    const { parseFeedbackXml } = await import('@mbzoo/core')
+    const xml = await this.tryRead(`${moduleNameDir(activity)}.xml`)
+    const feedback = xml
+      ? await parseFeedbackXml(new TextDecoder().decode(xml))
+      : { items: [], pageAfterSubmit: '', anonymous: false, autoNumbering: false }
+
+    const notice = document.createElement('p')
+    notice.className = 'quiz-notice'
+    notice.textContent = feedback.anonymous
+      ? `${t('feedback.inspectOnly')} ${t('feedback.anonymous')}`
+      : t('feedback.inspectOnly')
+    container.appendChild(notice)
+
+    container.appendChild(
+      this.buildSummary([
+        ['availableFrom', fields.get('timeopen')],
+        ['dueDate', fields.get('timeclose')],
+      ]),
+    )
+
+    if (feedback.items.length === 0) {
+      const note = document.createElement('p')
+      note.className = 'fallback-note'
+      note.textContent = t('feedback.noItems')
+      container.appendChild(note)
+      return
+    }
+
+    const list = document.createElement('ol')
+    list.className = 'feedback-list'
+    let number = 0
+    for (const item of feedback.items) {
+      if (item.type === 'pagebreak') {
+        const hr = document.createElement('hr')
+        hr.className = 'feedback-pagebreak'
+        list.appendChild(hr)
+        continue
+      }
+      const li = document.createElement('li')
+      li.className = `feedback-item t-${item.type}`
+
+      if (item.html !== '') {
+        // A label carries authored HTML instead of a question.
+        const body = document.createElement('div')
+        body.className = 'activity-content'
+        body.innerHTML = this.safeHtml(item.html)
+        li.appendChild(body)
+        li.classList.add('feedback-label')
+        list.appendChild(li)
+        continue
+      }
+
+      // Moodle numbers only the items that collect an answer, and only when
+      // the activity asked for it (REPO-005: complete_form::add_item_number).
+      if (item.hasValue) number++
+      const head = document.createElement('div')
+      head.className = 'quiz-q-head'
+      const badge = document.createElement('span')
+      badge.className = 'mod-badge t-blue'
+      badge.textContent = item.type
+      const name = document.createElement('strong')
+      name.textContent =
+        feedback.autoNumbering && item.hasValue ? `${number}. ${item.text}` : item.text
+      head.append(badge, ' ', name)
+      if (item.required) {
+        const req = document.createElement('span')
+        req.className = 'q-pool-chip'
+        req.textContent = t('feedback.required')
+        head.append(' ', req)
+      }
+      li.appendChild(head)
+
+      if (item.choices.length > 0) {
+        const options = document.createElement('ul')
+        options.className = 'q-answers moodle-inputs'
+        for (const [i, choice] of item.choices.entries()) {
+          const option = document.createElement('li')
+          option.className = 'q-neutral'
+          const label = document.createElement('label')
+          const input = document.createElement('input')
+          input.type = item.choiceStyle === 'checkbox' ? 'checkbox' : 'radio'
+          input.name = `fb-${item.id}`
+          input.value = String(i)
+          const span = document.createElement('span')
+          span.textContent = choice
+          label.append(input, span)
+          option.appendChild(label)
+          options.appendChild(option)
+        }
+        li.appendChild(options)
+      } else if (item.type === 'textarea') {
+        const ta = document.createElement('textarea')
+        ta.className = 'q-input'
+        ta.rows = 4
+        li.appendChild(ta)
+      } else if (item.type === 'textfield' || item.type === 'numeric') {
+        const input = document.createElement('input')
+        input.type = item.type === 'numeric' ? 'number' : 'text'
+        input.className = 'q-input'
+        li.appendChild(input)
+      }
+      list.appendChild(li)
+    }
+    container.appendChild(list)
+
+    if (feedback.pageAfterSubmit !== '') {
+      const after = document.createElement('details')
+      after.className = 'advanced'
+      const summary = document.createElement('summary')
+      summary.textContent = t('feedback.afterSubmit')
+      const body = document.createElement('div')
+      body.className = 'activity-content'
+      body.innerHTML = this.safeHtml(feedback.pageAfterSubmit)
+      after.append(summary, body)
+      container.appendChild(after)
+    }
+  }
+
   private async renderGlossary(
     activity: ActivityInfo,
     fields: Map<string, string>,
@@ -1312,6 +1447,25 @@ export class Renderer {
       input.type = 'text'
       input.className = 'q-input'
       el.appendChild(input)
+      return el
+    }
+    if (q.matches.length > 0) {
+      // A match question's pairs are the answer: showing the stem alone
+      // renders a question with nothing under it.
+      const title = document.createElement('div')
+      title.className = 'q-answers-title'
+      title.textContent = t('quiz.matchPairs')
+      const list = document.createElement('dl')
+      list.className = 'q-match-list'
+      for (const pair of q.matches) {
+        const dt = document.createElement('dt')
+        dt.innerHTML = this.safeHtml(pair.stem)
+        const dd = document.createElement('dd')
+        dd.className = 'q-correct'
+        dd.innerHTML = this.safeHtml(pair.response)
+        list.append(dt, dd)
+      }
+      el.append(title, list)
       return el
     }
     if (q.answers.length === 0) return el

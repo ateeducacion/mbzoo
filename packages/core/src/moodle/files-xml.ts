@@ -9,14 +9,9 @@
  * Moodle encodes SQL NULL as the literal string "$@NULL@$".
  */
 import type { BackupFileRecord } from '../model/backup.ts'
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, NULL_SENTINEL, parseXmlEvents } from './xml.ts'
 
-/** Moodle's serialized NULL sentinel (lib/moodlelib.php). */
-export const NULL_SENTINEL = '$@NULL@$'
-
-function orNull(v: string): string {
-  return v === NULL_SENTINEL ? '' : v
-}
+export { NULL_SENTINEL }
 
 export async function parseFilesXml(xml: string): Promise<Map<string, BackupFileRecord>> {
   const files = new Map<string, BackupFileRecord>()
@@ -37,10 +32,10 @@ export async function parseFilesXml(xml: string): Promise<Map<string, BackupFile
     const p = path.join('/')
     if (current && p.startsWith('files/file/')) {
       const key = FIELD_MAP.get(leaf(p))
-      if (key) current[key] = text.trim()
+      if (key) current[key] = leafValue(text)
     }
     if (ev.name === 'file' && current) {
-      const hash = orNull(current.contentHash ?? '')
+      const hash = current.contentHash ?? ''
       if (hash !== '') {
         files.set(fileKey(current), toRecord(current))
       }
@@ -85,14 +80,14 @@ export function fileKey(r: Partial<Record<keyof BackupFileRecord, string>>): str
 
 function toRecord(r: Partial<Record<keyof BackupFileRecord, string>>): BackupFileRecord {
   return {
-    contentHash: orNull(r.contentHash ?? ''),
-    filePath: orNull(r.filePath ?? '/'),
-    fileName: orNull(r.fileName ?? ''),
-    mimeType: orNull(r.mimeType ?? ''),
-    fileSize: Number(orNull(r.fileSize ?? '0')) || 0,
-    component: orNull(r.component ?? ''),
-    fileArea: orNull(r.fileArea ?? ''),
-    itemId: orNull(r.itemId ?? '0'),
-    contextId: orNull(r.contextId ?? ''),
+    contentHash: leafValue(r.contentHash ?? ''),
+    filePath: leafValue(r.filePath ?? '/'),
+    fileName: leafValue(r.fileName ?? ''),
+    mimeType: leafValue(r.mimeType ?? ''),
+    fileSize: Number(leafValue(r.fileSize ?? '0')) || 0,
+    component: leafValue(r.component ?? ''),
+    fileArea: leafValue(r.fileArea ?? ''),
+    itemId: leafValue(r.itemId ?? '0'),
+    contextId: leafValue(r.contextId ?? ''),
   }
 }

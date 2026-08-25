@@ -6,8 +6,7 @@
  */
 
 import { type AvailabilitySummary, humanizeAvailability } from './availability.ts'
-import { NULL_SENTINEL } from './files-xml.ts'
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, parseXmlEvents } from './xml.ts'
 
 export interface ActivitySettings {
   readonly visible: boolean
@@ -46,7 +45,7 @@ export async function parseModuleXml(xml: string): Promise<ActivitySettings> {
       return
     }
     if (path.length === 2 && path[0] === 'module' && path[1] !== undefined) {
-      fields.set(path[1], text.trim())
+      fields.set(path[1], leafValue(text))
     }
     path.pop()
     text = ''
@@ -54,7 +53,7 @@ export async function parseModuleXml(xml: string): Promise<ActivitySettings> {
 
   const availabilityRaw = fields.get('availability') ?? ''
   const availability: AvailabilitySummary =
-    availabilityRaw === '' || availabilityRaw === NULL_SENTINEL
+    availabilityRaw === ''
       ? { kind: 'none', conditions: [] }
       : humanizeAvailability(availabilityRaw)
 
@@ -62,7 +61,7 @@ export async function parseModuleXml(xml: string): Promise<ActivitySettings> {
   const completion = COMPLETION_MODES[fields.get('completion') ?? '0'] ?? 'unknown'
   return {
     visible: (fields.get('visible') ?? '1') === '1',
-    idNumber: fields.get('idnumber') === NULL_SENTINEL ? '' : (fields.get('idnumber') ?? ''),
+    idNumber: fields.get('idnumber') ?? '',
     groupMode,
     groupingId: Number(fields.get('groupingid') ?? '0') || 0,
     completion,

@@ -67,3 +67,29 @@ describe('@@PLUGINFILE@@ handling', () => {
     expect(contentHashPath('abcdef1234')).toBe('files/ab/abcdef1234')
   })
 })
+
+// PRDV103-2017-07-21 (REPO-004) has an unnamed section 0, serialized as
+// <name>$@NULL@$</name>. It reached the sidebar verbatim as a heading.
+describe('$@NULL@$ never becomes content', () => {
+  test('a section whose name is NULL parses as unnamed', async () => {
+    const { parseSectionXml } = await import('../src/moodle/course-xml.ts')
+    const section = await parseSectionXml(
+      '<section id="579"><number>0</number><name>$@NULL@$</name><sequence>1,2</sequence></section>',
+    )
+    expect(section.name).toBe('')
+    expect(section.number).toBe(0)
+  })
+
+  test('course fields carry the sentinel through as absence', async () => {
+    const { parseCourseXml } = await import('../src/moodle/course-xml.ts')
+    const course = await parseCourseXml(
+      '<course id="1"><fullname>Real</fullname><shortname>$@NULL@$</shortname>' +
+        '<idnumber>$@NULL@$</idnumber><summary>$@NULL@$</summary></course>',
+      { fullname: 'fallback', originalWwwroot: '' },
+    )
+    expect(course.shortname).toBe('')
+    expect(course.idNumber).toBe('')
+    expect(course.summary).toBe('')
+    expect(course.fullname).toBe('Real')
+  })
+})

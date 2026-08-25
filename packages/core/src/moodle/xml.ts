@@ -26,6 +26,20 @@ export interface XmlCloseTagEvent {
 
 export type XmlEvent = XmlTextEvent | XmlOpenTagEvent | XmlCloseTagEvent
 
+/**
+ * Moodle serializes SQL NULL as this literal string (lib/moodlelib.php).
+ * It shares the `$@…@$` grammar with the backup link codes but is a field
+ * value, never a link — and never content: a section whose name is NULL is
+ * an unnamed section, not a section called "$@NULL@$".
+ */
+export const NULL_SENTINEL = '$@NULL@$'
+
+/** Trims a leaf's text and reads Moodle's NULL sentinel as absence. */
+export function leafValue(raw: string): string {
+  const value = raw.trim()
+  return value === NULL_SENTINEL ? '' : value
+}
+
 /** Hard ceiling on any single XML document we parse (bytes of decoded text). */
 export const MAX_XML_BYTES = 512 * 1024 * 1024
 

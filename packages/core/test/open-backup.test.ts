@@ -26,7 +26,7 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     const b = await openBackup(Bun.file(FIXTURE))
     expect(b.sections.map((s) => s.number)).toEqual([1, 2])
     expect(b.sections[0]?.name).toBe('Introduction')
-    expect(b.sections[0]?.activityIds).toEqual([3001, 3002, 3004, 3006, 3007])
+    expect(b.sections[0]?.activityIds).toEqual([3001, 3002, 3004, 3006, 3007, 3012])
     expect(b.sections[1]?.activityIds).toEqual([3003, 3005, 3008, 3009, 3010, 3011])
   })
 
@@ -91,5 +91,42 @@ describe('user-data flag', () => {
     )
     const b = await openBackup(new Blob([zipSync(entries)]))
     expect(b.includesUserData).toBe(false)
+  })
+})
+
+// PRDV103-2017-07-21 (REPO-004) opens with Moodle's unnamed section 0:
+// section.xml names it $@NULL@$ and moodle_backup.xml titles it "0". Neither
+// is a name, and both reached the sidebar as a heading.
+describe('unnamed sections', () => {
+  test('a NULL name and a number-as-title both resolve to no name', async () => {
+    const bytes = new Uint8Array(await Bun.file(FIXTURE).arrayBuffer())
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import('fflate')
+    const entries = unzipSync(bytes)
+    const backup = entries['moodle_backup.xml']
+    const section = entries['sections/section_2001/section.xml']
+    if (!backup || !section) throw new Error('fixture is missing section 2001')
+    entries['moodle_backup.xml'] = strToU8(
+      strFromU8(backup).replace('<title>Introduction</title>', '<title>1</title>'),
+    )
+    entries['sections/section_2001/section.xml'] = strToU8(
+      strFromU8(section).replace('<name>Introduction</name>', '<name>$@NULL@$</name>'),
+    )
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.sections[0]?.name).toBe('')
+    expect(b.sections[0]?.number).toBe(1)
+  })
+
+  test('a section genuinely named after its number keeps that name', async () => {
+    // SMR_SOR names its sections "1".."6"; section.xml is the authority.
+    const bytes = new Uint8Array(await Bun.file(FIXTURE).arrayBuffer())
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import('fflate')
+    const entries = unzipSync(bytes)
+    const section = entries['sections/section_2001/section.xml']
+    if (!section) throw new Error('fixture is missing section 2001')
+    entries['sections/section_2001/section.xml'] = strToU8(
+      strFromU8(section).replace('<name>Introduction</name>', '<name>1</name>'),
+    )
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.sections[0]?.name).toBe('1')
   })
 })

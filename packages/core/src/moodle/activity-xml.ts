@@ -6,8 +6,7 @@
  * under the module element (bounded depth). Module-specific renderers pick
  * the fields they understand; unknown plugins degrade gracefully.
  */
-import { NULL_SENTINEL } from './files-xml.ts'
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, parseXmlEvents } from './xml.ts'
 
 export interface ParsedActivity {
   readonly contextId: string
@@ -45,10 +44,7 @@ export async function parseActivityXml(xml: string): Promise<ParsedActivity> {
       const key = path[2]
       if (key === undefined) return
       const existing = fields.get(key)
-      const value = (existing === undefined ? text : `${existing}${text}`).trim()
-      // Moodle serializes SQL NULL as a literal string; it is an absence, and
-      // renderers that print field values must never show it as content.
-      fields.set(key, value === NULL_SENTINEL ? '' : value)
+      fields.set(key, leafValue(existing === undefined ? text : `${existing}${text}`))
     }
     path.pop()
     text = ''

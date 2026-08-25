@@ -179,6 +179,13 @@ function moodleBackupXml(): string {
           <title>Demo H5P content</title>
           <directory>activities/h5pactivity_3011</directory>
         </activity>
+        <activity>
+          <moduleid>3012</moduleid>
+          <sectionid>2001</sectionid>
+          <modulename>feedback</modulename>
+          <title>Demo questionnaire</title>
+          <directory>activities/feedback_3012</directory>
+        </activity>
       </activities>
     </contents>
     <settings>
@@ -412,7 +419,7 @@ ${specFiles.map(fileRecord).join('\n')}
   add('course/course.xml', courseXml())
   add(
     'sections/section_2001/section.xml',
-    sectionXml(2001, 1, 'Introduction', '3001,3002,3004,3006,3007'),
+    sectionXml(2001, 1, 'Introduction', '3001,3002,3004,3006,3007,3012'),
   )
   add('sections/section_2001/inforef.xml', `${XML_HEADER}<inforef/>`)
   add(
@@ -476,6 +483,56 @@ ${specFiles.map(fileRecord).join('\n')}
       </entry>
     </entries>
   </glossary>
+</activity>
+`,
+  )
+  add(
+    'activities/feedback_3012/feedback.xml',
+    `${XML_HEADER}<activity id="12" moduleid="12" modulename="feedback" contextid="112">
+  <feedback id="12">
+    <name>Demo questionnaire</name>
+    <intro>&lt;p&gt;Tell us how the demo went.&lt;/p&gt;</intro>
+    <anonymous>1</anonymous>
+    <autonumbering>1</autonumbering>
+    <page_after_submit>&lt;p&gt;Thanks for answering.&lt;/p&gt;</page_after_submit>
+    <items>
+      <item id="6001">
+        <name>label</name>
+        <label></label>
+        <presentation>&lt;p id="fb-label"&gt;&lt;strong&gt;About this demo&lt;/strong&gt;&lt;/p&gt;</presentation>
+        <typ>label</typ>
+        <hasvalue>0</hasvalue>
+        <position>1</position>
+        <required>0</required>
+      </item>
+      <item id="6002">
+        <name>Did the fixture open?</name>
+        <label>Q1</label>
+        <presentation>r&gt;&gt;&gt;&gt;&gt;Yes|No&lt;&lt;&lt;&lt;&lt;1</presentation>
+        <typ>multichoice</typ>
+        <hasvalue>1</hasvalue>
+        <position>2</position>
+        <required>1</required>
+      </item>
+      <item id="6003">
+        <name>pagebreak</name>
+        <presentation></presentation>
+        <typ>pagebreak</typ>
+        <hasvalue>0</hasvalue>
+        <position>3</position>
+        <required>0</required>
+      </item>
+      <item id="6004">
+        <name>Anything else?</name>
+        <label></label>
+        <presentation>30|5</presentation>
+        <typ>textarea</typ>
+        <hasvalue>1</hasvalue>
+        <position>4</position>
+        <required>0</required>
+      </item>
+    </items>
+  </feedback>
 </activity>
 `,
   )

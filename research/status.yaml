@@ -58,6 +58,17 @@ added:
       CSP; those links are now defused and the site is navigated from a page row
       in MBZoo's own chrome. An empty glossary in a backup taken without user
       data (users=0) now says so instead of reading like a parse gap.
+  - date: 2026-08-25
+    note: >-
+      $@NULL@$ normalized at every parse boundary (shared leafValue in
+      moodle/xml.ts) after PRDV103 showed it as a sidebar heading; an unnamed
+      section now resolves through moodle_backup.xml's number-as-title
+      placeholder and renders as Moodle's "General" (REPO-005). mod_feedback
+      gets a parser and renderer (item order, packed multichoice options).
+      match questions read their pairs from plugin_qtype_match_question instead
+      of showing an empty stem. Undecodable link tokens carry a visible marker
+      and name the code. Fixture grew a feedback activity; the recorded sha256
+      for the PRDV103 specimen was wrong and is corrected in the manifest.
 
 risks:
   RISK-001:

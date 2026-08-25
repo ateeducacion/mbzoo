@@ -238,3 +238,53 @@ describe('resolveQuizSlots', () => {
     expect(plan.fixedSlots).toBe(1)
   })
 })
+
+// A match question keeps its pairs in <plugin_qtype_match_question>, not in
+// <answers> — parsing only <answers> renders the stem with nothing under it
+// (SMR_SOR "Relaciona:", REPO-004).
+describe('match questions', () => {
+  const MATCH = `<?xml version="1.0"?>
+<question_categories>
+  <question_category id="1">
+    <name>Bank</name>
+    <questions>
+      <question id="91205">
+        <qtype>match</qtype>
+        <name>Relaciona:</name>
+        <questiontext>Relaciona:</questiontext>
+        <plugin_qtype_match_question>
+          <matchoptions id="2712"><shuffleanswers>1</shuffleanswers></matchoptions>
+          <matches>
+            <match id="13530">
+              <questiontext>aragorn@gondor.tm</questiontext>
+              <answertext>Usuario de AD.</answertext>
+            </match>
+            <match id="13531">
+              <questiontext>aragorn.gondor.tm</questiontext>
+              <answertext>Equipo de AD.</answertext>
+            </match>
+          </matches>
+        </plugin_qtype_match_question>
+      </question>
+    </questions>
+  </question_category>
+</question_categories>`
+
+  test('reads the stem/response pairs', async () => {
+    const q = (await parseQuestionsXml(MATCH)).get(91205)
+    expect(q?.matches).toEqual([
+      { stem: 'aragorn@gondor.tm', response: 'Usuario de AD.' },
+      { stem: 'aragorn.gondor.tm', response: 'Equipo de AD.' },
+    ])
+  })
+
+  test("a match's inner questiontext does not overwrite the question's own", async () => {
+    const q = (await parseQuestionsXml(MATCH)).get(91205)
+    expect(q?.questionText).toBe('Relaciona:')
+  })
+
+  test('questions of other types carry no pairs', async () => {
+    const q = await parseQuestionsXml(V3)
+    expect(q.get(50)?.matches).toEqual([])
+  })
+})

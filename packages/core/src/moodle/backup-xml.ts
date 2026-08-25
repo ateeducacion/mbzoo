@@ -17,7 +17,7 @@
  * warnings, never silently dropped.
  */
 import type { ActivityInfo, CourseInfo, ParsedBackup, SectionInfo } from '../model/backup.ts'
-import { parseXmlEvents, type XmlEvent } from './xml.ts'
+import { leafValue, parseXmlEvents, type XmlEvent } from './xml.ts'
 
 export interface BackupXmlResult {
   readonly course: CourseInfo
@@ -88,7 +88,7 @@ export async function parseMoodleBackupXml(
     }
 
     const p = path.join('/')
-    const value = text.trim()
+    const value = leafValue(text)
     if (!warnedClose && ev.name !== path[path.length - 1]) {
       warnings.push({
         code: 'xml-mismatched-close',

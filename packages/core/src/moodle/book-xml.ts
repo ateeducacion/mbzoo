@@ -4,7 +4,7 @@
  * writing]): <book><name>…<chapters><chapter id="">
  *   <parent>…<weight>…<subchapter>0|1…<title>…<content>escaped HTML
  */
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, parseXmlEvents } from './xml.ts'
 
 export interface BookChapter {
   readonly id: number
@@ -64,31 +64,31 @@ export async function parseBookXml(xml: string): Promise<MoodleBook> {
       }
     }
     if (leaf === 'name' && parent === 'book' && !nameDone) {
-      name = text.trim()
+      name = leafValue(text)
       nameDone = true
     } else if (leaf === 'intro' && parent === 'book' && !introDone) {
-      intro = text.trim()
+      intro = leafValue(text)
       introDone = true
     } else if (leaf === 'text' && parent === 'name' && !nameDone) {
-      name = text.trim()
+      name = leafValue(text)
       nameDone = true
     } else if (leaf === 'text' && parent === 'intro' && !introDone) {
-      intro = text.trim()
+      intro = leafValue(text)
       introDone = true
     } else if (current) {
       if (leaf === 'chapter' && parent === 'chapters') {
         if (Number.isFinite(current.id)) chapters.push(current)
         current = undefined
       } else if (leaf === 'title' && parent === 'chapter' && !titleDone) {
-        current.title = text.trim()
+        current.title = leafValue(text)
         titleDone = true
       } else if (leaf === 'content' && parent === 'chapter' && !contentDone) {
-        current.content = text.trim()
+        current.content = leafValue(text)
         contentDone = true
       } else if (leaf === 'subchapter' && parent === 'chapter') {
-        current.subchapter = text.trim() === '1'
+        current.subchapter = leafValue(text) === '1'
       } else if (leaf === 'weight' && parent === 'chapter') {
-        const n = Number(text.trim())
+        const n = Number(leafValue(text))
         if (Number.isFinite(n)) current.weight = n
       }
     }

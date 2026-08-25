@@ -4,8 +4,8 @@
 # If a checksum changes unexpectedly, treat it as a parser/generator regression.
 fixtures:
   demo-course-zip.mbz:
-    sha256: c0840e2d80734e7fa862485aa364f0a9a3857266da1b442d0c3ac8b887c6600a
-    bytes: 11492
+    sha256: ba8b851d24ceff24a6d67431bf7ef57d380101367d5d14d0b7420ecf196ab271
+    bytes: 12168
     format: zip
     synthetic: true
     contains_user_data: false
@@ -13,7 +13,7 @@ fixtures:
     moodle_version_target: "3.8 schema shapes"
     includes:
       sections: 2
-      activities: [page, label, page(content), quiz(2 questions), glossary(2 entries), resource, assign, supermodule(unknown-plugin), h5pactivity(synthetic .h5p: nested libs, string versions, content/ image)]
+      activities: [page, label, page(content), quiz(2 questions), glossary(2 entries), resource, assign, supermodule(unknown-plugin), h5pactivity(synthetic .h5p: nested libs, string versions, content/ image), feedback(label + multichoice + pagebreak + textarea)]
       files_indexed: 4
     expected_parser_result:
       course_fullname: Demo Course for MBZoo
@@ -23,7 +23,11 @@ fixtures:
   # downloaded specimen here with provenance + sha256 when used.
 external:
   prdv103-2017-07-21-mbz.mbz:
-    sha256: 9756c118056173a90cf9276072dee5baf6d188abbb9d1338707b5e5aa2c16f84
+    sha256: 77df2b341aa044bea7cfcec615aa7698a486b99d68f1898a8f47e076df6f12cc
+    sha256_note: >-
+      Corrected 2026-08-25. The previously recorded 9756c118…600a does not
+      match the file at this URL; two independent downloads (gh contents API
+      and raw.githubusercontent) agree on 77df2b34… for 43342 bytes.
     source: https://github.com/saylordotorg/course_backups/blob/master/prdv103/PRDV103-2017-07-21-mbz.mbz (REPO-004)
     committed: false
     reason: "no LICENSE file upstream; embedded third-party content under varied licenses (see compliance/licensing)"

@@ -15,7 +15,8 @@ what it cannot do. Unknown third-party plugins never break the course view.
 | Forum | ✅ metadata | 🔜 planned (read-only) | discussions only exist if backup included user data |
 | Glossary | ✅ | ✅ entries rendered | entries are user-generated, so a backup taken without user data has none — the viewer says so |
 | Assignment | ✅ metadata | 🔜 planned | submissions only present with user data |
-| Quiz | ✅ metadata + question bank | ✅ read-only question navigation | random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
+| Feedback (questionnaire) | ✅ | ✅ items rendered | labels, questions and their options in author order; responses only exist with user data |
+| Quiz | ✅ metadata + question bank | ✅ read-only question navigation | multichoice/true-false/short answer/essay/match; random slots page through the pool they draw from, captioned with how many an attempt asks; faithful execution requires Moodle's Question Engine — not a goal |
 | SCORM | ✅ metadata + package file | ⏳ research | launch needs a runtime (scorm-again candidate, Q-012) in the sandbox |
 | H5P (mod_h5pactivity / .h5p files) | ✅ metadata + package | ⚠️ experimental playback | sandboxed player, self-contained packages; see ADR-0018 — unsupported content types fall back to download |
 | eXeLearning .elp/.elpx | ✅ as files | ⏳ research | format study tracked in Q-016 |

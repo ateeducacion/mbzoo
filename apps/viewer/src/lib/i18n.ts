@@ -49,6 +49,12 @@ const STRINGS = {
     'quiz.partial': 'partial',
     'quiz.wrong': 'incorrect',
     'quiz.answers': 'Answers',
+    'quiz.matchPairs': 'Pairs to match',
+    'feedback.inspectOnly': 'Read-only inspection — MBZoo does not collect responses.',
+    'feedback.anonymous': 'This questionnaire was answered anonymously.',
+    'feedback.noItems': 'This questionnaire has no items in the backup.',
+    'feedback.required': 'required',
+    'feedback.afterSubmit': 'Message shown after submitting',
     'quiz.randomEmpty':
       'Drawn at random from “{cat}”, whose questions are not present in this backup',
     'quiz.randomSummary':
@@ -62,6 +68,11 @@ const STRINGS = {
     'link.internal': 'Course link — opens this activity in MBZoo',
     'link.original': 'Course link, rewritten by the backup. On the original site: {url}',
     'link.unresolved': 'Course link — this backup does not record where it pointed.',
+    'link.unresolvedCode':
+      'Course link MBZoo cannot resolve ({code}) — the backup does not record where it pointed.',
+    'section.general': 'General',
+    'section.numbered': 'Section',
+    'section.unnamed': 'Section',
     'site.pages': 'Pages in this site',
     'site.pagesHint':
       'Links between the pages of this site are inactive inside the preview — each page is opened from the list above so its stylesheet and images load.',
@@ -165,6 +176,12 @@ const STRINGS = {
     'quiz.partial': 'parcial',
     'quiz.wrong': 'incorrecta',
     'quiz.answers': 'Respuestas',
+    'quiz.matchPairs': 'Parejas a relacionar',
+    'feedback.inspectOnly': 'Solo inspección: MBZoo no recoge respuestas.',
+    'feedback.anonymous': 'Este cuestionario se respondía de forma anónima.',
+    'feedback.noItems': 'Esta encuesta no tiene elementos en la copia.',
+    'feedback.required': 'obligatoria',
+    'feedback.afterSubmit': 'Mensaje mostrado al enviar',
     'quiz.randomEmpty': 'Se sortea al azar de «{cat}», cuyas preguntas no están en esta copia',
     'quiz.randomSummary':
       'Cada intento sortea {n} pregunta(s) al azar. Aquí se muestran las {pool} preguntas que pueden salir.',
@@ -177,6 +194,11 @@ const STRINGS = {
     'link.internal': 'Enlace del curso: abre esta actividad en MBZoo',
     'link.original': 'Enlace del curso, reescrito por la copia. En el sitio original: {url}',
     'link.unresolved': 'Enlace del curso: esta copia no registra a dónde apuntaba.',
+    'link.unresolvedCode':
+      'Enlace del curso que MBZoo no sabe resolver ({code}): la copia no registra a dónde apuntaba.',
+    'section.general': 'General',
+    'section.numbered': 'Sección',
+    'section.unnamed': 'Sección',
     'site.pages': 'Páginas de este sitio',
     'site.pagesHint':
       'Los enlaces entre las páginas de este sitio no navegan dentro de la vista previa: cada página se abre desde la lista de arriba para que carguen sus estilos e imágenes.',

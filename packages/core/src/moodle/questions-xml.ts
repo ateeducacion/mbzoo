@@ -8,7 +8,7 @@
  *   <answertext>/<fraction> answers.
  * - Variant with <name><text>… wrappers also accepted.
  */
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, parseXmlEvents } from './xml.ts'
 
 export interface QuizQuestion {
   readonly id: number
@@ -16,6 +16,8 @@ export interface QuizQuestion {
   readonly name: string
   readonly questionText: string
   readonly answers: QuizAnswer[]
+  /** Stem/response pairs of a `match` question; empty for every other type. */
+  readonly matches: QuizMatchPair[]
   /**
    * Bank category this question lives in. A `random` question draws from
    * its own category at attempt time, so this is what turns a random slot
@@ -31,12 +33,25 @@ export interface QuizAnswer {
   readonly fraction: number
 }
 
+/**
+ * One pair of a `match` question. Its stems and responses live in
+ * <plugin_qtype_match_question><matches>, not in <answers>, so a parser that
+ * only reads <answers> renders the stem with nothing under it.
+ */
+export interface QuizMatchPair {
+  /** The stem shown to the student. */
+  readonly stem: string
+  /** The response it must be matched with. */
+  readonly response: string
+}
+
 interface MutableQuestion {
   id: number
   qtype: string
   name: string
   questionText: string
   answers: Array<{ text: string; fraction: number }>
+  matches: Array<{ stem: string; response: string }>
   categoryId: number
   categoryName: string
 }
@@ -165,6 +180,7 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
           name: '',
           questionText: '',
           answers: [],
+          matches: [],
           categoryId,
           categoryName,
         }
@@ -176,6 +192,9 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
       if (current && ev.name === 'answer' && leafOf() === 'answers') {
         current.answers.push({ text: '', fraction: 0 })
       }
+      if (current && ev.name === 'match' && leafOf() === 'matches') {
+        current.matches.push({ stem: '', response: '' })
+      }
       path.push(ev.name)
       return
     }
@@ -184,7 +203,7 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
       return
     }
 
-    const value = text.trim()
+    const value = leafValue(text)
     if (!current && leafOf() === 'name' && parentOf() === 'question_category') {
       categoryName = value
     }
@@ -214,6 +233,12 @@ export async function parseQuestionsXml(xml: string): Promise<Map<number, QuizQu
       } else if (leaf === 'text' && parent === 'answer') {
         const a = current.answers[current.answers.length - 1]
         if (a && a.text === '') a.text = value
+      } else if (leaf === 'questiontext' && parent === 'match') {
+        const m = current.matches[current.matches.length - 1]
+        if (m) m.stem = value
+      } else if (leaf === 'answertext' && parent === 'match') {
+        const m = current.matches[current.matches.length - 1]
+        if (m) m.response = value
       } else if (leaf === 'fraction' && parent === 'answer') {
         const a = current.answers[current.answers.length - 1]
         const n = Number(value)
@@ -234,6 +259,7 @@ function finalize(c: MutableQuestion): QuizQuestion {
     name: c.name,
     questionText: c.questionText,
     answers: c.answers,
+    matches: c.matches,
     categoryId: c.categoryId,
     categoryName: c.categoryName,
   }
@@ -258,7 +284,7 @@ export async function parseQuizQuestionIds(xml: string): Promise<number[]> {
       (ev.name === 'questionid' || ev.name === 'questionbankentryid') &&
       (p.includes('question_instance') || p.includes('question_reference'))
     ) {
-      const n = Number(text.trim())
+      const n = Number(leafValue(text))
       if (Number.isFinite(n)) ids.push(n)
     }
     path.pop()

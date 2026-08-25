@@ -106,7 +106,7 @@ test('opens the synthetic .mbz and renders the course structure', async ({ page 
   await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
   const meta = await page.locator('#course-meta').textContent()
   expect(meta).toContain('2 sections')
-  expect(meta).toContain('11 activities')
+  expect(meta).toContain('12 activities')
 
   await expect(page.locator('#sections li h3').first()).toHaveText('Introduction')
   await expect(page.getByText('Welcome page')).toBeVisible()
@@ -597,6 +597,77 @@ test('external links in a sandboxed site open in a new tab (ADR-0017)', async ({
 })
 
 /**
+ * A match question keeps its pairs in <plugin_qtype_match_question>, so a
+ * renderer that only reads <answers> shows the stem with nothing under it
+ * (SMR_SOR "Relaciona:").
+ */
+test('a match question shows the pairs it asks you to relate', async ({ page }) => {
+  const fixture = mutatedFixture((entries) => {
+    replaceTextEntry(entries, 'questions.xml', (xml) =>
+      xml.replace(
+        '<questions>',
+        `<questions>
+      <question id="4003">
+        <qtype>match</qtype>
+        <name>Relate these</name>
+        <questiontext>Relate these</questiontext>
+        <plugin_qtype_match_question>
+          <matches>
+            <match id="1"><questiontext>.mbz</questiontext><answertext>Moodle backup</answertext></match>
+            <match id="2"><questiontext>.h5p</questiontext><answertext>Interactive package</answertext></match>
+          </matches>
+        </plugin_qtype_match_question>
+      </question>`,
+      ),
+    )
+    replaceTextEntry(entries, 'activities/quiz_3006/quiz.xml', (xml) =>
+      xml.replace(/<questionid>\d+<\/questionid>/, '<questionid>4003</questionid>'),
+    )
+  }, 'match-quiz.mbz')
+
+  await page.goto('/')
+  await page.setInputFiles('#file-input', fixture)
+  await page.getByRole('button', { name: /Self-assessment quiz/ }).click()
+
+  const card = page.locator('.quiz-card')
+  await expect(card).toContainText('Relate these')
+  await expect(card.locator('.q-match-list dt')).toHaveCount(2)
+  await expect(card.locator('.q-match-list dt').first()).toHaveText('.mbz')
+  // The responses are the answer, so they stay hidden until revealed.
+  await expect(card.locator('.q-match-list dd').first()).toBeHidden()
+  await page.getByRole('button', { name: /Mostrar respuestas|Reveal answers/ }).click()
+  await expect(card.locator('.q-match-list dd').first()).toHaveText('Moodle backup')
+})
+
+/**
+ * A feedback activity is a questionnaire whose items pack their options into
+ * one `presentation` string (SMR_SOR "Encuesta sobre la asignatura"); before
+ * this it fell through to the generic intro-plus-metadata renderer.
+ */
+test('a feedback questionnaire renders every item', async ({ page }) => {
+  await page.goto('/')
+  await page.setInputFiles('#file-input', FIXTURE)
+  await page.getByRole('button', { name: /Demo questionnaire/ }).click()
+
+  const items = page.locator('.feedback-item')
+  await expect(items).toHaveCount(3) // label + multichoice + textarea
+  await expect(page.locator('#fb-label')).toContainText('About this demo')
+
+  // Moodle numbers only the items that collect an answer, so the label and
+  // the page break do not consume a number.
+  await expect(items.nth(1)).toContainText('1. Did the fixture open?')
+  await expect(items.nth(1)).toContainText('Yes')
+  await expect(items.nth(1)).toContainText('No')
+  await expect(items.nth(1).locator('input[type="radio"]')).toHaveCount(2)
+  await expect(items.nth(2)).toContainText('2. Anything else?')
+  await expect(items.nth(2).locator('textarea')).toBeVisible()
+
+  // "30|5" is the textarea's width|height, never two options.
+  await expect(items.nth(2).locator('input[type="radio"]')).toHaveCount(0)
+  await expect(page.locator('.feedback-pagebreak')).toHaveCount(1)
+})
+
+/**
  * Glossary entries are user-generated, so a backup taken without user data
  * has none by construction — SMR_SOR's "Glosario para SOR." is empty for
  * exactly that reason, and "no entries" alone reads like a parse gap.
@@ -696,8 +767,11 @@ test('backup link tokens resolve instead of pointing at MBZoo', async ({ page })
   // An activity travelling in this same backup navigates inside MBZoo.
   await expect(page.locator('#to-welcome')).toHaveAttribute('data-mbz-activity', '3001')
 
-  // A code MBZoo cannot decode must not pretend to lead anywhere.
+  // A code MBZoo cannot decode must not pretend to lead anywhere — but it
+  // must still be visible as a link that led somewhere once, and say which.
   await expect(page.locator('#to-nowhere')).not.toHaveAttribute('href', /./)
+  await expect(page.locator('#to-nowhere')).toHaveClass(/mbz-link-dead/)
+  await expect(page.locator('#to-nowhere')).toHaveAttribute('title', /NOSUCHCODE/)
 
   // No token may survive in a URL attribute: it would be requested from us.
   const hrefs = await page.locator('.activity-content [href], .activity-content [src]').all()

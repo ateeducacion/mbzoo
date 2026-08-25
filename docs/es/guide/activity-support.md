@@ -16,7 +16,8 @@ vista del curso.
 | Foro | ✅ metadatos | 🔜 planeado (solo lectura) | los debates solo existen si la copia incluyó usuarios |
 | Glosario | ✅ | ✅ entradas renderizadas | concepto + definición; las entradas las escriben los usuarios, así que una copia hecha sin datos de usuario no trae ninguna y el visor lo indica |
 | Tarea (Assignment) | ✅ | ✅ resumen | fechas de entrega/cierre y tipos de entrega |
-| Cuestionario (Quiz) | ✅ banco de preguntas | ✅ inspección navegable | preguntas con radios/checkboxes estilo Moodle; las preguntas al azar recorren el banco del que se sortean, indicando cuántas pide cada intento; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
+| Encuesta (Feedback) | ✅ | ✅ elementos renderizados | etiquetas, preguntas y sus opciones en el orden del autor; las respuestas solo existen con datos de usuario |
+| Cuestionario (Quiz) | ✅ banco de preguntas | ✅ inspección navegable | preguntas con radios/checkboxes estilo Moodle; opción múltiple/verdadero-falso/respuesta corta/ensayo/relacionar; las preguntas al azar recorren el banco del que se sortean, indicando cuántas pide cada intento; la ejecución fiel requiere el Question Engine de Moodle — no es objetivo |
 | SCORM | ✅ metadatos + paquete | ⏳ investigación | lanzar requiere un runtime (candidato: scorm-again, Q-012) |
 | H5P | ✅ metadatos + paquete | ⏳ investigación | candidato: h5p-standalone (Q-013) |
 | eXeLearning .elp/.elpx | ✅ como archivos | ⏳ investigación | estudio de formato en Q-016 |

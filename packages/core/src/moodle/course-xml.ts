@@ -6,7 +6,7 @@
  *                         order in <sequence> (comma-separated module ids)
  */
 import type { CourseInfo } from '../model/backup.ts'
-import { parseXmlEvents } from './xml.ts'
+import { leafValue, parseXmlEvents } from './xml.ts'
 
 export async function parseCourseXml(
   xml: string,
@@ -32,7 +32,7 @@ export async function parseCourseXml(
       text += ev.data
       return
     }
-    const value = text.trim()
+    const value = leafValue(text)
     // Only direct children of <course>.
     if (path.length === 2 && path[0] === 'course') {
       const field = path[1]
@@ -81,7 +81,7 @@ export async function parseSectionXml(xml: string): Promise<{
       text += ev.data
       return
     }
-    const value = text.trim()
+    const value = leafValue(text)
     if (path.length === 2 && path[0] === 'section') {
       const field = path[1]
       if (field === 'number') {

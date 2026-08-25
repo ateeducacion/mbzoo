@@ -176,10 +176,18 @@ function assembleSections(
     for (const a of activities) {
       if (a.sectionId === ref.id) pushActivity(a.id)
     }
+    const number = d?.number ?? ref.number
+    // moodle_backup.xml titles an unnamed section with its own number
+    // (PRDV103 section 579: <number>0</number>, <title>0</title>, and a name
+    // of $@NULL@$ in section.xml). That is a placeholder, not a name — and
+    // only ever consulted when section.xml gave us nothing, so a section
+    // genuinely named "1" (SMR_SOR) still keeps its name.
+    const detailName = d?.name ?? ''
+    const refName = ref.name === String(number) ? '' : ref.name
     out.push({
       ...ref,
-      number: d?.number ?? ref.number,
-      name: d?.name !== '' ? (d?.name ?? '') : ref.name,
+      number,
+      name: detailName !== '' ? detailName : refName,
       summary: '',
       activityIds: ordered,
     })
