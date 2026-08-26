@@ -136,3 +136,7 @@ adrs:
     title: Classify package zips (SCORM, eXe) and render them from the resource path
     status: Accepted
     date: 2026-08-25
+  ADR-0035:
+    title: Relicense MBZoo under GPL-3.0-or-later
+    status: Accepted
+    date: 2026-08-26

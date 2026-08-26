@@ -7,7 +7,7 @@
 [![CI](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml/badge.svg)](https://github.com/ateeducacion/mbzoo/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ateeducacion/mbzoo/graph/badge.svg)](https://codecov.io/gh/ateeducacion/mbzoo)
 [![Docs](https://img.shields.io/badge/docs-ateeducacion.github.io%2Fmbzoo%2Fdocs-blue)](https://ateeducacion.github.io/mbzoo/docs/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 *See what's inside your MBZ.*
 
@@ -59,5 +59,25 @@ and the evidence system live under `research/`.
 
 ## License
 
-MIT — see `LICENSE`. Moodle compatibility was achieved by studying documented
-format facts, not by porting GPL code.
+GPL-3.0-or-later — see `LICENSE` (ADR-0035).
+
+    Copyright (C) 2026 ateeducacion
+
+    This program is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation, either version 3 of the License, or (at your option)
+    any later version. It is distributed WITHOUT ANY WARRANTY; see the GNU
+    General Public License for more details.
+
+Moodle compatibility was achieved by studying documented format facts, not by
+porting Moodle code.
+
+### Bundled third-party code
+
+The built viewer bundle ships the H5P core client scripts from
+`h5p-standalone` (see `apps/viewer/package.json` for the pinned version), whose
+maintainers confirmed the distributed bundle carries GPL-3.0 H5P code
+(tunapanda/h5p-standalone#188). Its corresponding source is the published npm
+package and https://github.com/tunapanda/h5p-standalone. Other bundled
+dependencies are MIT, ISC or Apache-2.0; `research/compliance/licensing/dependency-report.md`
+lists them.

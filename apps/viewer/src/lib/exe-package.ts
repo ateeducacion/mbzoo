@@ -7,8 +7,8 @@
  *
  * Format facts were established from the vendor's own format documentation
  * and from inspecting real archives. They are facts about a file layout, not
- * code: eXeLearning and the Moodle plugins are GPL/AGPL and MBZoo is MIT, so
- * nothing is ported from them (REPO-005).
+ * code: eXeLearning and the Moodle plugins are GPL/AGPL, and nothing is ported
+ * from them (REPO-005).
  */
 import { type EpubBook, type EpubChapter, type EpubEntries, xmlText } from './epub-reader.ts'
 

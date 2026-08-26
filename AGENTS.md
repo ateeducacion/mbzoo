@@ -1,9 +1,9 @@
 # AGENTS.md — MBZoo
 
 **MBZoo** opens, inspects and previews Moodle `.mbz` backups directly in the
-browser. *See what's inside your MBZ.* License: MIT. Per-activity export
-(module XML, rendered content HTML, files ZIP) ships (ADR-0016); whole-backup
-re-packaging is planned, not implemented.
+browser. *See what's inside your MBZ.* License: GPL-3.0-or-later (ADR-0035).
+Per-activity export (module XML, rendered content HTML, files ZIP) ships
+(ADR-0016); whole-backup re-packaging is planned, not implemented.
 
 ## Current maturity
 
@@ -117,8 +117,10 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
 - NEVER commit real institution or personal Moodle backups. Real-world
   specimens (e.g. saylordotorg/course_backups, REPO-004) are downloaded ad hoc,
   recorded with provenance, and never vendored wholesale.
-- Do not port GPL Moodle PHP into this MIT codebase line-by-line; study format
-  facts instead (REPO-005).
+- Do not port Moodle PHP line-by-line; study format facts instead
+  (REPO-005). GPL-3.0-or-later (ADR-0035) removes the licence bar, not the
+  rule: the parsers stay clean-room TypeScript, and copied code would drag in
+  Moodle's copyright notices and PHP semantics.
 
 ## Files generated automatically
 

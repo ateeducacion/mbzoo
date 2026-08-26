@@ -190,11 +190,21 @@ risks:
     status: retired
   RISK-004:
     title: h5p-standalone vendors H5P core JS from a GPL-3.0 repository distribution while the npm package declares MIT
-    severity: medium
+    severity: low
     probability: confirmed
     mitigation: recorded in TECH-014/ADR-0018; playback stays experimental and is re-reviewed before any non-experimental release
-    upstream: https://github.com/tunapanda/h5p-standalone/issues/188 (opened 2026-08-25, awaiting maintainer reply)
-    status: monitored
+    upstream: https://github.com/tunapanda/h5p-standalone/issues/188 (opened 2026-08-25, answered 2026-08-26)
+    status: resolved
+    resolution: >
+      A h5p-standalone collaborator confirmed on 2026-08-26 that the distributed
+      npm package should be GPL-3.0 because its bundle includes GPL-licensed H5P
+      code, and that no upstream h5p/h5p-php-library version corresponds to its
+      vendored tree. MBZoo relicensed to GPL-3.0-or-later (ADR-0035), so
+      conveying that bundle is no longer a licence conflict. Residual, low: the
+      upstream npm license field still reads MIT, so SBOM/scanner output will
+      disagree with the maintainer statement until upstream updates its
+      metadata; recorded in TECH-014 and the dependency report. H5P playback
+      stays experimental for verification reasons only (ADR-0018 rule 5).
   RISK-005:
     title: "e2e 'concurrent activity opens both finish' asserts which of two racing clicks wins"
     severity: low

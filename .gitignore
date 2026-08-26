@@ -122,3 +122,6 @@ apps/viewer/dist/
 
 # Rspress output
 doc_build/
+
+# Claude Code agent scratch (worktrees, local settings)
+.claude/

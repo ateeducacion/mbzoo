@@ -142,8 +142,8 @@ sources:
     title: h5p-standalone
     kind: technology
     url: https://github.com/tunapanda/h5p-standalone
-    accessed: 2026-08-25
-    license: MIT
+    accessed: 2026-08-26
+    license: MIT declared in npm metadata; GPL-3.0 in practice (see below)
   TECH-015:
     title: scorm-again
     kind: technology
