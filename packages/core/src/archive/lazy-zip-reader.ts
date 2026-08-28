@@ -1,6 +1,7 @@
 /**
  * ZIP implementation of ArchiveReader that reads the archive lazily
- * (ADR-0029, retires RISK-001 for ZIP and RISK-003).
+ * (ADR-0029, carried forward unchanged by ADR-0036; retires RISK-001 for ZIP
+ * and RISK-003).
  *
  * Only the central directory is read up front — a few bytes per entry at
  * the tail of the file. An entry's bytes are sliced from the Blob and
@@ -23,7 +24,7 @@
 import { inflateSync } from 'fflate'
 import type { BackupFormat } from '../model/backup.ts'
 import { MbzParseError } from '../model/backup.ts'
-import type { ArchiveEntryInfo, ArchiveReader } from './reader.ts'
+import { type ArchiveEntryInfo, type ArchiveReader, tooLargeToRead } from './reader.ts'
 import { sanitizeTarName } from './targz-reader.ts'
 
 const SIG_EOCD = 0x06054b50
@@ -105,7 +106,12 @@ export class LazyZipReader implements ArchiveReader {
     if (dataEnd > this.blob.size) {
       throw new MbzParseError(`Entry data out of range: ${name}`)
     }
-    const compressed = new Uint8Array(await this.blob.slice(dataStart, dataEnd).arrayBuffer())
+    let compressed: Uint8Array
+    try {
+      compressed = new Uint8Array(await this.blob.slice(dataStart, dataEnd).arrayBuffer())
+    } catch (cause) {
+      throw tooLargeToRead(name, entry.compressedSize, cause)
+    }
 
     if (entry.method === METHOD_STORED) {
       if (compressed.byteLength !== entry.uncompressedSize) {
@@ -114,13 +120,21 @@ export class LazyZipReader implements ArchiveReader {
       return compressed
     }
     // METHOD_DEFLATE — the only other method accepted at open time.
+    // fflate never grows a caller-supplied buffer: it fills it and stops,
+    // silently. So the buffer is one byte longer than the directory
+    // promised — a stream that fills that extra byte is producing more than
+    // it declared, and a bomb still cannot allocate past declared + 1. It is
+    // allocated outside the try so a browser that cannot satisfy it says so
+    // (ADR-0036) instead of blaming the inflate.
+    let out: Uint8Array
+    try {
+      out = new Uint8Array(entry.uncompressedSize + 1)
+    } catch (cause) {
+      throw tooLargeToRead(name, entry.uncompressedSize, cause)
+    }
     let inflated: Uint8Array
     try {
-      // fflate never grows a caller-supplied buffer: it fills it and stops,
-      // silently. So the buffer is one byte longer than the directory
-      // promised — a stream that fills that extra byte is producing more than
-      // it declared, and a bomb still cannot allocate past declared + 1.
-      inflated = inflateSync(compressed, { out: new Uint8Array(entry.uncompressedSize + 1) })
+      inflated = inflateSync(compressed, { out })
     } catch (e) {
       throw new MbzParseError(`Failed to inflate entry: ${name}`, { cause: e })
     }

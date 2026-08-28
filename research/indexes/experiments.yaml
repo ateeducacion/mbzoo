@@ -16,3 +16,7 @@ experiments:
     title: Peak memory and time of archive access before and after lazy readers
     status: completed
     date: 2026-08-25
+  EXP-005:
+    title: Where the decompressed tar lives — one ArrayBuffer versus a Blob, measured per browser process
+    status: completed
+    date: 2026-08-28

@@ -19,13 +19,13 @@ Q-004:
   status: answered — no, and not needed: ADR-0029 reads the central directory over Blob.slice with fflate inflateSync, portable to Bun
 Q-005:
   Streaming strategy for multi-GB TAR.GZ (DecompressionStream + incremental ustar)?
-  status: answered — ADR-0029 streams DecompressionStream into one ISIZE-sized buffer with entries as views; incremental ustar without the buffer is Q-007 (TASK-012)
+  status: answered — ADR-0036 streams DecompressionStream into a Blob and indexes ustar headers as the bytes pass, so nothing is pre-sized from ISIZE (ADR-0029 did, and that allocation is what failed); staging to OPFS instead stays Q-007 (TASK-012)
 Q-006:
   Which browser memory limits materially affect MBZoo (per-tab heaps, Blob limits)?
-  status: open
+  status: partly answered — a renderer refuses a single multi-hundred-MB ArrayBuffer under pressure (the reported Chrome/Windows failure); Blob storage took a 1.46 GiB tar with the renderer flat (EXP-005). Where blob storage itself stops is still open.
 Q-007:
   Temporary large-file storage: memory vs OPFS vs IndexedDB hybrid?
-  status: open
+  status: narrowed — ADR-0036 stages the decompressed tar in a Blob, which is portable and removed the failing allocation (EXP-005). OPFS (TASK-012) stays open for the case where blob storage proves insufficient.
 Q-008:
   Long-term XML parser choice as files.xml sizes grow (saxes vs alternatives)?
   status: open

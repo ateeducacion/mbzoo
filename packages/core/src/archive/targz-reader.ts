@@ -6,20 +6,25 @@
  * REPO-004 fixtures). A minimal ustar parser over DecompressionStream keeps
  * this dependency-free; entries are indexed sequentially.
  *
- * Memory (ADR-0029): gzip is one stream, so random access needs the
- * decompressed bytes somewhere; this keeps them in one buffer and nothing
- * else. The Blob is streamed straight into DecompressionStream rather than
- * read whole first, the buffer is pre-sized from the gzip trailer's ISIZE so
- * it is not grown by copying, and entries are recorded as offsets into it —
- * readEntry hands back a view, never a copy. Peak memory is therefore the
- * decompressed size, where it used to be compressed + decompressed + one
- * copy of every entry. Staging to OPFS to drop the buffer too is Q-007.
+ * Memory (ADR-0036, superseding the TAR.GZ half of ADR-0029): gzip is one
+ * stream, so random access needs the decompressed bytes somewhere. They are
+ * staged in a Blob rather than an ArrayBuffer — the platform's own byte
+ * store, which the browser keeps outside the JS heap, is free to page to
+ * disk, and never has to satisfy as one contiguous allocation. Pre-sizing a
+ * buffer from the gzip trailer's ISIZE is what used to fail outright with
+ * "Array buffer allocation failed" on backups of a few hundred MB. The tar
+ * index is built from the bytes as they stream past, so the archive is read
+ * once and never re-read to be indexed; readEntry slices out only the entry
+ * that was asked for.
  */
 import type { BackupFormat } from '../model/backup.ts'
 import { MbzParseError } from '../model/backup.ts'
-import type { ArchiveEntryInfo, ArchiveReader } from './reader.ts'
+import { type ArchiveEntryInfo, type ArchiveReader, tooLargeToRead } from './reader.ts'
 
 const BLOCK = 512
+
+/** Largest decompressed tar this reader will stage; bounds a gzip bomb. */
+export const MAX_TAR_BYTES = 8 * 1024 * 1024 * 1024
 
 interface TarEntry {
   readonly offset: number
@@ -30,36 +35,27 @@ export class TarGzReader implements ArchiveReader {
   readonly format: BackupFormat = 'targz'
 
   private constructor(
-    private buffer: Uint8Array | undefined,
+    private data: Blob | undefined,
     private readonly entries: Map<string, TarEntry>,
   ) {}
 
   static async open(blob: Blob): Promise<TarGzReader> {
-    const decompressed = await gunzipToBuffer(blob)
-    const entries = new Map<string, TarEntry>()
-    let offset = 0
-    while (offset + BLOCK <= decompressed.byteLength) {
-      const header = decompressed.subarray(offset, offset + BLOCK)
-      if (isZeroBlock(header)) break
-      const name = readString(header, 0, 100)
-      const sizeField = readString(header, 124, 12)
-      const size = Number.parseInt(sizeField.trim() || '0', 8)
-      const prefix = readString(header, 345, 155)
-      if (!Number.isFinite(size) || size < 0) {
-        throw new MbzParseError(`Malformed tar header at offset ${offset}`)
-      }
-      offset += BLOCK
-      // Path traversal guard (ADR-0009): reject absolute paths and "..".
-      const fullName = sanitizeTarName(prefix ? `${prefix}/${name}` : name)
-      if (fullName !== undefined && size > 0) {
-        if (offset + size > decompressed.byteLength) {
-          throw new MbzParseError(`Truncated tar entry: ${fullName}`)
-        }
-        entries.set(fullName, { offset, size })
-      }
-      offset += Math.ceil(size / BLOCK) * BLOCK
+    const indexer = new TarIndexer()
+    const index = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        indexer.push(chunk)
+        controller.enqueue(chunk)
+      },
+    })
+    let data: Blob
+    try {
+      const stream = blob.stream().pipeThrough(new DecompressionStream('gzip')).pipeThrough(index)
+      data = await new Response(stream).blob()
+    } catch (e) {
+      if (e instanceof MbzParseError) throw e
+      throw new MbzParseError('Failed to decompress gzip stream', { cause: e })
     }
-    return new TarGzReader(decompressed, entries)
+    return new TarGzReader(data, indexer.finish())
   }
 
   async listEntries(): Promise<ArchiveEntryInfo[]> {
@@ -69,16 +65,94 @@ export class TarGzReader implements ArchiveReader {
     }))
   }
 
-  /** Returns a view into the decompressed buffer; callers must not retain it past close(). */
+  /** Reads one entry out of the staged tar; each call returns its own bytes. */
   async readEntry(name: string): Promise<Uint8Array> {
     const e = this.entries.get(name)
-    if (!e || !this.buffer) throw new MbzParseError(`Entry not found in archive: ${name}`)
-    return this.buffer.subarray(e.offset, e.offset + e.size)
+    if (!e || !this.data) throw new MbzParseError(`Entry not found in archive: ${name}`)
+    try {
+      return new Uint8Array(await this.data.slice(e.offset, e.offset + e.size).arrayBuffer())
+    } catch (cause) {
+      throw tooLargeToRead(name, e.size, cause)
+    }
   }
 
   async close(): Promise<void> {
     this.entries.clear()
-    this.buffer = undefined
+    this.data = undefined
+  }
+}
+
+/**
+ * Indexes ustar headers out of the decompressed byte stream as it passes.
+ *
+ * The tar layout is sequential — a 512-byte header, then that entry's data
+ * padded to a block boundary — so the index can be built while the bytes are
+ * still in flight: count down the data left to skip, and accumulate the next
+ * header across chunk boundaries when it straddles one.
+ */
+class TarIndexer {
+  private readonly entries = new Map<string, TarEntry>()
+  private readonly header = new Uint8Array(BLOCK)
+  private headerUsed = 0
+  private skip = 0
+  private padding = 0
+  private offset = 0
+  private done = false
+  private lastName = ''
+
+  push(chunk: Uint8Array): void {
+    let i = 0
+    while (i < chunk.byteLength && !this.done) {
+      if (this.skip > 0) {
+        const n = Math.min(this.skip, chunk.byteLength - i)
+        i += n
+        this.skip -= n
+        this.offset += n
+        continue
+      }
+      const n = Math.min(BLOCK - this.headerUsed, chunk.byteLength - i)
+      this.header.set(chunk.subarray(i, i + n), this.headerUsed)
+      this.headerUsed += n
+      i += n
+      this.offset += n
+      if (this.headerUsed < BLOCK) return
+      this.headerUsed = 0
+      this.consumeHeader()
+    }
+    if (this.offset > MAX_TAR_BYTES) throw new MbzParseError('Decompressed archive too large')
+  }
+
+  /** Reads the header just completed; `offset` already points at its data. */
+  private consumeHeader(): void {
+    if (isZeroBlock(this.header)) {
+      this.done = true
+      return
+    }
+    const name = readString(this.header, 0, 100)
+    const sizeField = readString(this.header, 124, 12)
+    const size = Number.parseInt(sizeField.trim() || '0', 8)
+    if (!Number.isFinite(size) || size < 0) {
+      throw new MbzParseError(`Malformed tar header at offset ${this.offset - BLOCK}`)
+    }
+    const prefix = readString(this.header, 345, 155)
+    // Path traversal guard (ADR-0009): reject absolute paths and "..".
+    const fullName = sanitizeTarName(prefix ? `${prefix}/${name}` : name)
+    if (fullName !== undefined && size > 0) {
+      this.entries.set(fullName, { offset: this.offset, size })
+      this.lastName = fullName
+    }
+    this.padding = (BLOCK - (size % BLOCK)) % BLOCK
+    this.skip = size + this.padding
+  }
+
+  /**
+   * A stream that ends before an entry's data does described bytes that are
+   * not there. Missing trailing padding is not that: the entry itself is all
+   * present, and archives in the wild do end that way.
+   */
+  finish(): Map<string, TarEntry> {
+    if (this.skip > this.padding) throw new MbzParseError(`Truncated tar entry: ${this.lastName}`)
+    return this.entries
   }
 }
 
@@ -106,49 +180,4 @@ export function sanitizeTarName(raw: string): string | undefined {
     return undefined
   }
   return name
-}
-
-/** Largest decompressed tar this reader will hold; beyond it, Q-007 applies. */
-export const MAX_TAR_BYTES = 8 * 1024 * 1024 * 1024
-
-/**
- * Streams the Blob through gzip decompression into one pre-sized buffer.
- *
- * The gzip trailer's last four bytes are ISIZE, the decompressed length
- * modulo 2^32 — exact for anything under 4 GiB, which is every backup this
- * reader is meant for. Sizing the buffer from it means the stream is copied
- * into place once instead of being accumulated in chunks and joined, which
- * would briefly hold the whole thing twice. zlib verifies ISIZE against
- * what it produced, so a trailer that lies fails decompression outright;
- * the growth path below exists only for the ≥ 4 GiB wrap-around.
- */
-async function gunzipToBuffer(blob: Blob): Promise<Uint8Array> {
-  let hint = 0
-  if (blob.size >= 4) {
-    const trailer = new DataView(await blob.slice(blob.size - 4, blob.size).arrayBuffer())
-    hint = trailer.getUint32(0, true)
-  }
-  let out = new Uint8Array(Math.min(Math.max(hint, 1024), MAX_TAR_BYTES))
-  let used = 0
-  const reader = blob.stream().pipeThrough(new DecompressionStream('gzip')).getReader()
-  try {
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      if (used + value.byteLength > out.byteLength) {
-        const grown = Math.min(Math.max(out.byteLength * 2, used + value.byteLength), MAX_TAR_BYTES)
-        if (grown < used + value.byteLength)
-          throw new MbzParseError('Decompressed archive too large')
-        const next = new Uint8Array(grown)
-        next.set(out.subarray(0, used))
-        out = next
-      }
-      out.set(value, used)
-      used += value.byteLength
-    }
-  } catch (e) {
-    if (e instanceof MbzParseError) throw e
-    throw new MbzParseError('Failed to decompress gzip stream', { cause: e })
-  }
-  return out.subarray(0, used)
 }

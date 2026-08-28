@@ -69,7 +69,13 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>): Promise<void> => {
     // Allow addressing entries by content hash directly.
     if (/^[0-9a-f]{40}$/.test(path)) path = contentHashPath(path)
     const data = await session.readEntry(path)
-    const out = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
+    // readEntry owns its bytes now (ADR-0036 rule 3), so an entry that fills
+    // its buffer exactly can be transferred as-is; copying it first would
+    // hold a second full copy of a large video for no reason.
+    const exact = data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
+    const out = (
+      exact ? data.buffer : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+    ) as ArrayBuffer
     const response: ReadResponse = {
       kind: 'read',
       id: msg.id,

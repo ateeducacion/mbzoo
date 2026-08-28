@@ -21,8 +21,9 @@ remote-embed content named rather than dropped (in sandboxed sites too), section
 delegated sections (ADR-0030), and metadata fallback for unknown modules.
 H5P (ADR-0018) and SCORM (ADR-0023) playback are **experimental** inside the
 opaque-origin sandbox. ZIP backups are read lazily by central directory;
-TAR.GZ is streamed into one buffer, so its decompressed size is the memory
-ceiling (ADR-0029; OPFS staging is TASK-012). Whole-backup re-packaging
+TAR.GZ is decompressed into a Blob and indexed as it streams, so the renderer
+never allocates the whole tar (ADR-0036, supersedes ADR-0029; OPFS staging is
+still TASK-012 if blob storage proves insufficient). Whole-backup re-packaging
 remains planned. Do not advertise planned capabilities as existing.
 
 ## Repository map

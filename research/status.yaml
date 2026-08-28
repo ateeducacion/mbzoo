@@ -23,11 +23,12 @@ decisions:
   ADR-0025: { title: eXeLearning packages are classified by what is inside them, not by their extension, status: Accepted, date: 2026-08-25 }
   ADR-0027: { title: Every browser runs on every change, and the worker stays one chunk, status: Accepted, date: 2026-08-25 }
   ADR-0028: { title: A resource is the file Moodle marked, not the file whose name looks right, status: Accepted, date: 2026-08-25 }
-  ADR-0029: { title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer, status: Accepted, date: 2026-08-25 }
+  ADR-0029: { title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer, status: Superseded, date: 2026-08-25 }
   ADR-0030: { title: Sections form a tree when the course format says so, status: Accepted, date: 2026-08-25 }
   ADR-0031: { title: H5P content stored by mod_hvp is composed into a package, status: Accepted, date: 2026-08-25 }
   ADR-0032: { title: A SCO travels with its package as a virtual filesystem, XHR included, status: Accepted, date: 2026-08-25 }
   ADR-0033: { title: Legacy .elp projects are rendered from their contentv3.xml mirror, status: Accepted, date: 2026-08-25 }
+  ADR-0036: { title: The decompressed tar is staged in a Blob, not in one ArrayBuffer, status: Proposed, date: 2026-08-28 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }
@@ -163,9 +164,14 @@ risks:
       ADR-0029. ZIP is read by central directory and inflated per entry, so
       the archive never enters memory: a 400 MB, 32,150-entry ZIP peaks at
       257 MB where the previous reader inflated everything (EXP-004).
-      TAR.GZ is streamed into one pre-sized buffer with entries as views,
-      cutting peak by 24-47 % on the corpus; the decompressed tar itself is
-      inherent to gzip and is what TASK-012 (OPFS staging, Q-007) removes.
+      TAR.GZ was streamed into one pre-sized buffer with entries as views,
+      cutting peak by 24-47 % on the corpus; that buffer still had to be
+      allocated whole and a real user hit "Array buffer allocation failed"
+      on Chrome/Windows. ADR-0036 stages the decompressed tar in a Blob
+      instead: the renderer's peak on a 1,385 MB backup fell from 1,766 MB
+      to 425 MB and nothing is pre-sized from ISIZE (EXP-005). The bytes
+      still exist, now held by the browser process; OPFS (TASK-012, Q-007)
+      remains the answer if blob storage proves insufficient.
     status: mitigated
   RISK-002:
     title: Section-to-activity mapping inferred from sectionid/sequence may miss course-format-specific nesting (e.g. flexsections)
@@ -237,3 +243,16 @@ risks:
       suite was widened to `<file\b[^>]*>`, so fixtures carry the same shape
       as a real backup rather than only the same fields.
     status: mitigated
+  - date: 2026-08-28
+    note: >-
+      TAR.GZ is staged in a Blob (ADR-0036, supersedes ADR-0029). Pre-sizing
+      one buffer from the gzip trailer's ISIZE asked the renderer for the
+      whole decompressed tar in a single contiguous block before decompressing
+      anything, and a user opening a real course backup on Chrome/Windows got
+      V8's raw "Array buffer allocation failed" on the error card — unwrapped,
+      because the throw sat outside the try. The bytes now stream into a Blob
+      while ustar headers are indexed in passing, and readEntry slices out the
+      one entry asked for. Renderer peak on a 1,385 MB backup: 1,766 MB to
+      425 MB, at ~28 % more wall time (EXP-005). An allocation a browser still
+      refuses is now an MbzParseError naming the entry and its size, on both
+      readers.

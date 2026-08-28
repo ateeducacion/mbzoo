@@ -65,8 +65,10 @@ Key boundaries (see ADRs for rationale):
   back-references outright.
 
 Performance model today: parse runs in a Worker; only metadata XML is read
-eagerly; binary assets are never extracted unless requested. Large-file
-strategy is tracked as TASK-003 / Q-004..Q-007.
+eagerly; binary assets are never extracted unless requested. ZIP entries are
+sliced and inflated on demand (ADR-0029); a TAR.GZ is decompressed into a Blob
+and indexed as it streams, so no allocation is larger than the entry being
+read (ADR-0036). Large-file strategy is tracked as TASK-003 / Q-004..Q-007.
 
 ## How claims get verified
 
