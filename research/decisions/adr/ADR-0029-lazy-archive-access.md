@@ -1,12 +1,13 @@
 ---
 id: ADR-0029
 title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer
-status: Accepted
+status: Superseded
 date: 2026-08-25
 sources: [TECH-005, STD-001, REPO-004]
 experiments: [EXP-002, EXP-004]
 related: [ADR-0004, ADR-0005, ADR-0009]
 supersedes: []
+superseded_by: [ADR-0036]
 ai_tool: claude-code
 ai_model: claude-opus-5
 ---

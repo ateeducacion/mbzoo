@@ -114,7 +114,7 @@ adrs:
     date: 2026-08-25
   ADR-0029:
     title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer
-    status: Accepted
+    status: Superseded
     date: 2026-08-25
   ADR-0030:
     title: Sections form a tree when the course format says so
@@ -140,3 +140,7 @@ adrs:
     title: Relicense MBZoo under GPL-3.0-or-later
     status: Accepted
     date: 2026-08-26
+  ADR-0036:
+    title: The decompressed tar is staged in a Blob, not in one ArrayBuffer
+    status: Proposed
+    date: 2026-08-28
