@@ -30,10 +30,10 @@
     "research:validate": "bun run research/tools/validate-research.ts && bun run research:indexes -- --check"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.11",
     "@playwright/test": "1.62.1",
     "@types/bun": "1.4.0",
-    "@zip.js/zip.js": "2.8.59",
+    "@zip.js/zip.js": "2.8.60",
     "fflate": "0.8.3",
     "typescript": "7.0.2"
   }
