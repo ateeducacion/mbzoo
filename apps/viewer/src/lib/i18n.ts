@@ -117,6 +117,7 @@ const STRINGS = {
     'summary.letters': 'letters:',
     'summary.hint': 'Select an activity in the tree to inspect it →',
     'summary.backTitle': 'Back to the course summary',
+    'summary.courseData': 'Course data',
     'gradebook.courseTotal': 'Course total',
     'gradebook.itemType.course': 'Course total',
     'gradebook.itemType.activity': 'Activity',
@@ -316,6 +317,7 @@ const STRINGS = {
     'info.unavailable': 'This activity records no module settings in the backup.',
     'badge.hidden': 'Hidden',
     'raw.missing': 'No module XML was found for this activity in the backup.',
+    'raw.courseMissing': 'No course.xml was found in this backup.',
     'raw.truncated':
       'Showing the first {n} of {total} characters — use Export ▾ for the whole file.',
     'footer.made': 'Made with',
@@ -441,6 +443,7 @@ const STRINGS = {
     'summary.letters': 'letras:',
     'summary.hint': 'Selecciona una actividad en el árbol para inspeccionarla →',
     'summary.backTitle': 'Volver al resumen del curso',
+    'summary.courseData': 'Datos del curso',
     'gradebook.courseTotal': 'Total del curso',
     'gradebook.itemType.course': 'Total del curso',
     'gradebook.itemType.activity': 'Actividad',
@@ -642,6 +645,7 @@ const STRINGS = {
     'info.unavailable': 'Esta actividad no guarda ajustes de módulo en la copia.',
     'badge.hidden': 'Oculto',
     'raw.missing': 'No se encontró el XML de módulo de esta actividad en la copia.',
+    'raw.courseMissing': 'No se encontró course.xml en esta copia.',
     'raw.truncated':
       'Mostrando los primeros {n} de {total} caracteres: usa Exportar ▾ para el archivo completo.',
     'footer.made': 'Hecho con',
@@ -659,7 +663,8 @@ const STRINGS = {
 export type StringKey = keyof (typeof STRINGS)['en']
 
 export function detectLang(): Lang {
-  return navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en'
+  const language = globalThis.navigator?.language ?? 'en'
+  return language.toLowerCase().startsWith('es') ? 'es' : 'en'
 }
 
 const lang = detectLang()

@@ -20,6 +20,19 @@ describe('openBackup (synthetic ZIP fixture)', () => {
     expect(b.course.fullname).toBe('Demo Course for MBZoo')
     expect(b.course.shortname).toBe('DEMO-101')
     expect(b.course.idNumber).toBe('MBZOO-DEMO')
+    expect(b.course.id).toBe(1001)
+    expect(b.course.contextId).toBe('101')
+  })
+
+  test('keeps moodle_backup courseid when course.xml is absent', async () => {
+    const bytes = new Uint8Array(await Bun.file(FIXTURE).arrayBuffer())
+    const { unzipSync, zipSync } = await import('fflate')
+    const entries = unzipSync(bytes)
+    delete entries['course/course.xml']
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.course.id).toBe(1001)
+    expect(b.course.contextId).toBe('')
+    expect(b.course.fullname).toBe('Demo Course for MBZoo')
   })
 
   test('keeps the release and date the backup was taken with', async () => {

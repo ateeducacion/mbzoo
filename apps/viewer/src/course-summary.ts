@@ -1,17 +1,19 @@
 /**
  * Course summary: what the detail pane shows before anything is selected
  * (mockup 3a). Backup provenance, size metrics, activities by module, the
- * gradebook structure and the parse warnings — the whole backup at a glance
- * instead of a blank panel.
+ * gradebook structure, parse warnings, and a folded course-data disclosure
+ * (identifiers + course.xml) — the whole backup at a glance instead of a
+ * blank panel.
  *
  * Security: every value here comes from a hostile backup and is written with
  * textContent. The type bars are plain divs whose width is a computed
  * percentage, so no backup-derived string ever reaches a style or attribute.
  */
 
-import type { CourseGradebook, GradeItem, ParsedBackup } from '@mbzoo/core'
+import type { CourseGradebook, CourseInfo, GradeItem, ParsedBackup } from '@mbzoo/core'
 import { detectLang, t } from './lib/i18n.ts'
 import { formatDate, formatNumber } from './lib/preview-utils.ts'
+import { appendRawXml } from './lib/raw-xml.ts'
 
 export interface SummaryDeps {
   readonly readEntry: (path: string) => Promise<Uint8Array>
@@ -228,6 +230,60 @@ function buildGradebookTree(
   return details
 }
 
+/** Identifier and config rows for the course-data disclosure. Empty → "—". */
+export function courseDataRows(
+  course: CourseInfo,
+  lang: string,
+): ReadonlyArray<readonly [string, string]> {
+  const dash = (value: string): string => (value === '' ? '—' : value)
+  const start = course.startDate !== undefined ? formatDate(course.startDate, lang) : ''
+  return [
+    ['courseid', course.id !== undefined ? String(course.id) : '—'],
+    ['contextid', dash(course.contextId)],
+    ['idnumber', dash(course.idNumber)],
+    ['shortname', dash(course.shortname)],
+    ['format', dash(course.format)],
+    ['startdate', dash(start)],
+    ['original_wwwroot', dash(course.originalWwwroot)],
+  ]
+}
+
+export function buildCourseData(
+  backup: ParsedBackup,
+  deps: SummaryDeps,
+  lang: string,
+): HTMLElement {
+  const details = el('details', 'advanced course-data')
+  details.appendChild(el('summary', undefined, t('summary.courseData')))
+
+  const grid = el('div', 'info-grid')
+  for (const [key, value] of courseDataRows(backup.course, lang)) {
+    grid.appendChild(el('b', 'info-key', key))
+    grid.appendChild(el('span', 'info-value', value))
+  }
+  details.appendChild(grid)
+
+  const rawHost = el('div', 'course-raw')
+  details.appendChild(rawHost)
+
+  let rawBuilt = false
+  details.addEventListener('toggle', () => {
+    if (!details.open || rawBuilt) return
+    rawBuilt = true
+    void (async () => {
+      let xmlText = ''
+      try {
+        xmlText = new TextDecoder().decode(await deps.readEntry('course/course.xml'))
+      } catch {
+        xmlText = ''
+      }
+      if (!details.isConnected) return
+      appendRawXml(rawHost, xmlText, 'course/course.xml', t('raw.courseMissing'))
+    })()
+  })
+  return details
+}
+
 function buildWarnings(backup: ParsedBackup, lang: string): HTMLElement | undefined {
   if (backup.warnings.length === 0) return undefined
   const box = el('section', 'summary-warnings')
@@ -282,6 +338,7 @@ export async function renderCourseSummary(
     tile(size.value, t('summary.size'), size.unit),
   )
   root.appendChild(tiles)
+  root.appendChild(buildCourseData(backup, deps, lang))
 
   const grid = el('div', 'summary-grid')
   grid.appendChild(buildTypes(backup, deps, lang))

@@ -17,6 +17,10 @@ export interface SourceInfo {
 }
 
 export interface CourseInfo {
+  /** Moodle course id (`<course id>` / `<courseid>`). Absent when neither source has it. */
+  readonly id?: number | undefined
+  /** Course context id from `<course contextid>`; '' when the file omits it. */
+  readonly contextId: string
   fullname: string
   shortname: string
   readonly idNumber: string

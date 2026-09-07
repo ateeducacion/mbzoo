@@ -15,8 +15,8 @@
 import { type ActivityInfo, legacyModule } from '@mbzoo/core'
 import { buildActivityZip, exportFileName } from './lib/export.ts'
 import { t } from './lib/i18n.ts'
-import { formatBytes, formatDate } from './lib/preview-utils.ts'
-import { tokenizeXml } from './lib/xml-highlight.ts'
+import { formatDate } from './lib/preview-utils.ts'
+import { appendRawXml } from './lib/raw-xml.ts'
 import type { ParsedActivity, Renderer } from './renderers.ts'
 
 /** One section on the breadcrumb. */
@@ -51,9 +51,6 @@ const NULL_SENTINEL = '$@NULL@$'
 
 /** Fields rendered by the Preview tab, so the Info tab does not repeat them. */
 const CONTENT_FIELDS = new Set(['intro', 'content', 'name', 'summary'])
-
-/** Beyond this the Raw tab shows a head and points at the XML export. */
-const MAX_RAW_CHARS = 200_000
 
 /** Long or markup-bearing values belong in Raw, not in the Info grid. */
 const MAX_FIELD_CHARS = 80
@@ -233,44 +230,6 @@ function buildInfoPanel(activity: ActivityInfo, parsed: ParsedActivity, panel: H
   addRow(ids, 'sectionid', String(activity.sectionId))
   addRow(ids, 'contextid', parsed.contextId || '—')
   addRow(ids, 'idnumber', settings?.idNumber || '—')
-}
-
-// -------------------------------------------------------------- raw tab
-
-function buildRawPanel(parsed: ParsedActivity, panel: HTMLElement): void {
-  if (parsed.xmlText === '') {
-    panel.appendChild(el('p', 'fallback-note', t('raw.missing')))
-    return
-  }
-
-  const bar = el('div', 'raw-bar')
-  bar.appendChild(el('code', 'raw-path', parsed.xmlPath))
-  bar.appendChild(el('span', 'raw-size', formatBytes(parsed.xmlText.length)))
-  panel.appendChild(bar)
-
-  const truncated = parsed.xmlText.length > MAX_RAW_CHARS
-  const source = truncated ? parsed.xmlText.slice(0, MAX_RAW_CHARS) : parsed.xmlText
-
-  const pre = el('pre', 'raw-xml')
-  for (const token of tokenizeXml(source)) {
-    if (token.kind === 'text') {
-      pre.appendChild(document.createTextNode(token.text))
-      continue
-    }
-    pre.appendChild(el('span', `x-${token.kind}`, token.text))
-  }
-  if (truncated) pre.appendChild(document.createTextNode('\n…'))
-  panel.appendChild(pre)
-
-  if (truncated) {
-    panel.appendChild(
-      el(
-        'p',
-        'fallback-note',
-        t('raw.truncated', { n: MAX_RAW_CHARS, total: parsed.xmlText.length }),
-      ),
-    )
-  }
 }
 
 // ------------------------------------------------------------- actions
@@ -562,7 +521,7 @@ export async function renderDetail(
       id: 'raw',
       label: t('tab.raw'),
       panel: rawPanel,
-      build: () => buildRawPanel(parsed, rawPanel),
+      build: () => appendRawXml(rawPanel, parsed.xmlText, parsed.xmlPath),
     },
   ])
 
