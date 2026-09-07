@@ -66,6 +66,7 @@ export async function parseMoodleBackupXml(
           summary: '',
           originalWwwroot: '',
           format: '',
+          contextId: '',
           source: { xmlPath: p },
         }
       } else if (p.endsWith('/contents/sections/section')) {
@@ -163,7 +164,11 @@ function fillCourseField(
   field: string,
   v: string,
 ): void {
-  if (field === 'courseid') return // internal id kept out of model for now
+  if (field === 'courseid') {
+    const n = Number(v)
+    if (Number.isFinite(n)) c.id = n
+    return
+  }
   if (field === 'title') c.fullname = v
 }
 

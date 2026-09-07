@@ -1940,6 +1940,22 @@ test('the course summary fills the detail pane until an activity is opened', asy
   await expect(summary.locator('.summary-warnings')).toHaveCount(0)
   await expect(summary.locator('.summary-hint')).toBeVisible()
 
+  // Course identifiers and the course.xml payload stay folded, same idea
+  // as the activity Info/Raw tabs, so the glanceable summary stays short.
+  const courseData = summary.locator('.course-data')
+  await expect(courseData).toBeVisible()
+  await expect(courseData.locator('.info-grid')).toBeHidden()
+  await courseData.locator('summary').click()
+  await expect(courseData.locator('.info-grid')).toBeVisible()
+  await expect(courseData).toContainText('courseid')
+  await expect(courseData).toContainText('2001')
+  await expect(courseData).toContainText('idnumber')
+  await expect(courseData).toContainText('MBZOO-USERS')
+  await expect(courseData.locator('.raw-path')).toHaveText('course/course.xml')
+  await expect(courseData.locator('.raw-xml')).toContainText('<course')
+  await expect(courseData.locator('.raw-xml')).toContainText('MBZOO-USERS')
+  expect(await courseData.locator('.raw-xml script').count()).toBe(0)
+
   // Opening an activity replaces the summary…
   await page.getByRole('button', { name: /Course guide/ }).click()
   await expect(page.locator('#detail .course-summary')).toHaveCount(0)

@@ -2177,6 +2177,20 @@ audio.media-preview {
   font: 400 12px var(--font-body);
   color: var(--faint);
 }
+.course-data {
+  margin-top: 12px;
+}
+.course-data .info-grid {
+  padding: 4px 14px 8px;
+}
+.course-data .raw-bar,
+.course-data .fallback-note {
+  margin: 0 14px 8px;
+}
+.course-data .raw-xml {
+  margin: 0 14px 14px;
+  max-height: 40vh;
+}
 @media (max-width: 720px) {
   .summary-tiles {
     grid-template-columns: repeat(2, 1fr);

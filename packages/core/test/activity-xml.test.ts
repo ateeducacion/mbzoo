@@ -92,6 +92,40 @@ describe('$@NULL@$ never becomes content', () => {
     expect(course.summary).toBe('')
     expect(course.fullname).toBe('Real')
   })
+
+  test('course root attributes become id and contextId', async () => {
+    const { parseCourseXml } = await import('../src/moodle/course-xml.ts')
+    const course = await parseCourseXml(
+      '<course id="1001" contextid="101"><fullname>Demo</fullname></course>',
+      { fullname: 'fallback', originalWwwroot: '' },
+    )
+    expect(course.id).toBe(1001)
+    expect(course.contextId).toBe('101')
+  })
+
+  test('course.xml id wins; missing id keeps the moodle_backup fallback', async () => {
+    const { parseCourseXml } = await import('../src/moodle/course-xml.ts')
+    const withAttr = await parseCourseXml(
+      '<course id="9" contextid="1"><fullname>X</fullname></course>',
+      { fullname: 'fallback', originalWwwroot: '', id: 1001 },
+    )
+    expect(withAttr.id).toBe(9)
+
+    const noAttr = await parseCourseXml('<course><fullname>X</fullname></course>', {
+      fullname: 'fallback',
+      originalWwwroot: '',
+      id: 1001,
+    })
+    expect(noAttr.id).toBe(1001)
+    expect(noAttr.contextId).toBe('')
+
+    const junk = await parseCourseXml('<course id="nope"><fullname>X</fullname></course>', {
+      fullname: 'fallback',
+      originalWwwroot: '',
+      id: 7,
+    })
+    expect(junk.id).toBe(7)
+  })
 })
 
 // choice options, data fields and workshop example submissions all use the

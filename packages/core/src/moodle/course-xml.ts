@@ -10,7 +10,9 @@ import { leafValue, parseXmlEvents } from './xml.ts'
 
 export async function parseCourseXml(
   xml: string,
-  fallback: Pick<CourseInfo, 'fullname' | 'originalWwwroot'>,
+  fallback: Pick<CourseInfo, 'fullname' | 'originalWwwroot'> & {
+    readonly id?: number | undefined
+  },
 ): Promise<CourseInfo> {
   const out: { -readonly [K in keyof CourseInfo]: CourseInfo[K] } = {
     fullname: '',
@@ -18,6 +20,7 @@ export async function parseCourseXml(
     idNumber: '',
     summary: '',
     format: '',
+    contextId: '',
     // Site provenance only exists in moodle_backup.xml; keep it on the model.
     originalWwwroot: fallback.originalWwwroot,
     source: { xmlPath: 'course/course.xml' },
@@ -26,6 +29,14 @@ export async function parseCourseXml(
   let text = ''
   await parseXmlEvents(xml, (ev) => {
     if (ev.type === 'open') {
+      if (path.length === 0 && ev.name === 'course') {
+        const idAttr = ev.attributes.id
+        if (idAttr !== undefined) {
+          const n = Number(idAttr)
+          if (Number.isFinite(n)) out.id = n
+        }
+        out.contextId = ev.attributes.contextid ?? ''
+      }
       path.push(ev.name)
       return
     }
@@ -51,6 +62,7 @@ export async function parseCourseXml(
     text = ''
   })
   if (out.fullname === '') out.fullname = fallback.fullname
+  if (out.id === undefined && fallback.id !== undefined) out.id = fallback.id
   return out
 }
 
