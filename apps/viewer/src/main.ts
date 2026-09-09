@@ -1,9 +1,10 @@
 import type { ParsedBackup } from '@mbzoo/core'
-import { type StringKey, t } from './lib/i18n.ts'
+import { detectLang, type StringKey, t } from './lib/i18n.ts'
 import { formatBytes } from './lib/preview-utils.ts'
 
 /** Applies data-i18n / data-i18n-ph attributes after DOM is ready. */
 function applyI18nDom(): void {
+  document.documentElement.lang = detectLang()
   for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-title]')) {
     const key = el.getAttribute('data-i18n-title') as StringKey
     if (key) el.title = t(key)

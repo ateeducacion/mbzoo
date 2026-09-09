@@ -283,10 +283,16 @@ export function contentKind(mime: string, fileName: string): string {
   return 'File'
 }
 
+function intlLocale(lang: string): string {
+  if (lang === 'es') return 'es-ES'
+  if (lang === 'fr') return 'fr-FR'
+  return 'en-GB'
+}
+
 /** Formats a count or measure with the UI language's digit grouping and decimal mark. */
 export function formatNumber(n: number, lang: string, maxFractionDigits = 0): string {
   if (!Number.isFinite(n)) return ''
-  return new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
+  return new Intl.NumberFormat(intlLocale(lang), {
     maximumFractionDigits: maxFractionDigits,
   }).format(n)
 }
@@ -294,7 +300,7 @@ export function formatNumber(n: number, lang: string, maxFractionDigits = 0): st
 /** Formats a Moodle unix timestamp for the UI language. */
 export function formatDate(ts: number, lang: string): string {
   if (!Number.isFinite(ts) || ts <= 0) return ''
-  return new Date(ts * 1000).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-GB', {
+  return new Date(ts * 1000).toLocaleDateString(intlLocale(lang), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
