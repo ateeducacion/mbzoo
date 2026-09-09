@@ -3,6 +3,7 @@ import {
   ALLOWED_URI_REGEXP,
   decodeRefPath,
   formatBytes,
+  formatDate,
   formatNumber,
   guessMime,
   H5P_CSP,
@@ -39,6 +40,15 @@ describe('formatNumber', () => {
   test('drops fraction digits by default and never prints NaN', () => {
     expect(formatNumber(7.9, 'en')).toBe('8')
     expect(formatNumber(Number.NaN, 'en')).toBe('')
+  })
+})
+
+describe('formatDate', () => {
+  test('names the month in the UI language, including a regional tag', () => {
+    expect(formatDate(1700000000, 'en')).toBe('14 Nov 2023')
+    expect(formatDate(1700000000, 'es')).toBe('14 nov 2023')
+    expect(formatDate(1700000000, 'fr')).toBe('14 nov. 2023')
+    expect(formatDate(1700000000, 'fr-FR')).toBe('14 nov. 2023')
   })
 })
 

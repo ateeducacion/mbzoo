@@ -53,6 +53,15 @@ describe('detectLang', () => {
     expect(STRINGS.fr['drop.file']).toBe('ici')
   })
 
+  test('French Info tab enums match the reviewed wording', () => {
+    expect(STRINGS.fr['info.groupMode.separate']).toBe('Séparés')
+    expect(STRINGS.fr['info.groupMode.visible']).toBe('Visibles')
+    expect(STRINGS.fr['info.groupMode.none']).toBe('Aucun')
+    expect(STRINGS.fr['info.completionMode.manual']).toBe('Manuel')
+    expect(STRINGS.fr['info.completionMode.automatic']).toBe('Automatique')
+    expect(STRINGS.fr.download).toBe('Télécharger')
+  })
+
   test('selects Spanish for es prefixes and English otherwise', () => {
     setLanguage('es')
     expect(detectLang()).toBe('es')

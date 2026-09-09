@@ -1238,6 +1238,23 @@ test.describe('French locale', () => {
     await expect(title).not.toContainText('fichier ici')
     expect(warnings.filter((w) => w.includes('missing key'))).toEqual([])
   })
+
+  test('resource download and Info values use the French dictionary', async ({ page }) => {
+    await page.goto('/')
+    await page.setInputFiles('#file-input', FIXTURE)
+
+    await page.getByRole('button', { name: /Synthetic guide/ }).click()
+    await expect(page.locator('.file-card .button-link')).toHaveText('Télécharger')
+    await expect(page.locator('.file-card')).not.toContainText('Download')
+
+    await page.getByRole('button', { name: /Restricted page/ }).click()
+    await page.getByRole('tab', { name: 'Info' }).click()
+    const info = page.locator('.detail-panel-info')
+    await expect(info).toContainText('Séparés')
+    await expect(info).toContainText('Automatique')
+    await expect(info).not.toContainText('separate')
+    await expect(info).not.toContainText('automatic')
+  })
 })
 
 /**

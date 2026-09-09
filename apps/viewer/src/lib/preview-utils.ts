@@ -284,8 +284,9 @@ export function contentKind(mime: string, fileName: string): string {
 }
 
 function intlLocale(lang: string): string {
-  if (lang === 'es') return 'es-ES'
-  if (lang === 'fr') return 'fr-FR'
+  const tag = lang.toLowerCase()
+  if (tag.startsWith('es')) return 'es-ES'
+  if (tag.startsWith('fr')) return 'fr-FR'
   return 'en-GB'
 }
 
