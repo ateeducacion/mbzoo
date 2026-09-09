@@ -662,8 +662,8 @@ export const STRINGS = {
     'landing.title': 'Voir ce qui se trouve dans votre',
     'landing.sub':
       'Ouvrir les sauvegardes de cours Moodle directement dans votre navigateur. Rien à installer, rien n\u2019est déposé.',
-    'drop.title': 'Déposer votre',
-    'drop.file': 'fichier ici',
+    'drop.title': 'Déposer votre fichier',
+    'drop.file': 'ici',
     'drop.hint': 'ZIP et TAR.GZ · traité sur votre appareil',
     'drop.choose': 'Choisir un fichier',
     privacy:
@@ -694,8 +694,8 @@ export const STRINGS = {
     noContent: 'Cet élément n\u2019enregistre aucune donnée supplémentaire dans la sauvegarde.',
     download: 'Télécharger',
     showingPages: 'Affichage de {n} pages sur {total} — utiliser Télécharger pour le reste.',
-    pdfError: 'Impossible d\u2019afficher «\u00a0{name}\u00a0» en ligne — utiliser Télécharger.',
-    noRenderer: 'Aucun moteur de rendu dédié pour «\u00a0{mod}\u00a0».',
+    pdfError: 'Impossible d\u2019afficher « {name} » en ligne — utiliser Télécharger.',
+    noRenderer: 'Aucun moteur de rendu dédié pour « {mod} ».',
     'quiz.inspectOnly': 'Inspection en lecture seule — MBZoo n\u2019exécute pas les Tests Moodle.',
     'quiz.question': 'Question',
     'quiz.of': 'de',
@@ -802,7 +802,7 @@ export const STRINGS = {
     'grading.method.rubric': 'Grille d\u2019évaluation',
     'grading.method.guide': 'Guide de correction',
     'grading.notShown':
-      'Cette activité utilise la méthode d\u2019évaluation «\u00a0{method}\u00a0», dont MBZoo ne lit pas les critères.',
+      'Cette activité utilise la méthode d\u2019évaluation « {method} », dont MBZoo ne lit pas les critères.',
     'lti.toolUrl': 'URL de l\u2019outil',
     'lti.note': 'Configuration de l\u2019outil externe — MBZoo ne le lance jamais.',
     'qbank.note':
@@ -814,7 +814,7 @@ export const STRINGS = {
     'legacy.badge': 'retiré',
     'legacy.tooltip': 'Retiré du cœur de Moodle en {version} ({issue})',
     'legacy.notice':
-      'Moodle a retiré «\u00a0{mod}\u00a0» du cœur en {version} ({issue}), aucun Moodle actuel ne peut donc restaurer cette activité. MBZoo la lit toujours.',
+      'Moodle a retiré « {mod} » du cœur en {version} ({issue}), aucun Moodle actuel ne peut donc restaurer cette activité. MBZoo la lit toujours.',
     'forum.type': 'Type de forum',
     'forum.type.general': 'Forum standard pour utilisation générale',
     'forum.type.news': 'Annonces',
@@ -861,12 +861,12 @@ export const STRINGS = {
     'wiki.noUserData':
       'Les pages de wiki sont écrites par les utilisateurs, et cette sauvegarde a été effectuée sans les données utilisateur.',
     'quiz.randomEmpty':
-      'Tirée au sort dans «\u00a0{cat}\u00a0», dont les questions ne sont pas présentes dans cette sauvegarde',
+      'Tirée au sort dans « {cat} », dont les questions ne sont pas présentes dans cette sauvegarde',
     'quiz.randomSummary':
       'Chaque tentative tire au sort {n} question(s). L\u2019ensemble des {pool} question(s) pouvant être tirées est affiché ici.',
     'quiz.randomSummaryMixed':
       '{fixed} question(s) fixe(s), plus {n} tirée(s) au sort à chaque tentative. Les {pool} question(s) pouvant être tirées dans ces emplacements sont également affichées ici.',
-    'quiz.drawnFrom': 'tirée de «\u00a0{cat}\u00a0»',
+    'quiz.drawnFrom': 'tirée de « {cat} »',
     'quiz.drawnChip': 'tirée au sort',
     'quiz.randomUnknown':
       'Question aléatoire — tirée au sort dans une catégorie au moment de la tentative\u00a0; la catégorie n\u2019est pas identifiée dans cette sauvegarde',

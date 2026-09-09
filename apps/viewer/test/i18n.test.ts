@@ -40,6 +40,19 @@ describe('detectLang', () => {
     expect(Object.keys(STRINGS.fr).sort()).toEqual(english)
   })
 
+  test('French guillemets around placeholders use regular spaces', () => {
+    expect(STRINGS.fr.pdfError).toBe(
+      'Impossible d\u2019afficher « {name} » en ligne — utiliser Télécharger.',
+    )
+    expect(STRINGS.fr.noRenderer).toBe('Aucun moteur de rendu dédié pour « {mod} ».')
+    expect(STRINGS.fr['grading.notShown']).toContain('« {method} »')
+    expect(STRINGS.fr['legacy.notice']).toContain('« {mod} »')
+    expect(STRINGS.fr['quiz.randomEmpty']).toContain('« {cat} »')
+    expect(STRINGS.fr['quiz.drawnFrom']).toBe('tirée de « {cat} »')
+    expect(STRINGS.fr['drop.title']).toBe('Déposer votre fichier')
+    expect(STRINGS.fr['drop.file']).toBe('ici')
+  })
+
   test('selects Spanish for es prefixes and English otherwise', () => {
     setLanguage('es')
     expect(detectLang()).toBe('es')
