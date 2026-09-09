@@ -1218,6 +1218,27 @@ test.describe('Spanish locale', () => {
   })
 })
 
+test.describe('French locale', () => {
+  test.use({ locale: 'fr-FR' })
+
+  test('landing page uses the French dictionary', async ({ page }) => {
+    const warnings: string[] = []
+    page.on('console', (m) => {
+      if (m.type() === 'warning') warnings.push(m.text())
+    })
+    await page.goto('/')
+
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr')
+    await expect(page.locator('.hero-sub')).toContainText(
+      'Ouvrir les sauvegardes de cours Moodle directement dans votre navigateur',
+    )
+    const title = page.locator('.dz-title')
+    await expect(title).toContainText('Déposer votre')
+    await expect(title).toContainText('fichier ici')
+    expect(warnings.filter((w) => w.includes('missing key'))).toEqual([])
+  })
+})
+
 /**
  * Two reads in flight at once used to clobber each other's worker handler, so
  * the first promise never settled and the renderer stopped half-way with no

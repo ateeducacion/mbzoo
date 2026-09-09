@@ -30,8 +30,10 @@ describe('formatNumber', () => {
     expect(formatNumber(1234, 'en')).toBe('1,234')
     expect(formatNumber(1234, 'es')).toBe('1234')
     expect(formatNumber(12345, 'es')).toBe('12.345')
+    expect(formatNumber(12345, 'fr')).toBe('12\u202f345')
     expect(formatNumber(48.25, 'en', 1)).toBe('48.3')
     expect(formatNumber(48.25, 'es', 1)).toBe('48,3')
+    expect(formatNumber(48.25, 'fr', 1)).toBe('48,3')
   })
 
   test('drops fraction digits by default and never prints NaN', () => {
