@@ -54,7 +54,7 @@ import {
   vfsHeadScripts,
 } from './lib/h5p-player.ts'
 import { composeHvpEntries, hvpFields } from './lib/hvp-package.ts'
-import { t } from './lib/i18n.ts'
+import { detectLang, t } from './lib/i18n.ts'
 import {
   ALLOWED_URI_REGEXP,
   contentKind,
@@ -2825,7 +2825,7 @@ export class Renderer {
 
   /** Key/value summary grid with human dates for known time fields. */
   private buildSummary(pairs: Array<[string, string | undefined]>): HTMLElement {
-    const lang = navigator.language
+    const lang = detectLang()
     const grid = document.createElement('div')
     grid.className = 'summary-grid'
     const labels: Record<string, string> = {
@@ -3299,7 +3299,7 @@ function addDownload(card: HTMLElement, url: string, name: string): void {
   const a = document.createElement('a')
   a.href = url
   a.download = name
-  a.textContent = 'Download'
+  a.textContent = t('download')
   a.className = 'button-link'
   card.appendChild(a)
 }
@@ -3307,7 +3307,7 @@ function addDownload(card: HTMLElement, url: string, name: string): void {
 function notAvailable(container: HTMLElement): void {
   const p = document.createElement('p')
   p.className = 'fallback-note'
-  p.textContent = 'This item stores no additional content in the backup.'
+  p.textContent = t('noContent')
   container.appendChild(p)
 }
 

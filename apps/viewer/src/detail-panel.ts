@@ -12,9 +12,9 @@
  * ADR-0012's single sanitization path is untouched.
  */
 
-import { type ActivityInfo, legacyModule } from '@mbzoo/core'
+import { type ActivityInfo, type ActivitySettings, legacyModule } from '@mbzoo/core'
 import { buildActivityZip, exportFileName } from './lib/export.ts'
-import { t } from './lib/i18n.ts'
+import { detectLang, type StringKey, t } from './lib/i18n.ts'
 import { formatDate } from './lib/preview-utils.ts'
 import { appendRawXml } from './lib/raw-xml.ts'
 import type { ParsedActivity, Renderer } from './renderers.ts'
@@ -182,8 +182,21 @@ function fieldValue(key: string, raw: string, lang: string): string {
   return raw
 }
 
+const GROUP_MODE_KEY: Record<ActivitySettings['groupMode'], StringKey> = {
+  none: 'info.groupMode.none',
+  separate: 'info.groupMode.separate',
+  visible: 'info.groupMode.visible',
+}
+
+const COMPLETION_MODE_KEY: Record<ActivitySettings['completion'], StringKey> = {
+  none: 'info.completionMode.none',
+  manual: 'info.completionMode.manual',
+  automatic: 'info.completionMode.automatic',
+  unknown: 'info.completionMode.unknown',
+}
+
 function buildInfoPanel(activity: ActivityInfo, parsed: ParsedActivity, panel: HTMLElement): void {
-  const lang = navigator.language
+  const lang = detectLang()
   const settings = activity.settings
 
   const access = infoCard(panel, t('info.visibility'))
@@ -201,8 +214,8 @@ function buildInfoPanel(activity: ActivityInfo, parsed: ParsedActivity, panel: H
         ? settings.availability.conditions.map((c) => c.text).join(' · ')
         : t('info.none'),
     )
-    addRow(access, t('info.groups'), settings.groupMode)
-    addRow(access, t('info.completion'), settings.completion)
+    addRow(access, t('info.groups'), t(GROUP_MODE_KEY[settings.groupMode]))
+    addRow(access, t('info.completion'), t(COMPLETION_MODE_KEY[settings.completion]))
     // Authored intent that was parsed but never shown.
     if (settings.completionView) addRow(access, t('info.completionView'), t('info.yes'))
     if (settings.completionPassGrade) addRow(access, t('info.completionPass'), t('info.yes'))
