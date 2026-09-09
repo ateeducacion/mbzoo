@@ -1233,8 +1233,9 @@ test.describe('French locale', () => {
       'Ouvrir les sauvegardes de cours Moodle directement dans votre navigateur',
     )
     const title = page.locator('.dz-title')
-    await expect(title).toContainText('Déposer votre')
-    await expect(title).toContainText('fichier ici')
+    await expect(title).toContainText('Déposer votre fichier')
+    await expect(title).toContainText('ici')
+    await expect(title).not.toContainText('fichier ici')
     expect(warnings.filter((w) => w.includes('missing key'))).toEqual([])
   })
 })

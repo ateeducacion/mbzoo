@@ -994,13 +994,13 @@ export class Renderer {
       if (doc.numPages > MAX_PDF_PAGES) {
         const note = document.createElement('p')
         note.className = 'fallback-note'
-        note.textContent = `Showing ${MAX_PDF_PAGES} of ${doc.numPages} pages — use Download for the rest.`
+        note.textContent = t('showingPages', { n: MAX_PDF_PAGES, total: doc.numPages })
         card.appendChild(note)
       }
     } catch {
       const note = document.createElement('p')
       note.className = 'fallback-note'
-      note.textContent = `Could not render “${fileName}” inline — use Download.`
+      note.textContent = t('pdfError', { name: fileName })
       card.appendChild(note)
     }
   }
