@@ -1,6 +1,6 @@
 ---
 name: mbz-security
-description: Security review rules for hostile MBZ input and browser trust boundaries. Use for archive/XML parsing, HTML/file previews, URLs, dependencies, workers, or any new capability that consumes backup data.
+description: Security review rules for hostile MBZ input and browser trust boundaries. Use when reviewing a vulnerability or changing trust boundaries in archive/XML parsing, previews, URLs or worker messages.
 ---
 # Skill: MBZoo security review
 

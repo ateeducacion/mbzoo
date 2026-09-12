@@ -124,4 +124,5 @@ apps/viewer/dist/
 doc_build/
 
 # Claude Code agent scratch (worktrees, local settings)
-.claude/
+.claude/*
+!.claude/skills/

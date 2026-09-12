@@ -12,5 +12,5 @@ description: Invariants for apps/viewer UI, worker integration and activity rend
 - Do not automatically request remote resources referenced by backup content. External URLs require explicit user action.
 - Executable HTML/file previews must follow `mbz-content-sandbox`; do not weaken sandbox/CSP from renderer code.
 - Keep loading, error, warnings, empty/fallback and “open another” flows coherent when changing state transitions.
-- User-facing changes require targeted tests and browser-level verification. Load `browser-qa` for interaction/rendering changes and `web-quality-audit` for substantial UI work.
+- User-facing changes require targeted tests and browser-level verification. Load `browser-qa` for interaction/rendering changes; use `web-quality-audit` when a broader quality audit is requested.
 - Run `bun run check`; run `bun run test:e2e` when behavior is visible in the browser.

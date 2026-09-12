@@ -12,5 +12,5 @@ description: Performance and memory rules for archive parsing, workers and previ
 6. Prefer on-demand entry reads and previews. Do not eagerly materialize every file merely because metadata references it.
 7. Object URLs, PDF documents/canvases and other preview resources need bounded lifetimes and cleanup when the user switches activity/course.
 8. Any new size/count/time limit must be justified by security/performance evidence or a documented decision; avoid unexplained magic thresholds.
-9. Multi-gigabyte streaming/lazy backup support is planned, not currently guaranteed. Do not describe the app as supporting it until measured end-to-end behavior exists.
+9. ZIP reads lazily through `packages/core/src/archive/lazy-zip-reader.ts`; TAR.GZ stages decompressed bytes in a Blob and indexes offsets in `targz-reader.ts` (ADR-0036). Preserve on-demand reads and decompression limits; do not restore a whole-tar ArrayBuffer. OPFS staging remains planned, and this implementation is not a guarantee of arbitrary multi-gigabyte capacity.
 10. Significant benchmark claims belong in an EXP record via `mbz-research`; run targeted tests, `bun run check`, and browser QA when user-visible responsiveness changes.
