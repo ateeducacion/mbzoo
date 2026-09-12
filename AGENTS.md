@@ -5,32 +5,18 @@ browser. *See what's inside your MBZ.* License: GPL-3.0-or-later (ADR-0035).
 Per-activity export (module XML, rendered content HTML, files ZIP) ships
 (ADR-0016); whole-backup re-packaging is planned, not implemented.
 
-## Current maturity
+## Product scope
 
-Experimental but working end-to-end (2026-08-25): drag/drop `.mbz` → archive
-detection (ZIP + TAR.GZ) → parsing in a Web Worker → normalized course model →
-course/section/activity explorer.
-
-Implemented content support includes sanitized Page/Label HTML, URL activities,
-Resource/File/Folder previews (main file by Moodle's marker, ADR-0028),
-PDF/image/text/video previews, sandboxed HTML and multi-page sites with
-validated in-frame navigation (ADR-0022), EPUB chapters (ADR-0024),
-eXeLearning package inspection (ADR-0025) and SCORM/eXe package zips
-classified and rendered from a resource (ADR-0034), embedded and
-remote-embed content named rather than dropped (in sandboxed sites too), section hierarchy for flexsections and
-delegated sections (ADR-0030), and metadata fallback for unknown modules.
-H5P (ADR-0018) and SCORM (ADR-0023) playback are **experimental** inside the
-opaque-origin sandbox. ZIP backups are read lazily by central directory;
-TAR.GZ is decompressed into a Blob and indexed as it streams, so the renderer
-never allocates the whole tar (ADR-0036, supersedes ADR-0029; OPFS staging is
-still TASK-012 if blob storage proves insufficient). Whole-backup re-packaging
-remains planned. Do not advertise planned capabilities as existing.
+The current support matrix belongs in `README.md` and the viewer documentation.
+SCORM (ADR-0023/0032) and H5P (ADR-0018) playback are experimental.
+Whole-backup re-packaging remains planned; do not advertise it as implemented.
 
 ## Repository map
 
 ```
 apps/viewer/    browser app (Vite, vanilla TS, parse worker, renderers)
 apps/cli/       Bun CLI adapter over the core
+apps/docs/      documentation site bundled with the viewer
 packages/core/  portable parser: model/ archive/ moodle/   (@mbzoo/core)
 fixtures/       deterministic synthetic .mbz fixtures + generator + manifest
 e2e/            Playwright specs
@@ -40,18 +26,24 @@ docs/           architecture & privacy documentation
 .github/        CI workflows
 ```
 
-## Mandatory commands
+## Development and verification
 
 ```bash
-bun install                 # after changing dependencies
+bun install --frozen-lockfile # reproduce the committed dependency set
 bun run check               # lint + format + typecheck + unit tests + build + research validation
 bun run dev:viewer          # viewer dev server
-bun run test:e2e            # Playwright (needs `npx playwright install`)
+bun run build:viewer        # required before E2E: tests serve the built viewer
+bunx playwright install     # install browser engines once
+bun run test:e2e             # Chromium, Firefox and WebKit
 bun run cli -- <file.mbz>   # inspect a backup from the terminal
 bun run research:indexes    # regenerate research indexes (never edit them)
 ```
 
-CI runs the same commands; if `bun run check` fails locally it fails in CI.
+Run checks appropriate to the change while iterating; `bun run check` is the
+final code-change gate used by CI. Documentation/skill-only changes need link,
+frontmatter and diff checks; workflow changes also need `actionlint`.
+E2E uses a checkout-derived port (`MBZOO_E2E_PORT` overrides it) and never reuses
+an existing server. Do not import playground shell selectors or WASM boot waits.
 
 ## Architecture boundaries
 
@@ -65,12 +57,13 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
   HTML may reach `innerHTML` only after the single `sanitizeHtml()`/DOMPurify
   path defined by ADR-0012. Do not create a second sanitization path.
 - Executable HTML files run only in an opaque-origin sandboxed iframe with the
-  injected CSP defined by ADR-0014; never in the MBZoo application origin.
+  preview-specific CSP policies (ADR-0017/0018/0032); never in the MBZoo application origin.
 - New packages only when a real boundary exists (ADR-0011).
 
 ## Coding conventions
 
 - English everywhere: code, comments, docs, ADRs, commits.
+- Branch names are English and start with `feature/` or `hotfix/`.
 - TypeScript strict plus noUncheckedIndexedAccess/exactOptionalPropertyTypes;
   do not weaken flags.
 - No comments unless they explain a non-obvious "why"; cite decision/source IDs
@@ -85,10 +78,9 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
    assertions to silence validation.
 2. Never execute backup-provided JavaScript in the MBZoo application origin.
    Page/Label HTML is sanitized (ADR-0012); executable HTML-file previews use
-   the opaque-origin sandbox + injected CSP from ADR-0014.
-3. SCORM launchers are not implemented. H5P playback is experimental only
-   (ADR-0018): it must stay inside the opaque-origin sandbox and must not gain
-   new iframe permissions. Any new executable-content surface,
+   the opaque-origin sandbox and its preview-specific CSP policies.
+3. SCORM/H5P playback must stay inside the opaque-origin sandbox. Preserve
+   the per-preview permissions and CSP in `mbz-content-sandbox`. Any new executable-content surface,
    iframe permission, postMessage bridge or network capability requires an
    evidence-backed security/architecture decision and threat-model review.
 4. Nothing may upload user data anywhere. No telemetry, analytics or automatic
@@ -137,3 +129,50 @@ CI runs the same commands; if `bun run check` fails locally it fails in CI.
 - Edit generated files by hand; rewrite ADR history; reuse IDs.
 - Add heavy frameworks or new dependencies without an evidence-backed record
   covering purpose, license, maintenance and bundle impact.
+
+## Task-specific skills
+
+Read the skill needed for the task, not the whole catalog. Repository rules and
+local domain guidance take precedence over general upstream examples.
+
+| Skill | Use for |
+| --- | --- |
+| [mbz-parser](.agents/skills/mbz-parser/SKILL.md) | Archive/XML normalization and the portable core model |
+| [mbz-viewer](.agents/skills/mbz-viewer/SKILL.md) | Viewer state, worker transport and renderers |
+| [mbz-content-sandbox](.agents/skills/mbz-content-sandbox/SKILL.md) | Executable previews, CSP, iframe permissions and navigation messages |
+| [mbz-security](.agents/skills/mbz-security/SKILL.md) | Reviewing hostile-input trust boundaries |
+| [mbz-performance](.agents/skills/mbz-performance/SKILL.md) | Archive memory, lazy reads, transfers and preview lifetimes |
+| [mbz-fixture](.agents/skills/mbz-fixture/SKILL.md) | Deterministic synthetic backups and specimen provenance |
+| [browser-qa](.agents/skills/browser-qa/SKILL.md) | Authoring E2E specs and verifying viewer behavior |
+| [systematic-debugging](.agents/skills/systematic-debugging/SKILL.md) | Reproducing failures and isolating their cause |
+| [web-quality-audit](.agents/skills/web-quality-audit/SKILL.md) | Requested viewer quality audits |
+| [mbz-research](.agents/skills/mbz-research/SKILL.md) | Registering format/library evidence and experiments |
+| [architecture-decision](.agents/skills/architecture-decision/SKILL.md) | Durable decisions and superseding ADRs |
+| [release-check](.agents/skills/release-check/SKILL.md) | Release verification |
+| [skill-maintenance](.agents/skills/skill-maintenance/SKILL.md) | Updating these instructions and skills |
+| [github-actions-hardening](.agents/skills/github-actions-hardening/SKILL.md) | Writing or reviewing GitHub Actions workflows |
+| [playwright-cli](.agents/skills/playwright-cli/SKILL.md) | Terminal browser exploration; `browser-qa` governs E2E specs |
+
+### Installation and updates
+
+Skills live in `.agents/skills/`, with one symlink per skill in `.claude/skills/`.
+Local skills have no GitHub provenance and are maintained here. The two upstream
+skills are installed with `gh skills` (`gh skill` is an alias):
+
+```bash
+gh skills install github/awesome-copilot skills/github-actions-hardening --agent github-copilot
+gh skills install microsoft/playwright-cli skills/playwright-cli --agent github-copilot
+gh skills update --all --dir .agents/skills
+```
+
+Keep upstream contents and `metadata.github-*` verbatim. Fix upstream and update;
+put MBZoo-specific overrides here or in local skills. The sources are
+`github/awesome-copilot` ([MIT](.agents/licenses/github-awesome-copilot-MIT.txt)) and
+`microsoft/playwright-cli` ([Apache-2.0](.agents/licenses/microsoft-playwright-cli-Apache-2.0.txt)).
+Do not import Moodle Playground PHP/WASM or Node-test skills: MBZoo uses a portable
+TypeScript parser, Bun tests, and a different browser architecture.
+
+`.github/workflows/update-agent-skills.yml` checks weekly and on manual dispatch,
+then opens or updates a review PR. It skips local skills and never auto-merges.
+The default GitHub token does not trigger CI for the resulting PRs; review the
+prompt diff before merging. Dependabot maintains the workflow action pins.

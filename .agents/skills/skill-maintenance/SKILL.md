@@ -12,4 +12,5 @@ description: Create, review or update project Agent Skills under .agents/skills 
 6. When repository reality changes, fix the canonical document and every skill whose instruction became false. Stale skills are worse than missing skills.
 7. Do not vendor/copy third-party skill text unless its license and provenance have been verified and preserving it verbatim is intentional. Prefer a local project-specific skill when that is sufficient.
 8. Avoid overlapping skills with indistinguishable triggers. Merge or sharpen them instead.
-9. After changes, scan `.agents/skills`, `AGENTS.md` and README for contradictory claims/obsolete ADR references, then run the repository checks appropriate to the files touched.
+9. Install external skills with `gh skills` and preserve `metadata.github-*` plus upstream text verbatim. Keep project overrides in local skills or `AGENTS.md`; expose every skill via `.claude/skills/<name>` symlink to `../../.agents/skills/<name>`. The weekly updater skips skills without GitHub provenance.
+10. After changes, scan `.agents/skills`, `AGENTS.md` and README for contradictory claims/obsolete ADR references, then run the repository checks appropriate to the files touched.

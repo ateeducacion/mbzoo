@@ -12,5 +12,5 @@ description: Browser-level QA for the MBZoo viewer using Playwright. Use for use
 6. For security-sensitive previews, verify sandbox behavior and blocked capabilities, not merely that an iframe exists.
 7. Keep tests deterministic: use locators and event/state waits, never fixed sleeps. Do not enable retries to mask flakes.
 8. Validate keyboard-reachable controls, visible focus where applicable, labels/titles for interactive or embedded content, and responsive behavior for significant UI changes.
-9. Run the affected project while iterating; before completion run `bun run test:e2e` across Chromium, Firefox and WebKit plus `bun run check`.
+9. Run `bun run build:viewer` before E2E: `playwright.config.ts` serves `apps/viewer/dist` with Vite preview, not source. It derives a port per checkout (`MBZOO_E2E_PORT` overrides it) and sets `reuseExistingServer: false`. Run the affected browser while iterating; before completing browser behavior changes run `bun run test:e2e` across Chromium, Firefox and WebKit plus `bun run check`.
 10. Use retained Playwright traces to diagnose failures; update tests only when product behavior intentionally changed.

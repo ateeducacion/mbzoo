@@ -1,0 +1,51 @@
+# GITHUB_TOKEN-created PRs do not trigger CI. Review prompt changes before merging.
+name: Update agent skills
+
+on:
+  schedule:
+    # Weekly, Mondays at 06:43 UTC. Offset from the other Monday schedules.
+    - cron: "43 6 * * 1"
+  workflow_dispatch:
+
+# Only the update job can push a branch and open a PR.
+permissions: {}
+
+concurrency:
+  group: update-agent-skills
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: update
+        uses: devantler-tech/actions/update-agent-skills@4f4e07a3ebf3e1161756a292966e36c91a65ee04 # v13.3.0
+        with:
+          dir: .agents/skills
+
+      - name: Open pull request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          commit-message: "chore(deps): update agent skills"
+          title: "chore(deps): update agent skills"
+          body: |
+            Weekly `gh skill update --all` run against `.agents/skills/`.
+
+            ```text
+            ${{ steps.update.outputs.updated-skills }}
+            ```
+
+            Skills are prompts that coding agents follow, so an upstream change
+            is a behaviour change: skim the diff before merging.
+          add-paths: .agents/skills/**
+          branch: feature/update-agent-skills
+          delete-branch: true

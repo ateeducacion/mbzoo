@@ -1,16 +1,32 @@
 ---
 name: mbz-content-sandbox
-description: Security invariants for executable or active backup content. Load for iframe, HTML+JS, SCORM, H5P, postMessage, CSP, sandbox permissions, or embedded-runtime work.
+description: Preserve MBZoo executable-preview isolation when changing CSP, iframe permissions, SCORM/H5P players or navigation messages.
 ---
-# Skill: MBZoo content sandbox
+# MBZoo content sandbox
 
-1. Read ADR-0009, ADR-0012, ADR-0014 and the current threat model before changing active-content behavior.
-2. Backup-provided JavaScript must never execute in the MBZoo application origin.
-3. Current executable HTML-file preview uses an iframe with `sandbox="allow-scripts"` only: no `allow-same-origin`. Preserve the opaque origin unless a new evidence-backed ADR explicitly changes the security model.
-4. Preserve the injected `SANDBOX_CSP` default-deny model. Local sibling assets may be rewritten to controlled blob/data URLs; backup-authored remote network, frames, forms and connections must not become automatically available.
-5. Do not add popup, top-navigation, form, download, storage, same-origin or other sandbox permissions as a convenience fix. Treat each new token/capability as a security design change.
-6. A future postMessage bridge must validate `event.source`, a strict message schema and an explicit capability/operation allowlist. Because opaque sandbox origins report `null`, do not rely on `event.origin` alone as authentication.
-7. SCORM/H5P runtimes are still research work. Before adding a launcher, document runtime/library evidence, license/bundle impact, required sandbox capabilities, message/API surface and threat-model changes; create/supersede an ADR where required.
-8. Revoke preview object URLs when disposed and avoid sharing application secrets/state into the frame.
-9. Add browser security tests that demonstrate blocked app-DOM access and blocked network/capabilities for malicious fixture content. Use synthetic fixtures only.
-10. Do not claim SCORM/H5P compatibility or isolation properties that have not been verified across the supported browsers.
+Read `research/compliance/security/threat-model.md` and the relevant decisions:
+ADR-0017 supersedes the initial HTML-preview policy in ADR-0014; ADR-0018 covers
+H5P, ADR-0022 navigation, ADR-0023 SCORM, and ADR-0032 composed SCO documents.
+
+- Backup JavaScript never runs in the application origin. No preview grants
+  `allow-same-origin`.
+- HTML/site frames in `apps/viewer/src/renderers.ts` currently grant
+  `allow-scripts`, `allow-popups`, and `allow-popups-to-escape-sandbox` for author
+  links (ADR-0017). H5P frames grant only `allow-scripts`. Do not copy permissions
+  between preview types or describe every frame as scripts-only.
+- Preserve the distinct `SANDBOX_CSP`, `SCORM_CSP`, and `H5P_CSP` in
+  `apps/viewer/src/lib/preview-utils.ts`. SCORM's eval allowance is scoped to SCO
+  documents; it is not permission to widen ordinary HTML previews. Network,
+  nested frames and form submissions remain denied by these policies.
+- The navigation bridge already exists. Preserve the current-frame
+  `event.source` check, per-document token, strict `parseNavigationRequest`
+  validation, rate limit and mounted-page allowlist. Opaque `event.origin`
+  values are not authentication; a WindowProxy alone survives navigation.
+- SCORM and H5P playback are experimental implementations in
+  `apps/viewer/src/lib/scorm-player.ts` and `h5p-player.ts`. New runtime/network
+  capabilities require evidence for license, bundle impact and trust boundaries,
+  plus an ADR/threat-model update when the security decision changes.
+- Revoke preview URLs and message listeners on disposal. Exercise malicious
+  synthetic content in browser tests: blocked application-DOM access, automatic
+  remote fetches and disallowed capabilities. Do not infer isolation or package
+  compatibility from an iframe attribute or a Chromium-only success.
