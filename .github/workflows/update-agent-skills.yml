@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
 
       - id: update
-        uses: devantler-tech/actions/update-agent-skills@4f4e07a3ebf3e1161756a292966e36c91a65ee04 # v13.3.0
+        uses: devantler-tech/actions/update-agent-skills@a147ead8b8bc937fbfb1974e3698c7e32f95517d # v13.5.1
         with:
           dir: .agents/skills
 
