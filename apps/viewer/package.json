@@ -17,7 +17,7 @@
     "fflate": "0.8.3",
     "h5p-standalone": "^3.8.2",
     "pdfjs-dist": "^6.3.289",
-    "scorm-again": "3.3.4"
+    "scorm-again": "3.3.7"
   },
   "devDependencies": {
     "vite": "8.3.0"
