@@ -13,13 +13,13 @@
   },
   "dependencies": {
     "@mbzoo/core": "workspace:*",
-    "dompurify": "3.4.15",
+    "dompurify": "3.4.16",
     "fflate": "0.8.3",
     "h5p-standalone": "^3.8.2",
     "pdfjs-dist": "^6.3.289",
-    "scorm-again": "3.3.7"
+    "scorm-again": "3.4.1"
   },
   "devDependencies": {
-    "vite": "8.3.0"
+    "vite": "8.3.1"
   }
 }
