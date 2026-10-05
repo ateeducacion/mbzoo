@@ -37,12 +37,25 @@ jobs:
       - run: bun run typecheck
       - run: bun test packages apps fixtures
       - run: bun run test:coverage
+      # cli.codecov.io rejects the runner TLS handshake (codecov/codecov-action#1975),
+      # so the action's default download fails before upload. Fetch a pinned CLI
+      # release from GitHub and hand it to the action via `binary`.
+      - name: Install Codecov CLI
+        if: github.actor != 'dependabot[bot]'
+        env:
+          CODECOV_CLI_SHA256: ca1d64196d2d34771084afe76ea657d581bf628e31d993ff8e52ea09cc88a56d
+        run: |
+          curl -fsSL -o codecovcli \
+            https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_linux
+          echo "${CODECOV_CLI_SHA256}  codecovcli" | sha256sum -c -
+          chmod +x codecovcli
       - uses: codecov/codecov-action@v7
         # Dependabot PRs cannot read Actions secrets, so CODECOV_TOKEN is empty
         # and Codecov rejects the upload ("Token required because branch is
         # protected"). Tests still run; coverage from those PRs matches main.
         if: github.actor != 'dependabot[bot]'
         with:
+          binary: ${{ github.workspace }}/codecovcli
           files: coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           # A silent coverage gap is worse than a red CI run.
