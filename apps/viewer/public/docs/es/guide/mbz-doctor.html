@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MBZ Doctor - MBZoo</title>
+<link href="/mbzoo/docs/static/css/styles.c968649e43.css" rel="stylesheet">
+<link rel="preload" href="/mbzoo/docs/static/js/async/route-975b7656908c.ec0ff056a0.js" as="script">
+<script defer src="/mbzoo/docs/static/js/styles.d11df0a7f2.js"></script>
+<script defer src="/mbzoo/docs/static/js/lib-react.2d09b3b9e3.js"></script>
+<script defer src="/mbzoo/docs/static/js/lib-router.a765e51b9f.js"></script>
+<script defer src="/mbzoo/docs/static/js/953.ae7d7417d2.js"></script>
+<script defer src="/mbzoo/docs/static/js/index.aa99a8f49a.js"></script>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="generator" content="Rspress v2.0.19">
+<link rel="icon" href="/mbzoo/docs/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MBZ Doctor - MBZoo">
+<meta name="description" content="MBZ Doctor examina una copia .mbz de Moodle en este dispositivo y, para unos pocos problemas verificados, descarga una copia nueva. El archivo original no se modifica. Un archivo que vuelve a abrirse en MBZoo no es un archivo que Moodle haya restaurado. Tras una reparación la herramienta dice: Archive and structural validation passed. Successful restoration in Moodle has not been verified. La frase está en inglés a propósito en el informe técnico. En la interfaz aparece traducida. Las comprobaciones estáticas no demuestran una restauración.">
+<meta property="og:description" content="MBZ Doctor examina una copia .mbz de Moodle en este dispositivo y, para unos pocos problemas verificados, descarga una copia nueva. El archivo original no se modifica. Un archivo que vuelve a abrirse en MBZoo no es un archivo que Moodle haya restaurado. Tras una reparación la herramienta dice: Archive and structural validation passed. Successful restoration in Moodle has not been verified. La frase está en inglés a propósito en el informe técnico. En la interfaz aparece traducida. Las comprobaciones estáticas no demuestran una restauración."></head>
+
+  <body>
+    <div id="__rspress_root"><div class="rp-llms-hint" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);clip-path:inset(50%);white-space:nowrap;border:0">For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/mbz-doctor.md.</div><header class="rp-nav"><div class="rp-nav__left"><div class="rp-nav__title"><a href="/mbzoo/docs/" class="rp-nav__title__link rp-link"><span>MBZoo</span></a></div></div><div class="rp-nav__right"><button class="rp-search-button"><div class="rp-search-button__content"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 20 21" class="rp-search-button__icon"><path fill="currentColor" d="M8.333 1.913A6.667 6.667 0 0 1 15 8.58c0 1.54-.525 2.957-1.402 4.085l4.49 4.492a.834.834 0 0 1-1.177 1.178l-4.491-4.49a6.64 6.64 0 0 1-4.087 1.402 6.667 6.667 0 0 1 0-13.334m0 1.667a5 5 0 1 0 0 10 5 5 0 0 0 0-10"></path></svg><span class="rp-search-button__word">Search</span></div><div class="rp-search-button__hotkey" style="opacity:0"><span></span><span>K</span></div></button><div class="rp-search-button--mobile"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 20 21"><path fill="currentColor" d="M8.333 1.913A6.667 6.667 0 0 1 15 8.58c0 1.54-.525 2.957-1.402 4.085l4.49 4.492a.834.834 0 0 1-1.177 1.178l-4.491-4.49a6.64 6.64 0 0 1-4.087 1.402 6.667 6.667 0 0 1 0-13.334m0 1.667a5 5 0 1 0 0 10 5 5 0 0 0 0-10"></path></svg></div><ul class="rp-nav-menu rp-nav-menu--right"><li class="rp-nav-menu__item"><a href="/mbzoo/docs/guide/what-is-mbz.html" class="rp-nav-menu__item__container rp-link">Guide</a></li><li class="rp-nav-menu__item rp-nav-menu__item--active"><a href="/mbzoo/docs/guide/mbz-doctor.html" class="rp-nav-menu__item__container rp-link">MBZ Doctor</a></li><li class="rp-nav-menu__item"><a href="/mbzoo/docs/guide/activity-support.html" class="rp-nav-menu__item__container rp-link">Activity support</a></li><li class="rp-nav-menu__item"><a href="/mbzoo/docs/ARCHITECTURE.html" class="rp-nav-menu__item__container rp-link">Architecture</a></li><li class="rp-nav-menu__item"><a href="/mbzoo/docs/PRIVACY.html" class="rp-nav-menu__item__container rp-link">Privacy</a></li></ul><div class="rp-nav__others"><div class="rp-nav-menu__divider"></div><div class="rp-social-links"><a href="https://github.com/ateeducacion/mbzoo" target="_blank" rel="noopener noreferrer" class="rp-social-links__item"><div class="rp-social-links__icon"><div class="rp-social-links__icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12c0 5.303 3.438 9.8 8.205 11.385c.6.113.82-.258.82-.577c0-.285-.01-1.04-.015-2.04c-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729c1.205.084 1.838 1.236 1.838 1.236c1.07 1.835 2.809 1.305 3.495.998c.108-.776.417-1.305.76-1.605c-2.665-.3-5.466-1.332-5.466-5.93c0-1.31.465-2.38 1.235-3.22c-.135-.303-.54-1.523.105-3.176c0 0 1.005-.322 3.3 1.23c.96-.267 1.98-.399 3-.405c1.02.006 2.04.138 3 .405c2.28-1.552 3.285-1.23 3.285-1.23c.645 1.653.24 2.873.12 3.176c.765.84 1.23 1.91 1.23 3.22c0 4.61-2.805 5.625-5.475 5.92c.42.36.81 1.096.81 2.22c0 1.606-.015 2.896-.015 3.286c0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></div></div></a><ul class="rp-hover-group rp-hover-group--hidden rp-hover-group--right"></ul></div></div><button aria-label="mobile hamburger" class="rp-nav-hamburger rp-nav-hamburger__sm"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 21 21"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.667" d="M3.645 5.225h13.333M3.645 10.225h13.333M3.645 15.225h13.333"></path></svg></button><button aria-label="mobile hamburger" class="rp-nav-hamburger rp-nav-hamburger__md"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 21 21"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.667" d="M3.645 5.225h13.333M3.645 10.225h13.333M3.645 15.225h13.333"></path></svg><ul class="rp-hover-group rp-hover-group--hidden rp-hover-group--right"><div class="rp-nav-menu__others-mobile__container"><div class="rp-nav-hamburger__md__hover-group"><div class="rp-nav-screen-divider"></div><div class="rp-social-links"><a href="https://github.com/ateeducacion/mbzoo" target="_blank" rel="noopener noreferrer" class="rp-social-links__item"><div class="rp-social-links__icon"><div class="rp-social-links__icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12c0 5.303 3.438 9.8 8.205 11.385c.6.113.82-.258.82-.577c0-.285-.01-1.04-.015-2.04c-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729c1.205.084 1.838 1.236 1.838 1.236c1.07 1.835 2.809 1.305 3.495.998c.108-.776.417-1.305.76-1.605c-2.665-.3-5.466-1.332-5.466-5.93c0-1.31.465-2.38 1.235-3.22c-.135-.303-.54-1.523.105-3.176c0 0 1.005-.322 3.3 1.23c.96-.267 1.98-.399 3-.405c1.02.006 2.04.138 3 .405c2.28-1.552 3.285-1.23 3.285-1.23c.645 1.653.24 2.873.12 3.176c.765.84 1.23 1.91 1.23 3.22c0 4.61-2.805 5.625-5.475 5.92c.42.36.81 1.096.81 2.22c0 1.606-.015 2.896-.015 3.286c0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></div></div></a><ul class="rp-hover-group rp-hover-group--hidden rp-hover-group--right"></ul></div></div></div></ul></button></div></header><div class="rp-doc-layout__menu"><div class="rp-sidebar-menu"><button type="button" class="rp-sidebar-menu__left"><svg width="1em" height="1em" viewBox="0 0 32 32"><path fill="currentColor" d="M4 6h24v2H4zm0 18h24v2H4zm0-12h24v2H4zm0 6h24v2H4z"></path></svg><span>Menu</span></button><button type="button" class="rp-sidebar-menu__right"><span class="rp-sidebar-menu__right__text">ON THIS PAGE</span><svg width="14" height="14" class="rp-progress-circle"><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-divider-light)" stroke-width="2"></circle><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-brand)" stroke-width="2" stroke-dasharray="37.69911184307752" stroke-dashoffset="37.69911184307752" transform="rotate(-90 7 7)" style="transition:stroke-dashoffset 0.3s"></circle></svg><svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-sidebar-menu__right__icon" style="transform:rotate(0deg);transition:transform 0.2s ease-out"><path fill="currentColor" d="M22 16 12 26l-1.4-1.4 8.6-8.6-8.6-8.6L12 6z"></path></svg></button></div></div><div class="rp-doc-layout__container"><aside class="rp-doc-layout__sidebar rp-scrollbar"><a href="/mbzoo/docs/guide/what-is-mbz.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">Guide</span></div><div class="rp-sidebar-item__right"></div></a><a href="/mbzoo/docs/guide/mbz-doctor.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">MBZ Doctor</span></div><div class="rp-sidebar-item__right"></div></a><a href="/mbzoo/docs/guide/activity-support.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">Activity support</span></div><div class="rp-sidebar-item__right"></div></a><a href="/mbzoo/docs/guide/development.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">Development</span></div><div class="rp-sidebar-item__right"></div></a><a href="/mbzoo/docs/guide/research.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">Research system</span></div><div class="rp-sidebar-item__right"></div></a><a href="/mbzoo/docs/ARCHITECTURE.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">Architecture</span></div><div class="rp-sidebar-item__right"></div></a><a href="/mbzoo/docs/PRIVACY.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">Privacy</span></div><div class="rp-sidebar-item__right"></div></a></aside><div class="rp-doc-layout__doc"><main class="rp-doc-layout__doc-container"><div class="rp-doc rspress-doc"><!--$--><h1 class="rp-toc-include" id="mbz-doctor"><a href="#mbz-doctor" class="rp-header-anchor rp-link" aria-hidden="true">#</a>MBZ Doctor<!-- --> </h1><div class="rp-not-doc rp-llms-container"><button class="rp-not-doc rp-llms-button rp-llms-copy-button"><div class="rp-llms-copy-button__icon-wrapper"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-llms-copy-button__icon-success"><path fill="currentColor" d="m9.55 18-5.7-5.7 1.425-1.425L9.55 15.15l9.175-9.175L20.15 7.4z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-llms-copy-button__icon-copy"><path fill="currentColor" d="M20 8v12H8V8zm0-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"></path><path fill="currentColor" d="M4 16H2V4a2 2 0 0 1 2-2h12v2H4Z"></path></svg></div><span>Copy Markdown</span></button><button class="rp-llms-button rp-llms-view-options__trigger "><svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-llms-view-options__arrow "><path fill="currentColor" d="M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z"></path></svg></button></div>
+<p>MBZ Doctor examina una copia <code>.mbz</code> de Moodle en este dispositivo y, para
+unos pocos problemas verificados, descarga una copia nueva. El archivo
+original no se modifica.</p>
+<p>Un archivo que vuelve a abrirse en MBZoo no es un archivo que Moodle haya
+restaurado. Tras una reparación la herramienta dice:</p>
+<blockquote>
+<p>Archive and structural validation passed. Successful restoration in Moodle has not been verified.</p>
+</blockquote>
+<p>La frase está en inglés a propósito en el informe técnico. En la interfaz
+aparece traducida. Las comprobaciones estáticas no demuestran una
+restauración.</p>
+<h2 class="rp-toc-include" id="analizar-una-copia"><a href="#analizar-una-copia" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Analizar una copia</h2>
+<p>Abra la copia como siempre. <strong>MBZ Doctor</strong> aparece en la barra del curso.
+El texto de ayuda es «Analiza esta copia de Moodle en busca de errores y
+reparaciones posibles.»</p>
+<p>Si el curso no se puede abrir pero el contenedor aún se puede listar, la
+pantalla de error ofrece <strong>Analizar el archivo</strong>. Los fallos del contenedor
+no necesitan el modelo completo del curso.</p>
+<p>La versión de Moodle de destino es opcional. Si se deja vacía, un problema
+que depende de la versión sigue siendo condicional y no se trata como un
+error incondicional. Si se indica (por ejemplo <code>5.2</code>), la copia se compara
+con esa versión. Un destino más antiguo es un aviso. La versión declarada
+de la copia no se reescribe para saltarse esa comprobación: Moodle
+ejecutaría el código de restauración equivocado.</p>
+<p><strong>Analizar la copia</strong> se ejecuta en el mismo worker de análisis. La página
+sigue respondiendo. Cancelar detiene el análisis. Los hallazgos se filtran
+por gravedad, categoría, posibilidad de reparación y actividad. <strong>Mostrar
+la actividad</strong> solo aparece si esa actividad está en el curso abierto.</p>
+<p>La gravedad es una palabra y una marca, no solo un color: crítico (●),
+aviso (▲), nota (○).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Posibilidad</th><th>Significado</th></tr></thead><tbody><tr><td>Automática</td><td>Se puede aplicar con <strong>Reparar todos los problemas seguros</strong>. No se elimina contenido escrito.</td></tr><tr><td>Requiere confirmación</td><td>Hay que leer la vista previa. Si el cambio puede descartar o alterar registros, hace falta marcar la casilla.</td></tr><tr><td>Manual</td><td>Solo diagnóstico. MBZoo no lo edita.</td></tr><tr><td>No reparable</td><td>La copia no contiene los bytes que faltan, o editarla ocultaría un problema peor.</td></tr></tbody></table></div>
+<h2 class="rp-toc-include" id="reparar-y-descargar"><a href="#reparar-y-descargar" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Reparar y descargar</h2>
+<ol>
+<li>Seleccione una o más reparaciones, o pulse <strong>Reparar todos los problemas seguros</strong> (solo las automáticas).</li>
+<li><strong>Previsualizar cambios</strong> lista los archivos, las ediciones previstas y un extracto del XML antes y después. El extracto permanece en la página.</li>
+<li>Aplique. Las reparaciones que requieren confirmación esperan a <strong>Aplicar las reparaciones confirmadas</strong>.</li>
+<li><strong>Descargar MBZ reparado</strong> guarda un archivo nuevo. <code>curso.mbz</code> pasa a ser <code>curso-repaired.mbz</code>. El nombre quita <code>.mbz</code>, <code>.zip</code>, <code>.tar.gz</code>, <code>.tgz</code> y <code>.gz</code> antes de añadir <code>-repaired.mbz</code>.</li>
+<li><strong>Volver a analizar</strong> examina ese archivo nuevo. El explorador del curso sigue mostrando el original hasta que usted abre la descarga.</li>
+</ol>
+<p>Si una reparación falla, no se ofrece la descarga y el original no cambia.</p>
+<p>La descarga es una copia de Moodle en el mismo tipo de contenedor (ZIP o
+TAR.GZ). No es la exportación por actividad (XML, HTML o ZIP de archivos).</p>
+<h3 class="rp-toc-include" id="reparaciones-admitidas"><a href="#reparaciones-admitidas" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Reparaciones admitidas</h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Reparación</th><th>Cuándo se aplica</th><th>Qué cambia</th><th>Seguridad</th></tr></thead><tbody><tr><td>Tamaño de archivo declarado</td><td>El SHA-1 de los bytes coincide con <code>contenthash</code> y <code>&lt;filesize&gt;</code> no coincide con esa longitud. No se reescriben los archivos excluidos por la copia, los registros de directorio (nombre <code>.</code>) ni las entradas por encima del límite de hash de 8 MiB.</td><td>Solo el texto de <code>&lt;filesize&gt;</code>. Los bytes se quedan. Una segunda pasada no cambia nada.</td><td>Automática. Sin pérdida de contenido.</td></tr><tr><td>Caracteres de control ilegales en XML</td><td>La entrada contiene un código que XML 1.0 prohíbe (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tabulador, LF y CR se conservan.</td><td>Se eliminan esos códigos. El marcado circundante, los elementos desconocidos y los comentarios se conservan.</td><td>Requiere confirmación. Puede alterar texto escrito.</td></tr><tr><td>Pregunta aleatoria moderna</td><td>Véase más abajo. Si falla una precondición, no se edita nada.</td><td>Los <code>question_reference</code> del cuestionario que apuntan a esa entrada del banco pasan a ser <code>question_set_reference</code>. Se elimina la entrada comodín. Las demás preguntas se quedan.</td><td>Requiere confirmación. La pérdida de contenido solo se marca cuando ningún hueco del cuestionario referencia el comodín, porque ese camino borra el registro.</td></tr></tbody></table></div>
+<p>Una reparación que no cambia ningún byte no produce una descarga.</p>
+<h3 class="rp-toc-include" id="escritura-del-archivo"><a href="#escritura-del-archivo" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Escritura del archivo</h3>
+<p>Las entradas que no cambian se copian. El ZIP resultante se almacena sin
+compresión (método 0), así que puede ser mucho mayor que el original.
+<code>ZipPassThrough</code> de fflate transporta bytes almacenados; no copia un flujo
+deflate ya comprimido. Las fechas del ZIP nuevo son fijas
+(<code>2023-11-14T00:00:00.000Z</code>) para que los bytes no dependan del reloj. El
+TAR.GZ resultante es un ustar nuevo más gzip. Un TAR.GZ cuyo contenido sin
+comprimir superaría 512 MiB se rechaza en lugar de truncarse. No hay
+escritor ZIP64. Esto no es soporte para copias de tamaño arbitrario.</p>
+<p>Estos contenedores rechazan la reconstrucción: archivo ilegible, ruta
+insegura, ruta duplicada, suma de comprobación TAR incorrecta, CRC de ZIP
+incorrecto, <code>moodle_backup.xml</code> ausente, más de una raíz de copia. El CRC
+incorrecto se rechaza porque una reescritura guardaría los mismos bytes con
+un CRC recién calculado y ocultaría el desajuste. Un directorio extra
+alrededor de <code>moodle_backup.xml</code> es un aviso y no se elimina.</p>
+<h2 class="rp-toc-include" id="qtype-random"><a href="#qtype-random" class="rp-header-anchor rp-link" aria-hidden="true">#</a><code>qtype &quot;random&quot;</code></h2>
+<p>Moodle 5.2 puede detener una restauración con:</p>
+<div class="rp-codeblock language-text"><div class="rp-codeblock__content"><div class="rp-codeblock__content__scroll-container rp-scrollbar rp-scrollbar--always"><pre class="shiki css-variables" style="background-color:var(--shiki-background);color:var(--shiki-foreground)" tabindex="0" data-lang="text"><code><span class="line"><span>Coding error detected, it must be fixed by a programmer:</span></span>
+<span class="line"><span>You cannot restore a question with qtype &quot;random&quot;.</span></span>
+<span class="line"><span>It must be converted to a set reference instead.</span></span></code></pre></div><div class="rp-code-button-group"><button class="rp-code-button-group__button rp-code-wrap-button" title="Toggle code wrap" aria-label="Toggle code wrap"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-button-group__icon--wrapped"><path fill="currentColor" d="M21 5H3v2h18zM3 19h7v-2H3zm0-6h15c1 0 2 .43 2 2s-1 2-2 2h-2v-2l-4 3 4 3v-2h2c2.95 0 4-1.27 4-4 0-2.72-1-4-4-4H3z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-button-group__icon--wrap"><path fill="currentColor" d="M16 7H3V5h13zM3 19h13v-2H3zm19-7-4-3v2H3v2h15v2z"></path></svg></button><button class="rp-code-button-group__button rp-code-copy-button" title="Copy code"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-copy-button__icon rp-code-copy-button__icon--copy"><path fill="currentColor" d="M20 8v12H8V8zm0-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"></path><path fill="currentColor" d="M4 16H2V4a2 2 0 0 1 2-2h12v2H4Z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-copy-button__icon rp-code-copy-button__icon--success"><path fill="currentColor" d="m9.55 18-5.7-5.7 1.425-1.425L9.55 15.15l9.175-9.175L20.15 7.4z"></path></svg></button></div></div></div>
+<p>La excepción está en <code>restore_create_categories_and_questions::process_question</code>
+en Moodle 5.2 y en <code>main</code>. Moodle 4.5 y 5.1 no la lanzan. El mismo código
+de restauración ya aparta una pregunta aleatoria antigua y deja que el paso
+del cuestionario convierta un <code>question_instance</code> viejo en una referencia a
+un conjunto. Una copia que sigue ese camino está bien. MBZ Doctor la
+informa como pregunta aleatoria heredada y no la reescribe.</p>
+<p>No intente corregir el error así:</p>
+<ul>
+<li>bajando <code>moodle_release</code> o <code>backup_version</code>,</li>
+<li>borrando todas las preguntas aleatorias,</li>
+<li>renombrando <code>&lt;qtype&gt;random&lt;/qtype&gt;</code> a otro tipo.</li>
+</ul>
+<p>Cualquiera de esas acciones puede elegir el código de restauración
+equivocado o eliminar el sorteo para el que se construyó el cuestionario.</p>
+<h3 class="rp-toc-include" id="cuándo-se-ofrece-una-reparación"><a href="#cuándo-se-ofrece-una-reparación" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Cuándo se ofrece una reparación</h3>
+<p>Tiene que cumplirse todo esto:</p>
+<ul>
+<li>La versión de la copia es 4.0 o posterior, y el sello de <code>backup_version</code>
+falta o es al menos <code>20220202</code>. Una versión ausente y sin sello es un
+caso desconocido y no hay reparación. Una versión ausente con sello sigue
+el sello. Un destino anterior a 4.0 es un aviso de compatibilidad, no una
+reparación.</li>
+<li>La pregunta aleatoria es la única pregunta de su <code>question_bank_entry</code>.</li>
+<li>Su texto es exactamente <code>0</code> o <code>1</code> (<code>1</code> incluye subcategorías, que es como
+<code>qtype_random</code> guardaba la marca). Cualquier otro texto, incluida una
+frase, queda como <strong>no se puede convertir con seguridad</strong>.</li>
+<li>El elemento de la categoría tiene <code>contextid</code>. Ese valor se copia a
+<code>questionscontextid</code>. No se inventa ningún id de contexto.</li>
+<li>Los nombres de etiqueta no contienen comas. Moodle parte una etiqueta
+heredada por la primera coma.</li>
+<li>Cada hueco del cuestionario que referencia la entrada del banco ya tiene
+<code>usingcontextid</code>, <code>component</code> y <code>questionarea</code>, y no contiene ya un
+<code>question_set_reference</code>. Un hueco que solo tiene un id de pregunta no se
+convierte, y entonces se omite toda la reparación. No se inventa
+<code>usingcontextid</code>.</li>
+</ul>
+<p>El filtro que se escribe es el JSON heredado que Moodle 4.3 a 5.2 ya
+convierte:</p>
+<div class="rp-codeblock language-json"><div class="rp-codeblock__content"><div class="rp-codeblock__content__scroll-container rp-scrollbar rp-scrollbar--always"><pre class="shiki css-variables" style="background-color:var(--shiki-background);color:var(--shiki-foreground)" tabindex="0" data-lang="json"><code><span class="line"><span style="color:var(--shiki-foreground)">{</span><span style="color:var(--shiki-token-keyword)">&quot;questioncategoryid&quot;</span><span style="color:var(--shiki-token-punctuation)">:</span><span style="color:var(--shiki-token-constant)"> 5</span><span style="color:var(--shiki-token-punctuation)">,</span><span style="color:var(--shiki-token-keyword)"> &quot;includingsubcategories&quot;</span><span style="color:var(--shiki-token-punctuation)">:</span><span style="color:var(--shiki-token-constant)"> 0</span><span style="color:var(--shiki-foreground)">}</span></span></code></pre></div><div class="rp-code-button-group"><button class="rp-code-button-group__button rp-code-wrap-button" title="Toggle code wrap" aria-label="Toggle code wrap"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-button-group__icon--wrapped"><path fill="currentColor" d="M21 5H3v2h18zM3 19h7v-2H3zm0-6h15c1 0 2 .43 2 2s-1 2-2 2h-2v-2l-4 3 4 3v-2h2c2.95 0 4-1.27 4-4 0-2.72-1-4-4-4H3z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-button-group__icon--wrap"><path fill="currentColor" d="M16 7H3V5h13zM3 19h13v-2H3zm19-7-4-3v2H3v2h15v2z"></path></svg></button><button class="rp-code-button-group__button rp-code-copy-button" title="Copy code"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-copy-button__icon rp-code-copy-button__icon--copy"><path fill="currentColor" d="M20 8v12H8V8zm0-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"></path><path fill="currentColor" d="M4 16H2V4a2 2 0 0 1 2-2h12v2H4Z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-copy-button__icon rp-code-copy-button__icon--success"><path fill="currentColor" d="m9.55 18-5.7-5.7 1.425-1.425L9.55 15.15l9.175-9.175L20.15 7.4z"></path></svg></button></div></div></div>
+<p>Las etiquetas, si las hay, se copian como <code>&quot;0,name&quot;</code>. El id de categoría es
+un número JSON cuando es un entero seguro.</p>
+<p>No se ha ejecutado en un sitio real si Moodle 4.0–4.2 guarda ese JSON tal
+cual. Ningún proceso de Moodle ha restaurado un archivo escrito por esta
+herramienta (TASK-017). Hasta que esa restauración quede registrada, trate
+la reparación como una edición estructural con una forma documentada, y
+restáurela en un curso desechable antes de usarla con estudiantes.</p>
+<p>Un banco vacío es un aviso aparte. La herramienta no inventa preguntas
+para llenarlo. Un hueco que apunta a un banco que esta copia no incluyó no
+es lo mismo que un id roto: el banco puede existir en el sitio original.</p>
+<h2 class="rp-toc-include" id="qué-sigue-siendo-solo-diagnóstico"><a href="#qué-sigue-siendo-solo-diagnóstico" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Qué sigue siendo solo diagnóstico</h2>
+<p>Las actividades, secciones, categorías de preguntas, bytes de archivo y XML
+de plugins que faltan se informan y se conservan. Un módulo de terceros
+desconocido no significa que falte en el destino: la copia no puede ver qué
+plugins tiene instalados ese sitio. Los módulos retirados del núcleo (chat,
+survey, el assignment antiguo) se nombran según la historia de Moodle. Si
+el destino elegido es anterior a la retirada, el hallazgo es informativo.</p>
+<p>No se editan nombres de usuario, correos, roles, calificaciones, intentos
+ni entregas. Un conflicto con un usuario que ya existe en el servidor no se
+puede ver desde el archivo. <code>users.xml</code> no se copia al informe.</p>
+<p>No se descargan ni se reconstruyen URL externas, herramientas LTI,
+bibliotecas H5P ni entornos SCORM. Un token <code>$@…@$</code> no se solicita. Una
+actividad SCORM o H5P sin bytes empaquetados es un aviso, y solo cuando la
+copia no desactivó la inclusión de archivos.</p>
+<p>La memoria del servidor, los límites de tiempo de PHP, el tamaño de subida,
+el disco, los permisos y el cron no son propiedades del <code>.mbz</code>. No se
+informan como datos corruptos.</p>
+<h2 class="rp-toc-include" id="catálogo-de-reglas"><a href="#catálogo-de-reglas" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Catálogo de reglas</h2>
+<p>Los identificadores, la gravedad y la posibilidad de reparación son los de
+la <a href="/mbzoo/docs/guide/mbz-doctor.html" class="rp-link">guía en inglés</a>. El texto que ve en la interfaz está
+en español. Las frases en inglés del informe JSON viven en
+<code>packages/core/src/doctor/catalog.ts</code>.</p>
+<h2 class="rp-toc-include" id="informes"><a href="#informes" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Informes</h2>
+<p><strong>Descargar informe de diagnóstico</strong> es JSON. Es texto técnico en inglés
+generado por <code>@mbzoo/core</code>. <strong>Descargar informe legible</strong> sigue el idioma
+de la página. Los dos omiten el enunciado de las preguntas, los bytes, las
+contraseñas, los nombres de usuario y los correos. El XML de antes y
+después permanece en pantalla y en el JSON se sustituye por <code>[omitted]</code>.</p>
+<h2 class="rp-toc-include" id="comprobar-el-resultado-en-moodle"><a href="#comprobar-el-resultado-en-moodle" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Comprobar el resultado en Moodle</h2>
+<ol>
+<li>Restaure el archivo descargado en un curso desechable, en la versión de
+Moodle que realmente usa.</li>
+<li>Abra la actividad que nombró el hallazgo. En una reparación de pregunta
+aleatoria, previsualice el cuestionario y confirme que el hueco sigue
+sorteando la misma categoría.</li>
+<li>Si Moodle rechaza el archivo, conserve el original y el informe. No
+repita la misma reparación: una segunda pasada no encuentra nada que
+cambiar cuando la primera tuvo éxito.</li>
+</ol>
+<p>Estas comprobaciones se han ejecutado en las pruebas unitarias de MBZoo y
+en el navegador con copias sintéticas: ida y vuelta ZIP y TAR.GZ, la
+reparación del tamaño, la de los caracteres ilegales, las precondiciones
+de la pregunta aleatoria moderna, y la negativa a reescribir una pregunta
+aleatoria heredada de Moodle 3.x. No se han ejecutado dentro de Moodle. El
+código comparado al diseñar la regla: forma de pregunta de 3.x, entradas de
+banco de 4.0, conversión del filtro heredado en 4.3–5.2, 4.5, 5.1 (sin la
+excepción) y 5.2 / <code>main</code> (la excepción de arriba). Véase AN-009 y
+ADR-0037.</p>
+<h2 class="rp-toc-include" id="privacidad"><a href="#privacidad" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Privacidad</h2>
+<p>El análisis, la vista previa y las dos descargas permanecen en el
+navegador. No se sube nada. Un informe puede nombrar rutas del archivo. No
+publique un informe de una copia que contiene personas si esas rutas
+identificarían un curso o a una persona. Véase
+<a href="/mbzoo/docs/es/PRIVACY.html" class="rp-link">Privacidad</a>.</p>
+<p><a href="/mbzoo/docs/guide/mbz-doctor.html" class="rp-link">English</a></p><!--/$--></div><footer class="rp-doc-footer"><div class="rp-doc-footer__edit"></div><div class="rp-doc-footer__divider"></div><div class="rp-prev-next-page"><div class="rp-prev-next-page__placeholder"></div><a href="/mbzoo/docs/guide/what-is-mbz.html" class="rp-prev-next-page__item rp-prev-next-page__next rp-link"><span class="rp-prev-next-page__item__desc">Next page</span><span class="rp-prev-next-page__item__title"><span>Guide</span><svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-prev-next-page__icon"><path fill="currentColor" d="M22 16 12 26l-1.4-1.4 8.6-8.6-8.6-8.6L12 6z"></path></svg></span></a></div></footer></main></div><aside class="rp-doc-layout__outline rp-scrollbar"><div class="rp-outline"><div class="rp-outline__title">ON THIS PAGE<svg width="14" height="14" class="rp-progress-circle"><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-divider-light)" stroke-width="2"></circle><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-brand)" stroke-width="2" stroke-dasharray="37.69911184307752" stroke-dashoffset="37.69911184307752" transform="rotate(-90 7 7)" style="transition:stroke-dashoffset 0.3s"></circle></svg></div><nav class="rp-outline__toc rp-scrollbar"><a href="#analizar-una-copia" class="rp-toc-item rp-link" title="Analizar una copia" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Analizar una copia</span></a><a href="#reparar-y-descargar" class="rp-toc-item rp-link" title="Reparar y descargar" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Reparar y descargar</span></a><a href="#reparaciones-admitidas" class="rp-toc-item rp-link" title="Reparaciones admitidas" style="padding-left:12px" data-depth="1"><span class="rp-toc-item__text rp-doc">Reparaciones admitidas</span></a><a href="#escritura-del-archivo" class="rp-toc-item rp-link" title="Escritura del archivo" style="padding-left:12px" data-depth="1"><span class="rp-toc-item__text rp-doc">Escritura del archivo</span></a><a href="#qtype-random" class="rp-toc-item rp-link" title="qtype &quot;random&quot;" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc"><code>qtype "random"</code></span></a><a href="#cuándo-se-ofrece-una-reparación" class="rp-toc-item rp-link" title="Cuándo se ofrece una reparación" style="padding-left:12px" data-depth="1"><span class="rp-toc-item__text rp-doc">Cuándo se ofrece una reparación</span></a><a href="#qué-sigue-siendo-solo-diagnóstico" class="rp-toc-item rp-link" title="Qué sigue siendo solo diagnóstico" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Qué sigue siendo solo diagnóstico</span></a><a href="#catálogo-de-reglas" class="rp-toc-item rp-link" title="Catálogo de reglas" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Catálogo de reglas</span></a><a href="#informes" class="rp-toc-item rp-link" title="Informes" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Informes</span></a><a href="#comprobar-el-resultado-en-moodle" class="rp-toc-item rp-link" title="Comprobar el resultado en Moodle" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Comprobar el resultado en Moodle</span></a><a href="#privacidad" class="rp-toc-item rp-link" title="Privacidad" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">Privacidad</span></a></nav><div class="rp-outline__divider"></div><div class="rp-outline__bottom"></div></div></aside></div></div>
+    <div id="__rspress_modal_container"></div>
+  </body>
+</html>

@@ -1,4 +1,5 @@
 import type { ParsedBackup } from '@mbzoo/core'
+import { initDoctor } from './doctor-panel.ts'
 import { detectLang, type StringKey, t } from './lib/i18n.ts'
 import { formatBytes } from './lib/preview-utils.ts'
 
@@ -56,6 +57,14 @@ const dropOverlay = document.getElementById('drop-overlay') as HTMLElement
 
 let worker: Worker | undefined
 let requestId = 0
+const doctor = initDoctor({
+  worker: () => getWorker(),
+  nextId: () => ++requestId,
+  openActivity: (id) => {
+    void openActivity(id)
+  },
+  hasActivity: (id) => currentBackup?.activities.some((activity) => activity.id === id) ?? false,
+})
 let currentBackup: ParsedBackup | undefined
 let currentFacts: { fileSize: number; elapsedMs: number } | undefined
 let renderer: Renderer | undefined
@@ -575,6 +584,8 @@ const STEP_KEYS = new Map<string, -1 | 1>([
 // or a widget that handled it itself (the tab strip's arrow keys).
 document.addEventListener('keydown', (ev) => {
   if (ev.defaultPrevented || ev.altKey || ev.ctrlKey || ev.metaKey) return
+  const doctorDialog = document.getElementById('doctor')
+  if (doctorDialog instanceof HTMLDialogElement && doctorDialog.open) return
   if (!currentBackup || courseSection.hidden || isTypingTarget(ev.target)) return
   const delta = STEP_KEYS.get(ev.key)
   if (delta === undefined) return
@@ -596,16 +607,25 @@ detail.addEventListener('click', (ev) => {
   void openActivity(id)
 })
 
+function asDoctorFile(blob: Blob, name: string): File {
+  if (blob instanceof File && blob.name === name) return blob
+  return new File([blob], name)
+}
+
 async function handleBlob(blob: Blob, name: string): Promise<void> {
+  const file = asDoctorFile(blob, name)
+  doctor.setFile(file)
+  doctor.setErrorEntry(false)
   show('loading')
   loadingTitle.textContent = `${t('loading.reading')} ${name}`
   loadingSub.textContent = `${formatBytes(blob.size)} · ${t('loading.detecting')}`
   try {
-    const result = await parseInWorker(new File([blob], name))
+    const result = await parseInWorker(file)
     render(result.backup, name, blob.size, result.elapsedMs)
     setStatus('')
   } catch (e) {
     errorMsg.textContent = e instanceof Error ? `${name}: ${e.message}` : name
+    doctor.setErrorEntry(true)
     show('error')
   }
 }
@@ -617,6 +637,7 @@ courseTitle.addEventListener('click', showCourseHome)
 homeBtn.addEventListener('click', () => {
   renderer?.dispose()
   currentBackup = undefined
+  doctor.setFile(undefined)
   setStatus('')
   show('landing')
 })
@@ -711,6 +732,7 @@ async function openFromUrlParam(): Promise<void> {
     errorMsg.textContent = `${t('error.urlPrefix')} (${
       e instanceof Error ? e.message : 'unknown'
     }). ${t('error.urlSuffix')}`
+    doctor.setFile(undefined)
     show('error')
   }
 }

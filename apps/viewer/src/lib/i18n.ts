@@ -2,10 +2,13 @@
  * Minimal i18n (prompt §38): dictionary swap selected by the browser
  * language — deliberately not a framework.
  */
+import { DOCTOR_EN, DOCTOR_ES, DOCTOR_FR } from './doctor-i18n.ts'
+
 export type Lang = 'en' | 'es' | 'fr'
 
 export const STRINGS = {
   en: {
+    ...DOCTOR_EN,
     'landing.title': "See what's inside your",
     'landing.sub':
       'Open Moodle course backups right in your browser. Nothing to install, nothing uploaded.',
@@ -338,6 +341,7 @@ export const STRINGS = {
     'h5p.frameTitle': 'H5P content preview',
   },
   es: {
+    ...DOCTOR_ES,
     'landing.title': 'Mira qué hay dentro de tu',
     'landing.sub':
       'Abre copias de seguridad de Moodle directamente en tu navegador. Sin instalar nada, sin subir nada.',
@@ -673,6 +677,7 @@ export const STRINGS = {
     'h5p.frameTitle': 'Vista previa de contenido H5P',
   },
   fr: {
+    ...DOCTOR_FR,
     'landing.title': 'Voir ce qui se trouve dans votre',
     'landing.sub':
       'Ouvrir les sauvegardes de cours Moodle directement dans votre navigateur. Rien à installer, rien n\u2019est déposé.',

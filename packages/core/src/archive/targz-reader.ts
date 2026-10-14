@@ -19,7 +19,12 @@
  */
 import type { BackupFormat } from '../model/backup.ts'
 import { MbzParseError } from '../model/backup.ts'
-import { type ArchiveEntryInfo, type ArchiveReader, tooLargeToRead } from './reader.ts'
+import {
+  type ArchiveAnomalies,
+  type ArchiveEntryInfo,
+  type ArchiveReader,
+  tooLargeToRead,
+} from './reader.ts'
 
 const BLOCK = 512
 
@@ -37,6 +42,7 @@ export class TarGzReader implements ArchiveReader {
   private constructor(
     private data: Blob | undefined,
     private readonly entries: Map<string, TarEntry>,
+    private readonly notes: ArchiveAnomalies,
   ) {}
 
   static async open(blob: Blob): Promise<TarGzReader> {
@@ -55,7 +61,11 @@ export class TarGzReader implements ArchiveReader {
       if (e instanceof MbzParseError) throw e
       throw new MbzParseError('Failed to decompress gzip stream', { cause: e })
     }
-    return new TarGzReader(data, indexer.finish())
+    return new TarGzReader(data, indexer.finish(), indexer.anomalies())
+  }
+
+  anomalies(): ArchiveAnomalies {
+    return this.notes
   }
 
   async listEntries(): Promise<ArchiveEntryInfo[]> {
@@ -92,6 +102,9 @@ export class TarGzReader implements ArchiveReader {
  */
 class TarIndexer {
   private readonly entries = new Map<string, TarEntry>()
+  private readonly unsafeNames: string[] = []
+  private readonly duplicateNames: string[] = []
+  private readonly checksumFailures: string[] = []
   private readonly header = new Uint8Array(BLOCK)
   private headerUsed = 0
   private skip = 0
@@ -135,9 +148,20 @@ class TarIndexer {
       throw new MbzParseError(`Malformed tar header at offset ${this.offset - BLOCK}`)
     }
     const prefix = readString(this.header, 345, 155)
+    const rawName = prefix ? `${prefix}/${name}` : name
+    if (!tarChecksumOk(this.header))
+      this.checksumFailures.push(rawName || `(offset ${this.offset - BLOCK})`)
     // Path traversal guard (ADR-0009): reject absolute paths and "..".
-    const fullName = sanitizeTarName(prefix ? `${prefix}/${name}` : name)
-    if (fullName !== undefined && size > 0) {
+    const fullName = sanitizeTarName(rawName)
+    // Empty regular files still have to be copied by a repair (ADR-0037).
+    // Directory headers (typeflag '5', or a name ending in '/') stay out of
+    // the index: Moodle addresses content by file path, not by tar folders.
+    const typeflag = this.header[156] ?? 0
+    const regularFile = typeflag === 0 || typeflag === 0x30
+    if (fullName === undefined) {
+      if (rawName !== '') this.unsafeNames.push(rawName)
+    } else if (!fullName.endsWith('/') && (size > 0 || regularFile)) {
+      if (this.entries.has(fullName)) this.duplicateNames.push(fullName)
       this.entries.set(fullName, { offset: this.offset, size })
       this.lastName = fullName
     }
@@ -154,6 +178,27 @@ class TarIndexer {
     if (this.skip > this.padding) throw new MbzParseError(`Truncated tar entry: ${this.lastName}`)
     return this.entries
   }
+
+  anomalies(): ArchiveAnomalies {
+    return {
+      unsafeNames: this.unsafeNames,
+      duplicateNames: this.duplicateNames,
+      checksumFailures: this.checksumFailures,
+    }
+  }
+}
+
+/** ustar checksum: unsigned byte sum with the checksum field treated as spaces. */
+function tarChecksumOk(header: Uint8Array): boolean {
+  const field = readString(header, 148, 8).trim()
+  if (field === '') return false
+  const declared = Number.parseInt(field, 8)
+  if (!Number.isFinite(declared)) return false
+  let sum = 0
+  for (let i = 0; i < BLOCK; i++) {
+    sum += i >= 148 && i < 156 ? 0x20 : (header[i] ?? 0)
+  }
+  return sum === declared
 }
 
 function isZeroBlock(b: Uint8Array): boolean {

@@ -36,6 +36,14 @@ vista del curso.
 
 Leyenda: ✅ implementado · 🔜 planeado · ⏳ investigación (Q-012/Q-013/Q-016).
 
+## MBZ Doctor
+
+[MBZ Doctor](/mbzoo/docs/es/guide/mbz-doctor.md) analiza la copia en busca de
+problemas estructurales y puede descargar un `.mbz` nuevo para unas pocas
+reparaciones verificadas. No modifica el archivo original. Un archivo que
+vuelve a abrirse aquí no ha sido restaurado en Moodle. Las exportaciones
+por actividad de esta página (XML, HTML y ZIP) son otra acción (ADR-0016).
+
 Los archivos de vídeo y audio se previsualizan en línea con los controles
 nativos; un elemento multimedia decodifica su archivo pero nunca lo ejecuta.
 

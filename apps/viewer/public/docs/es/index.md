@@ -29,7 +29,9 @@ features:
   details: Postura de entrada hostil: HTML saneado, vistas previas en iframes de origen opaco, sin ejecución de contenido en el origen de la aplicación.
 - title: Basado en evidencia
   details: Cada afirmación durable traza a una fuente, experimento o ADR registrado. Índices de investigación validados automáticamente.
+- title: MBZ Doctor
+  details: Analiza una copia en busca de problemas estructurales y descarga un archivo nuevo para unas pocas reparaciones verificadas. El original no se toca, y un análisis no es una restauración de Moodle.
 
 ***
 
-[English](/mbzoo/docs/index.md)
+[MBZ Doctor](/mbzoo/docs/es/guide/mbz-doctor.md) · [English](/mbzoo/docs/index.md)

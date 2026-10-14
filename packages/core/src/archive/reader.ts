@@ -11,6 +11,17 @@ import { type BackupFormat, MbzParseError } from '../model/backup.ts'
 export interface ArchiveEntryInfo {
   readonly name: string
   readonly uncompressedSize: number
+  /** ZIP central-directory compressed size. Absent for tar entries. */
+  readonly compressedSize?: number
+  /** ZIP CRC-32 of the uncompressed bytes. Absent for tar entries. */
+  readonly crc32?: number
+}
+
+/** Names the archive walker refused or saw twice. Diagnosis only. */
+export interface ArchiveAnomalies {
+  readonly unsafeNames: readonly string[]
+  readonly duplicateNames: readonly string[]
+  readonly checksumFailures: readonly string[]
 }
 
 export interface ArchiveReader {
@@ -19,6 +30,8 @@ export interface ArchiveReader {
   listEntries(): Promise<ArchiveEntryInfo[]>
   /** Read one full entry as bytes. Callers must bound the size first. */
   readEntry(name: string): Promise<Uint8Array>
+  /** Path-traversal names, duplicate paths, and tar checksum failures. */
+  anomalies(): ArchiveAnomalies
   close(): Promise<void>
 }
 

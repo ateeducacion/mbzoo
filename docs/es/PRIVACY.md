@@ -54,6 +54,15 @@ escribe nada sin un clic, y el fichero se genera en tu navegador y va a tu
 propia carpeta de descargas. Ver
 [Soporte de actividades](/es/guide/activity-support.html).
 
+MBZ Doctor hace lo mismo con un `.mbz` reparado y con un informe de
+diagnóstico. Los dos se generan en el navegador después de un clic
+explícito. El archivo original no se modifica. El informe JSON es texto
+técnico en inglés y omite el enunciado de las preguntas, los bytes, las
+contraseñas, los nombres de usuario y los correos. La vista previa en
+pantalla puede mostrar el XML que va a cambiar; los informes descargados
+sustituyen esa vista por `[omitted]`. Un informe puede nombrar rutas del
+archivo. Véase [MBZ Doctor](/es/guide/mbz-doctor.html).
+
 ## Lo que este repositorio nunca contiene
 
 Las copias reales de instituciones o personas nunca se commitean. Los fixtures

@@ -36,6 +36,14 @@ what it cannot do. Unknown third-party plugins never break the course view.
 
 Legend: ✅ implemented · 🔜 planned next · ⏳ research (Q-012/Q-013/Q-016).
 
+## MBZ Doctor
+
+[MBZ Doctor](/mbzoo/docs/guide/mbz-doctor.md) scans the backup for structural problems and
+can download a new `.mbz` for a few verified repairs. It does not change
+the original file. A file that reopens here has not been restored in
+Moodle. The per-activity XML, HTML and ZIP exports on this page are a
+different action (ADR-0016).
+
 Media files (video, audio) preview inline with native controls; a media
 element decodes its file but never executes it.
 

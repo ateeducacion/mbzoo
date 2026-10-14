@@ -144,3 +144,7 @@ adrs:
     title: The decompressed tar is staged in a Blob, not in one ArrayBuffer
     status: Proposed
     date: 2026-08-28
+  ADR-0037:
+    title: Repair-only full backup rewrite
+    status: Proposed
+    date: 2026-10-14
