@@ -244,11 +244,15 @@ It is not the per-activity XML / HTML / ZIP export.
 
 ### Supported repairs
 
-| Repair                         | When it runs                                                                                                                                                                                                             | What changes                                                                                                                                                            | Safety                                                                                                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Declared file size             | The SHA-1 of the stored bytes equals `contenthash`, and `<filesize>` does not equal that length. Files the backup excluded, directory records (filename `.`), and entries above the 8 MiB hash budget are not rewritten. | The `<filesize>` text only. The bytes stay. Running it again changes nothing.                                                                                           | Automatic. No content loss.                                                                                                             |
-| Illegal XML control characters | The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay.                                                                                     | Those code points are removed. Surrounding markup, unknown elements and comments stay.                                                                                  | Confirmation required. This can alter authored text.                                                                                    |
-| Modern random question         | See below. Every precondition has to hold, or nothing is edited.                                                                                                                                                         | Quiz `question_reference` elements that point at that bank entry become `question_set_reference` elements. The placeholder bank entry is removed. Other questions stay. | Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record. |
+| Repair                          | When it runs                                                                                                                                                                                                                                                                                     | What changes                                                                                                                                                            | Safety                                                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Declared file size              | The SHA-1 of the stored bytes equals `contenthash`, and `<filesize>` does not equal that length. Files the backup excluded, directory records (filename `.`), and entries above the 8 MiB hash budget are not rewritten.                                                                         | The `<filesize>` text only. The bytes stay. Running it again changes nothing.                                                                                           | Automatic. No content loss.                                                                                                             |
+| Illegal XML control characters  | The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay.                                                                                                                                                             | Those code points are removed. Surrounding markup, unknown elements and comments stay.                                                                                  | Confirmation required. This can alter authored text.                                                                                    |
+| Modern random question          | See below. Every precondition has to hold, or nothing is edited.                                                                                                                                                                                                                                 | Quiz `question_reference` elements that point at that bank entry become `question_set_reference` elements. The placeholder bank entry is removed. Other questions stay. | Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record. |
+| Extra directory around the root | Exactly one `moodle_backup.xml`, every entry shares that one directory prefix, destinations stay unique and safe, and the archive has no integrity blocker. Two nested directories count as one prefix. A file outside the wrapper, a second manifest, an unsafe path, or a collision blocks it. | Every path loses that prefix. XML and file bytes are copied. Plugin files stay.                                                                                         | Automatic. No content loss.                                                                                                             |
+| Empty `roles.xml`               | The file is absent, every XML entry under the hash budget was scanned, and no scanned file names a role id. A referenced role, an unreadable XML file, or a `roles.xml` whose root is not `roles_definition` blocks it.                                                                          | Adds `roles.xml` whose root is `roles_definition`. No role, shortname, or permission is invented.                                                                       | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017).                                   |
+| Empty `questions.xml`           | The file is absent and no scanned XML depends on the question bank (quiz slots, question references, lessons that name a question, `inforef` question ids, and the same tags in plugin XML).                                                                                                     | Adds `questions.xml` whose root is `question_categories`. No category or question is invented. Quiz activities are not deleted to make this available.                  | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017).                                   |
+| Misplaced file payload          | `files.xml` names a physical file whose `files/<2 hex>/<sha1>` path is missing, and another entry at or below the hash budget has that exact SHA-1. Aliases, directory records (`filename` `.`), a conflicting canonical entry, and a hash that does not match are left alone.                   | Copies those bytes to the canonical path. The original entry stays. `files.xml` is not rewritten.                                                                       | Automatic. No content loss.                                                                                                             |
 
 A repair that does not change any bytes does not produce a download.
 
@@ -268,8 +272,8 @@ These containers refuse a rebuild: unreadable archive, unsafe path,
 duplicate path, TAR checksum failure, ZIP CRC mismatch, missing
 `moodle_backup.xml`, more than one backup root. A CRC mismatch is refused
 because a rewrite would store the same bytes under a newly computed CRC and
-hide the mismatch. An extra directory around `moodle_backup.xml` is a
-warning and is not stripped.
+hide the mismatch. One extra directory around `moodle_backup.xml` is
+unwrapped only when the row above holds. Any other wrapper stays a warning.
 
 ## `qtype "random"`
 
@@ -349,69 +353,105 @@ installed. Removed core modules (chat, survey, the old assignment) are
 named from Moodle's own history. If the chosen target is older than the
 removal, the finding is informational.
 
-Usernames, emails, roles, grades, attempts and submissions are not edited.
-A conflict with a user who already exists on the server cannot be seen from
-the file. `users.xml` is not copied into the report.
+A backup newer than the target you type is `noticenewerbackup`. Moodle's
+`restore_prechecks_helper::execute_prechecks` puts that string on the
+warning list when `$CFG->version` is lower than the backup's
+`moodle_version`. The precheck itself does not abort. Later steps can
+still fail. The tool compares the release strings you can read
+(`4.5`, `3.9`), which only approximate that numeric check. The declared
+version is never rewritten.
+
+These restore errors are diagnosed and not rewritten:
+
+| Moodle identifier                                                           | What MBZ Doctor does                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `restoremultipletopcats`                                                    | Reported when `backup_release` is at least 3.5 and the first eight digits of `moodle_version` are after `20180205`, and one question-bank context has more than one category whose parent is `0`. Categories are not merged.                                      |
+| `questionattemptreferstomissingquestion`                                    | Reported when legacy `<states>` or `<sessions>` name a question id that is not in this backup. Attempts are not deleted.                                                                                                                                          |
+| `questionattemptdatamissing`                                                | Reported when that legacy attempt has the question but is missing the session or the states.                                                                                                                                                                      |
+| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | Not a finding on the file. `restore_qtype_plugin` throws them only when the question already exists on the destination and an answer or hint text does not match. The backup is not edited to force a match.                                                      |
+| `unknown_context_mapping`                                                   | Reported when a physical file's `contextid` is absent from the contexts declared outside `files.xml`, and that set is non-empty. No context id is invented. An unfinished XML scan does not emit it.                                                              |
+| `inforef` ids                                                               | A reference to a file, question, or role id that is not in this backup is reported, as is a repeated id. A missing `inforef.xml` is not itself an error: `restore_load_included_inforef_records` loads the file only when it exists. The file is not synthesized. |
+
+`restoreuserconflict`, `restorecannotcreateuser`, and
+`restoremnethostidmismatch` depend on accounts on the destination.
+Usernames, emails, authentication identifiers, user ids, grades, attempts,
+and submissions are not edited. `users.xml` is not copied into the report.
+
+`restorechecksumfailed` and `errorcopyingbackupfile` are session or server
+failures, not damaged backup bytes. PHP memory, timeouts, upload limits,
+disk space, permissions, missing server plugins, and cron are not reported
+as corrupt content. `errorminbackup20version` and
+`errorrestorefrontpagebackup` are not bypassed by rewriting the version or
+the course type. A content hash that does not match its bytes is not
+"fixed" by storing the new hash. An external-file alias is not replaced
+with an empty file.
 
 External URLs, LTI tools, H5P libraries and SCORM runtimes are not fetched
 or rebuilt. A `$@…@$` token is not requested. A SCORM or H5P activity with
 no packed bytes is a warning, and only when the backup did not turn file
 inclusion off.
 
-Server memory, PHP time limits, upload size, disk space, permissions and
-cron are not properties of the `.mbz`. They are not reported as corrupt
-backup data.
-
 ## Rule catalog
 
-| Id                          | Severity | Repair                |
-| --------------------------- | -------- | --------------------- |
-| `archive.unreadable`        | critical | not repairable        |
-| `archive.extension`         | info     | not repairable        |
-| `archive.missing-root`      | critical | not repairable        |
-| `archive.enclosed`          | warning  | manual                |
-| `archive.multiple-roots`    | critical | manual                |
-| `archive.unsafe-path`       | critical | not repairable        |
-| `archive.duplicate-path`    | critical | not repairable        |
-| `archive.checksum`          | critical | not repairable        |
-| `archive.crc`               | critical | not repairable        |
-| `archive.ratio`             | warning  | not repairable        |
-| `xml.malformed`             | critical | not repairable        |
-| `xml.utf8`                  | critical | not repairable        |
-| `xml.limit`                 | warning  | not repairable        |
-| `xml.illegal-chars`         | warning  | confirmation required |
-| `metadata.no-target`        | info     | not repairable        |
-| `metadata.target-older`     | warning  | not repairable        |
-| `sections.missing`          | warning  | not repairable        |
-| `sections.cycle`            | warning  | manual                |
-| `activities.missing`        | critical | not repairable        |
-| `activities.missing-module` | warning  | not repairable        |
-| `activities.undeclared`     | warning  | manual                |
-| `activities.duplicate`      | warning  | manual                |
-| `activities.bad-section`    | warning  | manual                |
-| `files.excluded`            | info     | not repairable        |
-| `files.missing`             | critical | not repairable        |
-| `files.hash`                | critical | not repairable        |
-| `files.size`                | warning  | automatic             |
-| `files.hash-skipped`        | info     | not repairable        |
-| `files.unreferenced`        | info     | manual                |
-| `questions.legacy-random`   | info     | not repairable        |
-| `questions.random-modern`   | critical | confirmation required |
-| `questions.random-blocked`  | critical | manual                |
-| `questions.category-cycle`  | warning  | manual                |
-| `questions.missing-parent`  | warning  | manual                |
-| `questions.empty-pool`      | warning  | not repairable        |
-| `questions.outside-bank`    | info     | not repairable        |
-| `questions.bad-filter`      | warning  | manual                |
-| `questions.duplicate-id`    | warning  | manual                |
-| `plugins.removed`           | warning  | not repairable        |
-| `plugins.unknown-module`    | info     | not repairable        |
-| `plugins.unknown-qtype`     | info     | not repairable        |
-| `userdata.excluded`         | info     | not repairable        |
-| `userdata.missing`          | warning  | not repairable        |
-| `userdata.malformed`        | warning  | manual                |
-| `references.token`          | info     | not repairable        |
-| `embedded.package`          | warning  | not repairable        |
+| Id                                   | Severity | Repair                                                       |
+| ------------------------------------ | -------- | ------------------------------------------------------------ |
+| `archive.unreadable`                 | critical | not repairable                                               |
+| `archive.extension`                  | info     | not repairable                                               |
+| `archive.missing-root`               | critical | not repairable                                               |
+| `archive.enclosed`                   | warning  | manual                                                       |
+| `archive.unwrap-root`                | warning  | automatic                                                    |
+| `archive.multiple-roots`             | critical | manual                                                       |
+| `archive.unsafe-path`                | critical | not repairable                                               |
+| `archive.duplicate-path`             | critical | not repairable                                               |
+| `archive.checksum`                   | critical | not repairable                                               |
+| `archive.crc`                        | critical | not repairable                                               |
+| `archive.ratio`                      | warning  | not repairable                                               |
+| `xml.malformed`                      | critical | not repairable                                               |
+| `xml.utf8`                           | critical | not repairable                                               |
+| `xml.limit`                          | warning  | not repairable                                               |
+| `xml.illegal-chars`                  | warning  | confirmation required                                        |
+| `metadata.no-target`                 | info     | not repairable                                               |
+| `metadata.target-older`              | warning  | not repairable                                               |
+| `metadata.missing-roles`             | warning  | manual, or confirmation required when the empty file is safe |
+| `sections.missing`                   | warning  | not repairable                                               |
+| `sections.cycle`                     | warning  | manual                                                       |
+| `activities.missing`                 | critical | not repairable                                               |
+| `activities.missing-module`          | warning  | not repairable                                               |
+| `activities.undeclared`              | warning  | manual                                                       |
+| `activities.duplicate`               | warning  | manual                                                       |
+| `activities.bad-section`             | warning  | manual                                                       |
+| `files.excluded`                     | info     | not repairable                                               |
+| `files.missing`                      | critical | not repairable                                               |
+| `files.hash`                         | critical | not repairable                                               |
+| `files.size`                         | warning  | automatic                                                    |
+| `files.hash-skipped`                 | info     | not repairable                                               |
+| `files.recover-misplaced-content`    | critical | automatic                                                    |
+| `files.recovery-incomplete`          | info     | not repairable                                               |
+| `files.unreferenced`                 | info     | manual                                                       |
+| `questions.legacy-random`            | info     | not repairable                                               |
+| `questions.random-modern`            | critical | confirmation required                                        |
+| `questions.random-blocked`           | critical | manual                                                       |
+| `questions.category-cycle`           | warning  | manual                                                       |
+| `questions.missing-parent`           | warning  | manual                                                       |
+| `questions.empty-pool`               | warning  | not repairable                                               |
+| `questions.outside-bank`             | info     | not repairable                                               |
+| `questions.bad-filter`               | warning  | manual                                                       |
+| `questions.duplicate-id`             | warning  | manual                                                       |
+| `questions.missing-bank-file`        | warning  | manual, or confirmation required when the empty file is safe |
+| `questions.multiple-top-categories`  | critical | manual                                                       |
+| `questions.attempt-missing-question` | critical | not repairable                                               |
+| `questions.attempt-data-missing`     | critical | not repairable                                               |
+| `plugins.removed`                    | warning  | not repairable                                               |
+| `plugins.unknown-module`             | info     | not repairable                                               |
+| `plugins.unknown-qtype`              | info     | not repairable                                               |
+| `userdata.excluded`                  | info     | not repairable                                               |
+| `userdata.missing`                   | warning  | not repairable                                               |
+| `userdata.malformed`                 | warning  | manual                                                       |
+| `references.unknown-context`         | warning  | not repairable                                               |
+| `references.inforef-missing-target`  | warning  | not repairable                                               |
+| `references.inforef-duplicate`       | info     | manual                                                       |
+| `references.token`                   | info     | not repairable                                               |
+| `embedded.package`                   | warning  | not repairable                                               |
 
 The English sentences for each id live in `packages/core/src/doctor/catalog.ts`.
 The viewer shows a title, an explanation and a consequence in English,
@@ -437,11 +477,17 @@ addresses. Before/after XML stays on screen and is replaced with
 
 These checks have been run in MBZoo's unit tests and in the browser against
 synthetic backups: ZIP and TAR.GZ round-trips, the size repair, the illegal
-character repair, the modern random-question preconditions, and the refusal
-to rewrite a legacy 3.x random question. They have not been run inside
-Moodle. Source compared while designing the rule: Moodle 3.x question
-shape, 4.0 bank entries, 4.3–5.2 legacy filter conversion, 4.5, 5.1 (no
-throw) and 5.2 / `main` (the throw above). See AN-009 and ADR-0037.
+character repair, the modern random-question preconditions, the refusal
+to rewrite a legacy 3.x random question, unwrapping one directory, copying
+a payload whose SHA-1 matches, and the empty `roles.xml` /
+`questions.xml` documents. They have not been run inside Moodle. The empty
+documents follow the Moodle 5.2 writer roots and are still confirmation
+required because no disposable site has restored them (TASK-017). Source
+compared while designing the rules: Moodle 4.5 and 5.2
+`restore_dbops`, `restore_prechecks_helper`, `backup_stepslib`,
+`restore_stepslib`, and `restore_qtype_plugin`, plus the 3.x question
+shape and the 4.0–5.2 random-question path in AN-009. See AN-010 and
+ADR-0038.
 
 ## Privacy
 
@@ -520,11 +566,15 @@ TAR.GZ). No es la exportación por actividad (XML, HTML o ZIP de archivos).
 
 ### Reparaciones admitidas
 
-| Reparación                            | Cuándo se aplica                                                                                                                                                                                                                                     | Qué cambia                                                                                                                                                                        | Seguridad                                                                                                                                                     |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tamaño de archivo declarado           | El SHA-1 de los bytes coincide con `contenthash` y `<filesize>` no coincide con esa longitud. No se reescriben los archivos excluidos por la copia, los registros de directorio (nombre `.`) ni las entradas por encima del límite de hash de 8 MiB. | Solo el texto de `<filesize>`. Los bytes se quedan. Una segunda pasada no cambia nada.                                                                                            | Automática. Sin pérdida de contenido.                                                                                                                         |
-| Caracteres de control ilegales en XML | La entrada contiene un código que XML 1.0 prohíbe (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tabulador, LF y CR se conservan.                                                                                                   | Se eliminan esos códigos. El marcado circundante, los elementos desconocidos y los comentarios se conservan.                                                                      | Requiere confirmación. Puede alterar texto escrito.                                                                                                           |
-| Pregunta aleatoria moderna            | Véase más abajo. Si falla una precondición, no se edita nada.                                                                                                                                                                                        | Los `question_reference` del cuestionario que apuntan a esa entrada del banco pasan a ser `question_set_reference`. Se elimina la entrada comodín. Las demás preguntas se quedan. | Requiere confirmación. La pérdida de contenido solo se marca cuando ningún hueco del cuestionario referencia el comodín, porque ese camino borra el registro. |
+| Reparación                            | Cuándo se aplica                                                                                                                                                                                                                                                                                                              | Qué cambia                                                                                                                                                                        | Seguridad                                                                                                                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tamaño de archivo declarado           | El SHA-1 de los bytes coincide con `contenthash` y `<filesize>` no coincide con esa longitud. No se reescriben los archivos excluidos por la copia, los registros de directorio (nombre `.`) ni las entradas por encima del límite de hash de 8 MiB.                                                                          | Solo el texto de `<filesize>`. Los bytes se quedan. Una segunda pasada no cambia nada.                                                                                            | Automática. Sin pérdida de contenido.                                                                                                                         |
+| Caracteres de control ilegales en XML | La entrada contiene un código que XML 1.0 prohíbe (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tabulador, LF y CR se conservan.                                                                                                                                                                            | Se eliminan esos códigos. El marcado circundante, los elementos desconocidos y los comentarios se conservan.                                                                      | Requiere confirmación. Puede alterar texto escrito.                                                                                                           |
+| Pregunta aleatoria moderna            | Véase más abajo. Si falla una precondición, no se edita nada.                                                                                                                                                                                                                                                                 | Los `question_reference` del cuestionario que apuntan a esa entrada del banco pasan a ser `question_set_reference`. Se elimina la entrada comodín. Las demás preguntas se quedan. | Requiere confirmación. La pérdida de contenido solo se marca cuando ningún hueco del cuestionario referencia el comodín, porque ese camino borra el registro. |
+| Directorio extra alrededor de la raíz | Hay un solo `moodle_backup.xml`, todas las entradas comparten ese prefijo, los destinos siguen siendo únicos y seguros, y el archivo no tiene un fallo de integridad. Dos directorios anidados cuentan como un prefijo. Un archivo fuera del directorio, un segundo manifiesto, una ruta insegura o una colisión lo bloquean. | Cada ruta pierde ese prefijo. El XML y los bytes se copian. Los archivos de plugins se conservan.                                                                                 | Automática. Sin pérdida de contenido.                                                                                                                         |
+| `roles.xml` vacío                     | El archivo no está, se pudo leer cada XML dentro del límite de hash y ningún archivo nombra un id de rol. Lo bloquean un rol referenciado, un XML ilegible o un `roles.xml` cuya raíz no es `roles_definition`.                                                                                                               | Añade `roles.xml` con raíz `roles_definition`. No se inventa ningún rol, nombre corto ni permiso.                                                                                 | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017).                                         |
+| `questions.xml` vacío                 | El archivo no está y ningún XML analizado depende del banco (huecos de cuestionario, referencias, lecciones que nombran una pregunta, ids de `inforef` y las mismas etiquetas en XML de plugins).                                                                                                                             | Añade `questions.xml` con raíz `question_categories`. No se inventa ninguna categoría ni pregunta. No se borran cuestionarios para habilitar esta reparación.                     | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017).                                         |
+| Contenido de archivo en otra ruta     | `files.xml` nombra un archivo físico cuya ruta `files/<2 hex>/<sha1>` no está, y otra entrada dentro del límite de hash tiene exactamente ese SHA-1. Los alias, los registros de directorio (nombre `.`), una entrada canónica en conflicto y un hash que no coincide se dejan como están.                                    | Copia esos bytes a la ruta canónica. La entrada original se queda. `files.xml` no se reescribe.                                                                                   | Automática. Sin pérdida de contenido.                                                                                                                         |
 
 Una reparación que no cambia ningún byte no produce una descarga.
 
@@ -543,8 +593,9 @@ Estos contenedores rechazan la reconstrucción: archivo ilegible, ruta
 insegura, ruta duplicada, suma de comprobación TAR incorrecta, CRC de ZIP
 incorrecto, `moodle_backup.xml` ausente, más de una raíz de copia. El CRC
 incorrecto se rechaza porque una reescritura guardaría los mismos bytes con
-un CRC recién calculado y ocultaría el desajuste. Un directorio extra
-alrededor de `moodle_backup.xml` es un aviso y no se elimina.
+un CRC recién calculado y ocultaría el desajuste. Un único directorio
+extra alrededor de `moodle_backup.xml` se quita solo cuando se cumple la
+fila de arriba. Cualquier otro envoltorio sigue siendo un aviso.
 
 ## `qtype "random"`
 
@@ -624,18 +675,44 @@ plugins tiene instalados ese sitio. Los módulos retirados del núcleo (chat,
 survey, el assignment antiguo) se nombran según la historia de Moodle. Si
 el destino elegido es anterior a la retirada, el hallazgo es informativo.
 
-No se editan nombres de usuario, correos, roles, calificaciones, intentos
-ni entregas. Un conflicto con un usuario que ya existe en el servidor no se
-puede ver desde el archivo. `users.xml` no se copia al informe.
+Una copia más nueva que el destino que usted escribe es
+`noticenewerbackup`. `restore_prechecks_helper::execute_prechecks` pone
+esa cadena en la lista de avisos cuando `$CFG->version` es menor que el
+`moodle_version` de la copia. Esa comprobación previa no aborta por sí
+sola. Los pasos posteriores pueden fallar. La herramienta compara las
+cadenas de versión que se pueden leer (`4.5`, `3.9`), lo que solo se
+aproxima a la comparación numérica. La versión declarada no se reescribe.
+
+Estos errores de restauración se diagnostican y no se reescriben:
+
+| Identificador de Moodle                                                     | Qué hace MBZ Doctor                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `restoremultipletopcats`                                                    | Se informa cuando `backup_release` es 3.5 o posterior, los ocho primeros dígitos de `moodle_version` son posteriores a `20180205` y un contexto del banco tiene más de una categoría con padre `0`. Las categorías no se fusionan.                                |
+| `questionattemptreferstomissingquestion`                                    | Se informa cuando `<states>` o `<sessions>` antiguos nombran un id de pregunta que no está en esta copia. Los intentos no se borran.                                                                                                                              |
+| `questionattemptdatamissing`                                                | Se informa cuando ese intento antiguo tiene la pregunta pero le falta la sesión o los estados.                                                                                                                                                                    |
+| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | No son un hallazgo del archivo. `restore_qtype_plugin` los lanza solo cuando la pregunta ya existe en el destino y el texto de una respuesta o de una pista no coincide. La copia no se edita para forzar la coincidencia.                                        |
+| `unknown_context_mapping`                                                   | Se informa cuando el `contextid` de un archivo físico no aparece entre los contextos declarados fuera de `files.xml`, y ese conjunto no está vacío. No se inventa ningún contexto. Un análisis XML incompleto no lo emite.                                        |
+| Ids de `inforef`                                                            | Se informa una referencia a un archivo, una pregunta o un rol que no está en esta copia, y también un id repetido. Que falte `inforef.xml` no es por sí mismo un error: `restore_load_included_inforef_records` carga el archivo solo si existe. No se sintetiza. |
+
+`restoreuserconflict`, `restorecannotcreateuser` y
+`restoremnethostidmismatch` dependen de las cuentas del destino. No se
+editan nombres de usuario, correos, identificadores de autenticación, ids
+de usuario, calificaciones, intentos ni entregas. `users.xml` no se copia
+al informe.
+
+`restorechecksumfailed` y `errorcopyingbackupfile` son fallos de sesión o
+del servidor, no bytes dañados. La memoria de PHP, los tiempos de espera,
+el tamaño de subida, el disco, los permisos, los plugins que faltan en el
+servidor y el cron no se informan como contenido corrupto.
+`errorminbackup20version` y `errorrestorefrontpagebackup` no se evitan
+reescribiendo la versión o el tipo de curso. Un hash que no coincide con
+sus bytes no se «arregla» guardando el hash nuevo. Un alias de archivo
+externo no se sustituye por un archivo vacío.
 
 No se descargan ni se reconstruyen URL externas, herramientas LTI,
 bibliotecas H5P ni entornos SCORM. Un token `$@…@$` no se solicita. Una
 actividad SCORM o H5P sin bytes empaquetados es un aviso, y solo cuando la
 copia no desactivó la inclusión de archivos.
-
-La memoria del servidor, los límites de tiempo de PHP, el tamaño de subida,
-el disco, los permisos y el cron no son propiedades del `.mbz`. No se
-informan como datos corruptos.
 
 ## Catálogo de reglas
 
@@ -666,12 +743,17 @@ después permanece en pantalla y en el JSON se sustituye por `[omitted]`.
 Estas comprobaciones se han ejecutado en las pruebas unitarias de MBZoo y
 en el navegador con copias sintéticas: ida y vuelta ZIP y TAR.GZ, la
 reparación del tamaño, la de los caracteres ilegales, las precondiciones
-de la pregunta aleatoria moderna, y la negativa a reescribir una pregunta
-aleatoria heredada de Moodle 3.x. No se han ejecutado dentro de Moodle. El
-código comparado al diseñar la regla: forma de pregunta de 3.x, entradas de
-banco de 4.0, conversión del filtro heredado en 4.3–5.2, 4.5, 5.1 (sin la
-excepción) y 5.2 / `main` (la excepción de arriba). Véase AN-009 y
-ADR-0037.
+de la pregunta aleatoria moderna, la negativa a reescribir una pregunta
+aleatoria heredada de Moodle 3.x, quitar un directorio envoltorio, copiar
+un contenido cuyo SHA-1 coincide, y los documentos vacíos `roles.xml` y
+`questions.xml`. No se han ejecutado dentro de Moodle. Los documentos
+vacíos siguen la raíz que escribe Moodle 5.2 y siguen requiriendo
+confirmación porque ningún sitio desechable los ha restaurado (TASK-017).
+El código comparado al diseñar las reglas: `restore_dbops`,
+`restore_prechecks_helper`, `backup_stepslib`, `restore_stepslib` y
+`restore_qtype_plugin` de Moodle 4.5 y 5.2, además de la forma de pregunta
+de 3.x y el camino de la pregunta aleatoria de 4.0 a 5.2 en AN-009. Véase
+AN-010 y ADR-0038.
 
 ## Privacidad
 
@@ -965,15 +1047,16 @@ sliced and inflated on demand (ADR-0029); a TAR.GZ is decompressed into a Blob
 and indexed as it streams, so no allocation is larger than the entry being
 read (ADR-0036). Large-file strategy is tracked as TASK-003 / Q-004..Q-007.
 
-MBZ Doctor (ADR-0037) is a separate pass. It does not run when a course is
-opened. The viewer sends the same file to the parse worker, which calls
-`analyzeBackup` in `packages/core/src/doctor/`. A repair splices the original
-XML and asks `rewriteArchive` for a new Blob. Entries that were not changed
-are copied. A repaired ZIP stores every entry uncompressed, because fflate
-`ZipPassThrough` carries stored bytes rather than a deflate stream. A repaired
-TAR.GZ is a new ustar stream plus gzip and is refused above 512 MiB. The
-original Blob is never written. Per-activity export stays ADR-0016. Reopening
-the result in MBZoo is not a Moodle restore (TASK-017).
+MBZ Doctor (ADR-0037, ADR-0038) is a separate pass. It does not run when a
+course is opened. The viewer sends the same file to the parse worker, which
+calls `analyzeBackup` in `packages/core/src/doctor/`. A repair may splice an
+existing XML entry, add a verified entry, or rename paths when one enclosing
+directory is removed. `rewriteArchive` writes a new Blob. Entries that were
+not changed are copied. A repaired ZIP stores every entry uncompressed,
+because fflate `ZipPassThrough` carries stored bytes rather than a deflate
+stream. A repaired TAR.GZ is a new ustar stream plus gzip and is refused
+above 512 MiB. The original Blob is never written. Per-activity export stays
+ADR-0016. Reopening the result in MBZoo is not a Moodle restore (TASK-017).
 
 ## How claims get verified
 

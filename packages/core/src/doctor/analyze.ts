@@ -18,7 +18,9 @@ import { MAX_XML_BYTES, parseXmlEvents } from '../moodle/xml.ts'
 import { countIllegalXmlChars, crc32, decodeUtf8, sha1Hex, stripIllegalXmlChars } from './bytes.ts'
 import { LIMITATIONS, makeFinding } from './catalog.ts'
 import { type NamedXml, planQuestions } from './questions.ts'
+import { aliasContentHashes, planMissingMetadata, planUnwrap, recoverMisplaced } from './restore.ts'
 import type {
+  ArchiveEditStep,
   BackupFacts,
   DiagnosticReport,
   DoctorOptions,
@@ -40,6 +42,7 @@ import {
 export interface Inspection {
   readonly report: DiagnosticReport
   readonly steps: readonly RepairStep[]
+  readonly archiveEdits: readonly ArchiveEditStep[]
 }
 
 const CORE_MODULES = new Set([
@@ -82,6 +85,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
   const hashBudget = options.hashBudgetBytes ?? 8 * 1024 * 1024
   const findings: Finding[] = []
   const steps: RepairStep[] = []
+  const archiveEdits: ArchiveEditStep[] = []
   const head = new Uint8Array(await blob.slice(0, 8).arrayBuffer())
   const format = detectFormat(head)
   const facts: MutableFacts = {
@@ -112,6 +116,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
       moodleRestoreVerified: false,
     },
     steps,
+    archiveEdits,
   })
 
   if (format === 'unknown') {
@@ -392,6 +397,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
       facts,
       findings,
       steps,
+      archiveEdits,
       options,
     )
     await scanCrc(reader, entries, hashBudget, findings, options)
@@ -433,7 +439,14 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
     for (const [id, xml] of sectionXml)
       linkTexts.push({ name: `sections/section_${id}/section.xml`, xml })
 
-    const planned = planQuestions(questionFiles, activityFiles, path, targetRelease)
+    const planned = planQuestions(
+      questionFiles,
+      activityFiles,
+      path,
+      targetRelease,
+      manifest.backupRelease,
+      manifest.moodleVersion,
+    )
     findings.push(...planned.findings)
     steps.push(...planned.steps)
     facts.questionCategories = planned.categories
@@ -468,6 +481,24 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
         }
       }
     }
+
+    const unwrap = planUnwrap(entries, prefix, findings)
+    if (unwrap) {
+      const enclosed = findings.findIndex((finding) => finding.id === 'archive.enclosed')
+      if (enclosed >= 0) findings.splice(enclosed, 1)
+      findings.push(unwrap.finding)
+      archiveEdits.push(unwrap.edit)
+    }
+    const metadata = await planMissingMetadata({
+      reader,
+      entries,
+      prefix,
+      hashBudget,
+      options,
+      existing: findings,
+    })
+    findings.push(...metadata.findings)
+    archiveEdits.push(...metadata.edits)
 
     options.onProgress?.(6, 6, 'done')
     return finish()
@@ -681,6 +712,7 @@ async function scanFiles(
   facts: MutableFacts,
   findings: Finding[],
   steps: RepairStep[],
+  archiveEdits: ArchiveEditStep[],
   options: DoctorOptions,
 ): Promise<Set<string>> {
   const presentComponents = new Set<string>()
@@ -704,8 +736,9 @@ async function scanFiles(
   if (includesFiles === false) {
     findings.push(makeFinding('files.excluded', { id: 'files.excluded' }))
   }
+  const aliases = aliasContentHashes(xml)
   const referenced = new Set<string>()
-  const missing: string[] = []
+  const pending = new Map<string, string[]>()
   const mismatched: string[] = []
   const skipped: string[] = []
   const sized = new Set<string>()
@@ -718,11 +751,11 @@ async function scanFiles(
     const path = `${prefix}${contentHashPath(hash)}`
     const fileEntry = byName.get(path)
     if (!fileEntry) {
-      if (includesFiles !== false) {
-        missing.push(
-          `${record.component}/${record.fileArea}/${record.fileName} (${hash.slice(0, 8)})`,
-        )
-      }
+      if (includesFiles === false || aliases.has(hash)) continue
+      const label = `${record.component}/${record.fileArea}/${record.fileName} (${hash.slice(0, 8)})`
+      const labels = pending.get(hash) ?? []
+      labels.push(label)
+      pending.set(hash, labels)
       continue
     }
     presentComponents.add(record.component)
@@ -761,14 +794,17 @@ async function scanFiles(
       apply: (text) => rewriteDeclaredSize(text, hash, bytes.byteLength),
     })
   }
-  if (missing.length > 0) {
-    findings.push(
-      makeFinding('files.missing', {
-        id: 'files.missing',
-        evidence: missing.slice(0, 8).map((detail) => ({ detail })),
-        params: { count: missing.length },
-      }),
-    )
+  if (pending.size > 0) {
+    const recovered = await recoverMisplaced({
+      reader,
+      entries: [...byName.values()],
+      prefix,
+      missing: pending,
+      hashBudget,
+      options,
+    })
+    findings.push(...recovered.findings)
+    archiveEdits.push(...recovered.edits)
   }
   if (mismatched.length > 0) {
     findings.push(

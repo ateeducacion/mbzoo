@@ -159,9 +159,12 @@ describe('analyzeBackup', () => {
       filename: 'course.mbz',
       targetRelease: '3.9',
     })
-    expect(olderTarget.findings.some((finding) => finding.ruleId === 'metadata.target-older')).toBe(
-      true,
-    )
+    const older = olderTarget.findings.find((finding) => finding.ruleId === 'metadata.target-older')
+    expect(older?.severity).toBe('warning')
+    expect(older?.repairability).toBe('not-repairable')
+    expect(older?.repair).toBeUndefined()
+    expect(older?.explanation).toContain('noticenewerbackup')
+    expect(older?.explanation).not.toContain('fails even when')
     expect(
       olderTarget.findings.some((finding) => finding.ruleId === 'questions.random-modern'),
     ).toBe(false)

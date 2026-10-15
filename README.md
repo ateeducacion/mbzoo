@@ -30,8 +30,12 @@ Experimental H5P playback runs inside the same opaque-origin sandbox
 its module XML, its rendered content as a standalone HTML file, or its
 attached files as a ZIP (ADR-0016). MBZ Doctor can scan a backup for
 structural problems and, for a few verified repairs, download a new `.mbz`
-(ADR-0037). That rewrite is not a general course editor, and a file MBZoo
-can reopen has not been proven to restore in Moodle. See the
+(ADR-0037, ADR-0038). It can unwrap one enclosing directory and copy a
+payload to its SHA-1 path when the bytes match. An empty `roles.xml` or
+`questions.xml` is offered only after confirmation, and only when the
+backup does not already need those records. That rewrite is not a general
+course editor, and a file MBZoo can reopen has not been proven to restore
+in Moodle. See the
 [MBZ Doctor guide](https://ateeducacion.github.io/mbzoo/docs/guide/mbz-doctor.html).
 
 ## Try it
