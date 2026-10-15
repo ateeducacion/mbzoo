@@ -4,12 +4,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MBZ Doctor - MBZoo</title>
 <link href="/mbzoo/docs/static/css/styles.c968649e43.css" rel="stylesheet">
-<link rel="preload" href="/mbzoo/docs/static/js/async/route-4a05231485e6.0111277db3.js" as="script">
+<link rel="preload" href="/mbzoo/docs/static/js/async/route-4a05231485e6.591598db22.js" as="script">
 <script defer src="/mbzoo/docs/static/js/styles.d11df0a7f2.js"></script>
 <script defer src="/mbzoo/docs/static/js/lib-react.2d09b3b9e3.js"></script>
 <script defer src="/mbzoo/docs/static/js/lib-router.a765e51b9f.js"></script>
 <script defer src="/mbzoo/docs/static/js/953.ae7d7417d2.js"></script>
-<script defer src="/mbzoo/docs/static/js/index.aa99a8f49a.js"></script>
+<script defer src="/mbzoo/docs/static/js/index.64d2781231.js"></script>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="generator" content="Rspress v2.0.19">
 <link rel="icon" href="/mbzoo/docs/favicon.png">
@@ -113,7 +113,31 @@ It is not the per-activity XML / HTML / ZIP export.</p>
 
 
 
-<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Repair</th><th>When it runs</th><th>What changes</th><th>Safety</th></tr></thead><tbody><tr><td>Declared file size</td><td>The SHA-1 of the stored bytes equals <code>contenthash</code>, and <code>&lt;filesize&gt;</code> does not equal that length. Files the backup excluded, directory records (filename <code>.</code>), and entries above the 8 MiB hash budget are not rewritten.</td><td>The <code>&lt;filesize&gt;</code> text only. The bytes stay. Running it again changes nothing.</td><td>Automatic. No content loss.</td></tr><tr><td>Illegal XML control characters</td><td>The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay.</td><td>Those code points are removed. Surrounding markup, unknown elements and comments stay.</td><td>Confirmation required. This can alter authored text.</td></tr><tr><td>Modern random question</td><td>See below. Every precondition has to hold, or nothing is edited.</td><td>Quiz <code>question_reference</code> elements that point at that bank entry become <code>question_set_reference</code> elements. The placeholder bank entry is removed. Other questions stay.</td><td>Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record.</td></tr></tbody></table></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Repair</th><th>When it runs</th><th>What changes</th><th>Safety</th></tr></thead><tbody><tr><td>Declared file size</td><td>The SHA-1 of the stored bytes equals <code>contenthash</code>, and <code>&lt;filesize&gt;</code> does not equal that length. Files the backup excluded, directory records (filename <code>.</code>), and entries above the 8 MiB hash budget are not rewritten.</td><td>The <code>&lt;filesize&gt;</code> text only. The bytes stay. Running it again changes nothing.</td><td>Automatic. No content loss.</td></tr><tr><td>Illegal XML control characters</td><td>The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay.</td><td>Those code points are removed. Surrounding markup, unknown elements and comments stay.</td><td>Confirmation required. This can alter authored text.</td></tr><tr><td>Modern random question</td><td>See below. Every precondition has to hold, or nothing is edited.</td><td>Quiz <code>question_reference</code> elements that point at that bank entry become <code>question_set_reference</code> elements. The placeholder bank entry is removed. Other questions stay.</td><td>Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record.</td></tr><tr><td>Extra directory around the root</td><td>Exactly one <code>moodle_backup.xml</code>, every entry shares that one directory prefix, destinations stay unique and safe, and the archive has no integrity blocker. Two nested directories count as one prefix. A file outside the wrapper, a second manifest, an unsafe path, or a collision blocks it.</td><td>Every path loses that prefix. XML and file bytes are copied. Plugin files stay.</td><td>Automatic. No content loss.</td></tr><tr><td>Empty <code>roles.xml</code></td><td>The file is absent, every XML entry under the hash budget was scanned, and no scanned file names a role id. A referenced role, an unreadable XML file, or a <code>roles.xml</code> whose root is not <code>roles_definition</code> blocks it.</td><td>Adds <code>roles.xml</code> whose root is <code>roles_definition</code>. No role, shortname, or permission is invented.</td><td>Confirmation required. Not included in <strong>Repair All Safe Issues</strong>. Not restored in Moodle (TASK-017).</td></tr><tr><td>Empty <code>questions.xml</code></td><td>The file is absent and no scanned XML depends on the question bank (quiz slots, question references, lessons that name a question, <code>inforef</code> question ids, and the same tags in plugin XML).</td><td>Adds <code>questions.xml</code> whose root is <code>question_categories</code>. No category or question is invented. Quiz activities are not deleted to make this available.</td><td>Confirmation required. Not included in <strong>Repair All Safe Issues</strong>. Not restored in Moodle (TASK-017).</td></tr><tr><td>Misplaced file payload</td><td><code>files.xml</code> names a physical file whose <code>files/&lt;2 hex&gt;/&lt;sha1&gt;</code> path is missing, and another entry at or below the hash budget has that exact SHA-1. Aliases, directory records (<code>filename</code> <code>.</code>), a conflicting canonical entry, and a hash that does not match are left alone.</td><td>Copies those bytes to the canonical path. The original entry stays. <code>files.xml</code> is not rewritten.</td><td>Automatic. No content loss.</td></tr></tbody></table></div>
 <p>A repair that does not change any bytes does not produce a download.</p>
 <h3 class="rp-toc-include" id="archive-writer"><a href="#archive-writer" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Archive writer</h3>
 <p>Unchanged entries are copied. ZIP output is stored (compression method 0),
@@ -129,8 +153,8 @@ arbitrarily large backups.</p>
 duplicate path, TAR checksum failure, ZIP CRC mismatch, missing
 <code>moodle_backup.xml</code>, more than one backup root. A CRC mismatch is refused
 because a rewrite would store the same bytes under a newly computed CRC and
-hide the mismatch. An extra directory around <code>moodle_backup.xml</code> is a
-warning and is not stripped.</p>
+hide the mismatch. One extra directory around <code>moodle_backup.xml</code> is
+unwrapped only when the row above holds. Any other wrapper stays a warning.</p>
 <h2 class="rp-toc-include" id="qtype-random"><a href="#qtype-random" class="rp-header-anchor rp-link" aria-hidden="true">#</a><code>qtype &quot;random&quot;</code></h2>
 <p>Moodle 5.2 can stop a restore with:</p>
 <div class="rp-codeblock language-text"><div class="rp-codeblock__content"><div class="rp-codeblock__content__scroll-container rp-scrollbar rp-scrollbar--always"><pre class="shiki css-variables" style="background-color:var(--shiki-background);color:var(--shiki-foreground)" tabindex="0" data-lang="text"><code><span class="line"><span>Coding error detected, it must be fixed by a programmer:</span></span>
@@ -192,16 +216,64 @@ from the destination&quot;: the backup cannot see which plugins that site has
 installed. Removed core modules (chat, survey, the old assignment) are
 named from Moodle&#x27;s own history. If the chosen target is older than the
 removal, the finding is informational.</p>
-<p>Usernames, emails, roles, grades, attempts and submissions are not edited.
-A conflict with a user who already exists on the server cannot be seen from
-the file. <code>users.xml</code> is not copied into the report.</p>
+<p>A backup newer than the target you type is <code>noticenewerbackup</code>. Moodle&#x27;s
+<code>restore_prechecks_helper::execute_prechecks</code> puts that string on the
+warning list when <code>$CFG-&gt;version</code> is lower than the backup&#x27;s
+<code>moodle_version</code>. The precheck itself does not abort. Later steps can
+still fail. The tool compares the release strings you can read
+(<code>4.5</code>, <code>3.9</code>), which only approximate that numeric check. The declared
+version is never rewritten.</p>
+<p>These restore errors are diagnosed and not rewritten:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Moodle identifier</th><th>What MBZ Doctor does</th></tr></thead><tbody><tr><td><code>restoremultipletopcats</code></td><td>Reported when <code>backup_release</code> is at least 3.5 and the first eight digits of <code>moodle_version</code> are after <code>20180205</code>, and one question-bank context has more than one category whose parent is <code>0</code>. Categories are not merged.</td></tr><tr><td><code>questionattemptreferstomissingquestion</code></td><td>Reported when legacy <code>&lt;states&gt;</code> or <code>&lt;sessions&gt;</code> name a question id that is not in this backup. Attempts are not deleted.</td></tr><tr><td><code>questionattemptdatamissing</code></td><td>Reported when that legacy attempt has the question but is missing the session or the states.</td></tr><tr><td><code>error_question_answers_missing_in_db</code>, <code>error_question_hint_missing_in_db</code></td><td>Not a finding on the file. <code>restore_qtype_plugin</code> throws them only when the question already exists on the destination and an answer or hint text does not match. The backup is not edited to force a match.</td></tr><tr><td><code>unknown_context_mapping</code></td><td>Reported when a physical file&#x27;s <code>contextid</code> is absent from the contexts declared outside <code>files.xml</code>, and that set is non-empty. No context id is invented. An unfinished XML scan does not emit it.</td></tr><tr><td><code>inforef</code> ids</td><td>A reference to a file, question, or role id that is not in this backup is reported, as is a repeated id. A missing <code>inforef.xml</code> is not itself an error: <code>restore_load_included_inforef_records</code> loads the file only when it exists. The file is not synthesized.</td></tr></tbody></table></div>
+<p><code>restoreuserconflict</code>, <code>restorecannotcreateuser</code>, and
+<code>restoremnethostidmismatch</code> depend on accounts on the destination.
+Usernames, emails, authentication identifiers, user ids, grades, attempts,
+and submissions are not edited. <code>users.xml</code> is not copied into the report.</p>
+<p><code>restorechecksumfailed</code> and <code>errorcopyingbackupfile</code> are session or server
+failures, not damaged backup bytes. PHP memory, timeouts, upload limits,
+disk space, permissions, missing server plugins, and cron are not reported
+as corrupt content. <code>errorminbackup20version</code> and
+<code>errorrestorefrontpagebackup</code> are not bypassed by rewriting the version or
+the course type. A content hash that does not match its bytes is not
+&quot;fixed&quot; by storing the new hash. An external-file alias is not replaced
+with an empty file.</p>
 <p>External URLs, LTI tools, H5P libraries and SCORM runtimes are not fetched
 or rebuilt. A <code>$@…@$</code> token is not requested. A SCORM or H5P activity with
 no packed bytes is a warning, and only when the backup did not turn file
 inclusion off.</p>
-<p>Server memory, PHP time limits, upload size, disk space, permissions and
-cron are not properties of the <code>.mbz</code>. They are not reported as corrupt
-backup data.</p>
 <h2 class="rp-toc-include" id="rule-catalog"><a href="#rule-catalog" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Rule catalog</h2>
 
 
@@ -443,7 +515,62 @@ backup data.</p>
 
 
 
-<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Id</th><th>Severity</th><th>Repair</th></tr></thead><tbody><tr><td><code>archive.unreadable</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.extension</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>archive.missing-root</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.enclosed</code></td><td>warning</td><td>manual</td></tr><tr><td><code>archive.multiple-roots</code></td><td>critical</td><td>manual</td></tr><tr><td><code>archive.unsafe-path</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.duplicate-path</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.checksum</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.crc</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.ratio</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>xml.malformed</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>xml.utf8</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>xml.limit</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>xml.illegal-chars</code></td><td>warning</td><td>confirmation required</td></tr><tr><td><code>metadata.no-target</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>metadata.target-older</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>sections.missing</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>sections.cycle</code></td><td>warning</td><td>manual</td></tr><tr><td><code>activities.missing</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>activities.missing-module</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>activities.undeclared</code></td><td>warning</td><td>manual</td></tr><tr><td><code>activities.duplicate</code></td><td>warning</td><td>manual</td></tr><tr><td><code>activities.bad-section</code></td><td>warning</td><td>manual</td></tr><tr><td><code>files.excluded</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>files.missing</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>files.hash</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>files.size</code></td><td>warning</td><td>automatic</td></tr><tr><td><code>files.hash-skipped</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>files.unreferenced</code></td><td>info</td><td>manual</td></tr><tr><td><code>questions.legacy-random</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>questions.random-modern</code></td><td>critical</td><td>confirmation required</td></tr><tr><td><code>questions.random-blocked</code></td><td>critical</td><td>manual</td></tr><tr><td><code>questions.category-cycle</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.missing-parent</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.empty-pool</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>questions.outside-bank</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>questions.bad-filter</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.duplicate-id</code></td><td>warning</td><td>manual</td></tr><tr><td><code>plugins.removed</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>plugins.unknown-module</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>plugins.unknown-qtype</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>userdata.excluded</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>userdata.missing</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>userdata.malformed</code></td><td>warning</td><td>manual</td></tr><tr><td><code>references.token</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>embedded.package</code></td><td>warning</td><td>not repairable</td></tr></tbody></table></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>Id</th><th>Severity</th><th>Repair</th></tr></thead><tbody><tr><td><code>archive.unreadable</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.extension</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>archive.missing-root</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.enclosed</code></td><td>warning</td><td>manual</td></tr><tr><td><code>archive.unwrap-root</code></td><td>warning</td><td>automatic</td></tr><tr><td><code>archive.multiple-roots</code></td><td>critical</td><td>manual</td></tr><tr><td><code>archive.unsafe-path</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.duplicate-path</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.checksum</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.crc</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>archive.ratio</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>xml.malformed</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>xml.utf8</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>xml.limit</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>xml.illegal-chars</code></td><td>warning</td><td>confirmation required</td></tr><tr><td><code>metadata.no-target</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>metadata.target-older</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>metadata.missing-roles</code></td><td>warning</td><td>manual, or confirmation required when the empty file is safe</td></tr><tr><td><code>sections.missing</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>sections.cycle</code></td><td>warning</td><td>manual</td></tr><tr><td><code>activities.missing</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>activities.missing-module</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>activities.undeclared</code></td><td>warning</td><td>manual</td></tr><tr><td><code>activities.duplicate</code></td><td>warning</td><td>manual</td></tr><tr><td><code>activities.bad-section</code></td><td>warning</td><td>manual</td></tr><tr><td><code>files.excluded</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>files.missing</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>files.hash</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>files.size</code></td><td>warning</td><td>automatic</td></tr><tr><td><code>files.hash-skipped</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>files.recover-misplaced-content</code></td><td>critical</td><td>automatic</td></tr><tr><td><code>files.recovery-incomplete</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>files.unreferenced</code></td><td>info</td><td>manual</td></tr><tr><td><code>questions.legacy-random</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>questions.random-modern</code></td><td>critical</td><td>confirmation required</td></tr><tr><td><code>questions.random-blocked</code></td><td>critical</td><td>manual</td></tr><tr><td><code>questions.category-cycle</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.missing-parent</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.empty-pool</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>questions.outside-bank</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>questions.bad-filter</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.duplicate-id</code></td><td>warning</td><td>manual</td></tr><tr><td><code>questions.missing-bank-file</code></td><td>warning</td><td>manual, or confirmation required when the empty file is safe</td></tr><tr><td><code>questions.multiple-top-categories</code></td><td>critical</td><td>manual</td></tr><tr><td><code>questions.attempt-missing-question</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>questions.attempt-data-missing</code></td><td>critical</td><td>not repairable</td></tr><tr><td><code>plugins.removed</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>plugins.unknown-module</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>plugins.unknown-qtype</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>userdata.excluded</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>userdata.missing</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>userdata.malformed</code></td><td>warning</td><td>manual</td></tr><tr><td><code>references.unknown-context</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>references.inforef-missing-target</code></td><td>warning</td><td>not repairable</td></tr><tr><td><code>references.inforef-duplicate</code></td><td>info</td><td>manual</td></tr><tr><td><code>references.token</code></td><td>info</td><td>not repairable</td></tr><tr><td><code>embedded.package</code></td><td>warning</td><td>not repairable</td></tr></tbody></table></div>
 <p>The English sentences for each id live in <code>packages/core/src/doctor/catalog.ts</code>.
 The viewer shows a title, an explanation and a consequence in English,
 Spanish and French.</p>
@@ -465,11 +592,17 @@ when the first one succeeded.</li>
 </ol>
 <p>These checks have been run in MBZoo&#x27;s unit tests and in the browser against
 synthetic backups: ZIP and TAR.GZ round-trips, the size repair, the illegal
-character repair, the modern random-question preconditions, and the refusal
-to rewrite a legacy 3.x random question. They have not been run inside
-Moodle. Source compared while designing the rule: Moodle 3.x question
-shape, 4.0 bank entries, 4.3–5.2 legacy filter conversion, 4.5, 5.1 (no
-throw) and 5.2 / <code>main</code> (the throw above). See AN-009 and ADR-0037.</p>
+character repair, the modern random-question preconditions, the refusal
+to rewrite a legacy 3.x random question, unwrapping one directory, copying
+a payload whose SHA-1 matches, and the empty <code>roles.xml</code> /
+<code>questions.xml</code> documents. They have not been run inside Moodle. The empty
+documents follow the Moodle 5.2 writer roots and are still confirmation
+required because no disposable site has restored them (TASK-017). Source
+compared while designing the rules: Moodle 4.5 and 5.2
+<code>restore_dbops</code>, <code>restore_prechecks_helper</code>, <code>backup_stepslib</code>,
+<code>restore_stepslib</code>, and <code>restore_qtype_plugin</code>, plus the 3.x question
+shape and the 4.0–5.2 random-question path in AN-009. See AN-010 and
+ADR-0038.</p>
 <h2 class="rp-toc-include" id="privacy"><a href="#privacy" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Privacy</h2>
 <p>The scan, the preview and both downloads stay in the browser. Nothing is
 uploaded. A report can still name archive paths. Do not publish a report

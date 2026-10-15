@@ -160,8 +160,13 @@ not available when this decision was written.
 
 ## Follow-up work
 
+- ADR-0038 extends rules 1, 4 and 10. A typed plan may add an entry, rename
+  a path, or omit an empty path. One enclosing directory may be unwrapped
+  when the proof in that record holds. Where the two records conflict,
+  ADR-0038 wins. The rest of this decision stands.
 - TASK-017: restore the synthetic modern random-question backup on Moodle
-  5.2 and record the result.
+  5.2 and record the result. The same task now also covers the empty
+  `roles_definition` and `question_categories` documents.
 - A precompressed ZIP copy stays out until an experiment shows that every
   required zip.js field can be filled from the reader without corrupting
   an entry.

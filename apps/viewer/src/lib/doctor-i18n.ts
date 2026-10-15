@@ -405,9 +405,19 @@ const COPY = {
     fr: 'La racine de la sauvegarde est dans un dossier supplémentaire',
   },
   'doctor.rule.archive.enclosed.body': {
-    en: 'moodle_backup.xml is not at the archive root. MBZoo does not strip that wrapper automatically.',
-    es: 'moodle_backup.xml no está en la raíz. MBZoo no quita esa carpeta envolvente de forma automática.',
-    fr: 'moodle_backup.xml n\u2019est pas à la racine. MBZoo ne retire pas cet enrobage automatiquement.',
+    en: 'moodle_backup.xml is not at the archive root. A single enclosing directory can be unwrapped when every entry shares that directory and the archive is safe to rebuild. This finding stays when that proof is missing.',
+    es: 'moodle_backup.xml no está en la raíz. Un único directorio envolvente se puede desenvolver cuando todas las entradas comparten ese directorio y el archivo se puede reconstruir con seguridad. Este aviso permanece cuando falta esa prueba.',
+    fr: 'moodle_backup.xml n\u2019est pas à la racine. Un seul dossier enveloppant peut être retiré lorsque toutes les entrées partagent ce dossier et que l\u2019archive peut être reconstruite sans risque. Ce signal reste lorsque cette preuve manque.',
+  },
+  'doctor.rule.archive.unwrap-root.title': {
+    en: 'Extra directory around the backup root',
+    es: 'Directorio extra alrededor de la raíz de la copia',
+    fr: 'Dossier supplémentaire autour de la racine',
+  },
+  'doctor.rule.archive.unwrap-root.body': {
+    en: 'Every entry sits under one directory and moodle_backup.xml is the only manifest. The repair renames those paths so the manifest is at the archive root. File bytes and XML are copied unchanged.',
+    es: 'Todas las entradas están bajo un directorio y moodle_backup.xml es el único manifiesto. La reparación renombra esas rutas para dejar el manifiesto en la raíz. Los bytes y el XML se copian sin cambios.',
+    fr: 'Toutes les entrées sont sous un seul dossier et moodle_backup.xml est le seul manifeste. La réparation renomme ces chemins pour placer le manifeste à la racine. Les octets et le XML sont copiés tels quels.',
   },
   'doctor.rule.archive.multiple-roots.title': {
     en: 'More than one backup manifest',
@@ -525,9 +535,19 @@ const COPY = {
     fr: 'Le Moodle cible est plus ancien que la sauvegarde',
   },
   'doctor.rule.metadata.target-older.body': {
-    en: 'Moodle does not restore a newer backup onto an older release. The declared backup version is left unchanged.',
-    es: 'Moodle no restaura una copia más nueva en una versión más antigua. La versión declarada de la copia no se cambia.',
-    fr: 'Moodle ne restaure pas une sauvegarde plus récente sur une version plus ancienne. La version déclarée n\u2019est pas modifiée.',
+    en: 'The backup release is newer than the target you entered. Moodle records noticenewerbackup as a warning in restore_prechecks_helper::execute_prechecks when the site version is lower than the backup moodle_version. That precheck does not itself abort the restore. Later steps can still fail, and the result depends on the structures in the backup. This comparison uses the release strings, which approximate that numeric check. The declared version is never rewritten.',
+    es: 'La versión de la copia es más nueva que el destino indicado. Moodle registra noticenewerbackup como aviso en restore_prechecks_helper::execute_prechecks cuando la versión del sitio es menor que moodle_version de la copia. Esa comprobación previa no aborta la restauración por sí sola. Los pasos posteriores pueden fallar, y el resultado depende de las estructuras de la copia. Esta comparación usa las cadenas de versión, que se aproximan a esa comprobación numérica. La versión declarada no se reescribe.',
+    fr: 'La version de la sauvegarde est plus récente que la cible indiquée. Moodle enregistre noticenewerbackup comme avertissement dans restore_prechecks_helper::execute_prechecks lorsque la version du site est inférieure à moodle_version de la sauvegarde. Ce précontrôle n\u2019interrompt pas la restauration à lui seul. Les étapes suivantes peuvent échouer, et le résultat dépend des structures de la sauvegarde. Cette comparaison utilise les chaînes de version, qui approchent ce contrôle numérique. La version déclarée n\u2019est jamais réécrite.',
+  },
+  'doctor.rule.metadata.missing-roles.title': {
+    en: 'roles.xml is missing',
+    es: 'Falta roles.xml',
+    fr: 'roles.xml est absent',
+  },
+  'doctor.rule.metadata.missing-roles.body': {
+    en: 'restore_dbops::load_roles_to_tempids throws missing_roles_xml_file when the root roles.xml file is absent. Moodle writes roles_definition even when there are no roles. An empty file is offered only when every scanned XML file has no role id. It has not been restored in Moodle.',
+    es: 'restore_dbops::load_roles_to_tempids lanza missing_roles_xml_file cuando falta roles.xml en la raíz. Moodle escribe roles_definition aunque no haya roles. Un archivo vacío solo se ofrece cuando ningún XML analizado cita un id de rol. No se ha restaurado en Moodle.',
+    fr: 'restore_dbops::load_roles_to_tempids lève missing_roles_xml_file lorsque roles.xml est absent à la racine. Moodle écrit roles_definition même sans rôles. Un fichier vide n\u2019est proposé que si aucun XML analysé ne cite d\u2019identifiant de rôle. Il n\u2019a pas été restauré dans Moodle.',
   },
   'doctor.rule.sections.missing.title': {
     en: 'Section XML is missing',
@@ -649,6 +669,26 @@ const COPY = {
     es: 'La entrada supera el límite de hash. No se recalculó su SHA-1.',
     fr: 'L\u2019entrée dépasse le budget de hash. Son SHA-1 n\u2019a pas été recalculé.',
   },
+  'doctor.rule.files.recover-misplaced-content.title': {
+    en: 'File payload is not at its content-hash path',
+    es: 'El contenido del archivo no está en la ruta de su hash',
+    fr: 'Le contenu du fichier n\u2019est pas sur le chemin de son hash',
+  },
+  'doctor.rule.files.recover-misplaced-content.body': {
+    en: 'files.xml names a SHA-1 whose canonical files/<2 hex>/<sha1> path is missing, and another archive entry has those exact bytes. The repair copies them to the pool path and leaves the original entry in place. files.xml is not rewritten.',
+    es: 'files.xml nombra un SHA-1 cuya ruta files/<2 hex>/<sha1> no está, y otra entrada del archivo tiene exactamente esos bytes. La reparación los copia a la ruta del almacén y deja la entrada original. files.xml no se reescribe.',
+    fr: 'files.xml nomme un SHA-1 dont le chemin files/<2 hex>/<sha1> est absent, et une autre entrée contient exactement ces octets. La réparation les copie vers le chemin du dépôt et conserve l\u2019entrée d\u2019origine. files.xml n\u2019est pas réécrit.',
+  },
+  'doctor.rule.files.recovery-incomplete.title': {
+    en: 'File recovery search was not finished',
+    es: 'La búsqueda de recuperación no terminó',
+    fr: 'La recherche de récupération n\u2019est pas terminée',
+  },
+  'doctor.rule.files.recovery-incomplete.body': {
+    en: 'A referenced payload is not at its canonical path. At least one other entry is above the hash budget, so its SHA-1 was not computed. The file is not reported as missing content.',
+    es: 'Un contenido referenciado no está en su ruta canónica. Al menos otra entrada supera el límite de hash, así que no se calculó su SHA-1. No se informa como contenido ausente.',
+    fr: 'Un contenu référencé n\u2019est pas sur son chemin canonique. Au moins une autre entrée dépasse le budget de hash, donc son SHA-1 n\u2019a pas été calculé. Il n\u2019est pas signalé comme contenu manquant.',
+  },
   'doctor.rule.files.unreferenced.title': {
     en: 'Archive file has no files.xml record',
     es: 'Un archivo del contenedor no tiene ficha en files.xml',
@@ -739,6 +779,46 @@ const COPY = {
     es: 'filtercondition no es JSON válido, así que no se pueden comprobar categoría ni etiquetas. No se reescribe.',
     fr: 'filtercondition n\u2019est pas du JSON valide, donc les filtres de catégorie et d\u2019étiquette ne peuvent pas être vérifiés. Il n\u2019est pas réécrit.',
   },
+  'doctor.rule.questions.missing-bank-file.title': {
+    en: 'questions.xml is missing',
+    es: 'Falta questions.xml',
+    fr: 'questions.xml est absent',
+  },
+  'doctor.rule.questions.missing-bank-file.body': {
+    en: 'restore_dbops::load_categories_and_questions_to_tempids throws missing_questions_xml_file when questions.xml is absent. Moodle writes an empty question_categories document even when the bank is empty. An empty file is offered only when no scanned XML depends on the question bank. It has not been restored in Moodle.',
+    es: 'restore_dbops::load_categories_and_questions_to_tempids lanza missing_questions_xml_file cuando falta questions.xml. Moodle escribe un question_categories vacío aunque el banco no tenga preguntas. Un archivo vacío solo se ofrece cuando ningún XML analizado depende del banco. No se ha restaurado en Moodle.',
+    fr: 'restore_dbops::load_categories_and_questions_to_tempids lève missing_questions_xml_file lorsque questions.xml est absent. Moodle écrit un question_categories vide même si la banque est vide. Un fichier vide n\u2019est proposé que si aucun XML analysé ne dépend de la banque. Il n\u2019a pas été restauré dans Moodle.',
+  },
+  'doctor.rule.questions.multiple-top-categories.title': {
+    en: 'More than one top-level question category',
+    es: 'Más de una categoría de preguntas de nivel superior',
+    fr: 'Plusieurs catégories de questions de premier niveau',
+  },
+  'doctor.rule.questions.multiple-top-categories.body': {
+    en: "Moodle's question-bank precheck counts categories whose parent is 0 in one context. restore_dbops::prechek_precheck_qbanks_by_level reports restoremultipletopcats when backup_release is at least 3.5 and the first eight digits of moodle_version are after 20180205. backup_version is not the field that compare reads. Categories are not merged or deleted.",
+    es: 'La comprobación del banco cuenta las categorías cuyo padre es 0 en un contexto. restore_dbops::prechek_precheck_qbanks_by_level informa restoremultipletopcats cuando backup_release es 3.5 o posterior y los ocho primeros dígitos de moodle_version son posteriores a 20180205. backup_version no es el campo que se compara. Las categorías no se fusionan ni se borran.',
+    fr: 'Le contrôle de la banque compte les catégories dont le parent est 0 dans un contexte. restore_dbops::prechek_precheck_qbanks_by_level signale restoremultipletopcats lorsque backup_release vaut au moins 3.5 et que les huit premiers chiffres de moodle_version sont postérieurs à 20180205. backup_version n\u2019est pas le champ comparé. Les catégories ne sont ni fusionnées ni supprimées.',
+  },
+  'doctor.rule.questions.attempt-missing-question.title': {
+    en: 'Legacy quiz attempt points at a missing question',
+    es: 'Un intento antiguo del cuestionario apunta a una pregunta ausente',
+    fr: 'Une tentative ancienne de test pointe vers une question absente',
+  },
+  'doctor.rule.questions.attempt-missing-question.body': {
+    en: 'This activity still has Moodle 2.0 question states or sessions. process_legacy_quiz_attempt_data throws questionattemptreferstomissingquestion when a question id in that attempt is not in the restored question bank. Attempts are not deleted.',
+    es: 'Esta actividad aún tiene estados o sesiones de pregunta de Moodle 2.0. process_legacy_quiz_attempt_data lanza questionattemptreferstomissingquestion cuando un id de pregunta de ese intento no está en el banco restaurado. Los intentos no se borran.',
+    fr: 'Cette activité contient encore des états ou des sessions de question Moodle 2.0. process_legacy_quiz_attempt_data lève questionattemptreferstomissingquestion lorsqu\u2019un identifiant de question de cette tentative n\u2019est pas dans la banque restaurée. Les tentatives ne sont pas supprimées.',
+  },
+  'doctor.rule.questions.attempt-data-missing.title': {
+    en: 'Legacy quiz attempt is missing session or state data',
+    es: 'A un intento antiguo le falta la sesión o los estados',
+    fr: 'Une tentative ancienne n\u2019a pas de session ou d\u2019états',
+  },
+  'doctor.rule.questions.attempt-data-missing.body': {
+    en: 'process_legacy_quiz_attempt_data throws questionattemptdatamissing when a referenced question has no session or no states. The records that are present are not deleted.',
+    es: 'process_legacy_quiz_attempt_data lanza questionattemptdatamissing cuando una pregunta referenciada no tiene sesión o no tiene estados. Los registros presentes no se borran.',
+    fr: 'process_legacy_quiz_attempt_data lève questionattemptdatamissing lorsqu\u2019une question référencée n\u2019a pas de session ou n\u2019a pas d\u2019états. Les enregistrements présents ne sont pas supprimés.',
+  },
   'doctor.rule.questions.duplicate-id.title': {
     en: 'Duplicate question id',
     es: 'Identificador de pregunta duplicado',
@@ -809,6 +889,36 @@ const COPY = {
     es: 'El archivo de usuarios no se pudo leer. No se modifican nombres, correos ni ids. Este informe no los copia.',
     fr: 'Le fichier des utilisateurs n\u2019a pas pu être lu. Identifiants, adresses et ids ne sont pas modifiés. Ce rapport ne les copie pas.',
   },
+  'doctor.rule.references.unknown-context.title': {
+    en: 'File context id is not declared in this backup',
+    es: 'El id de contexto de un archivo no está declarado en esta copia',
+    fr: 'L\u2019identifiant de contexte d\u2019un fichier n\u2019est pas déclaré',
+  },
+  'doctor.rule.references.unknown-context.body': {
+    en: 'restore_dbops::send_files_to_pool throws unknown_context_mapping when the old context id has no mapping. A file record uses a context id that no other scanned element declares. Context ids are not invented. A destination that never restores that component can also fail this way, which this file cannot show.',
+    es: 'restore_dbops::send_files_to_pool lanza unknown_context_mapping cuando el id de contexto antiguo no tiene correspondencia. Un archivo usa un contexto que ningún otro elemento analizado declara. No se inventan ids de contexto. Un destino que no restaure ese componente también puede fallar así, y este archivo no puede mostrarlo.',
+    fr: 'restore_dbops::send_files_to_pool lève unknown_context_mapping lorsque l\u2019ancien identifiant de contexte n\u2019a pas de correspondance. Un fichier utilise un contexte qu\u2019aucun autre élément analysé ne déclare. Aucun identifiant de contexte n\u2019est inventé. Une cible qui ne restaure pas ce composant peut aussi échouer ainsi, ce que ce fichier ne peut pas montrer.',
+  },
+  'doctor.rule.references.inforef-missing-target.title': {
+    en: 'inforef.xml names an id this backup does not contain',
+    es: 'inforef.xml nombra un id que esta copia no contiene',
+    fr: 'inforef.xml nomme un identifiant absent de cette sauvegarde',
+  },
+  'doctor.rule.references.inforef-missing-target.body': {
+    en: 'An inforef file references a file, question, or role id that is not in the scanned backup. A missing inforef.xml is not itself an error: Moodle loads it only when the file exists. No inforef is generated.',
+    es: 'Un inforef referencia un id de archivo, pregunta o rol que no está en la copia analizada. La ausencia de inforef.xml no es por sí sola un error: Moodle lo carga solo si el archivo existe. No se genera ningún inforef.',
+    fr: 'Un inforef référence un identifiant de fichier, de question ou de rôle absent de la sauvegarde analysée. L\u2019absence d\u2019inforef.xml n\u2019est pas une erreur en soi : Moodle ne le charge que si le fichier existe. Aucun inforef n\u2019est généré.',
+  },
+  'doctor.rule.references.inforef-duplicate.title': {
+    en: 'inforef.xml repeats an id',
+    es: 'inforef.xml repite un id',
+    fr: 'inforef.xml répète un identifiant',
+  },
+  'doctor.rule.references.inforef-duplicate.body': {
+    en: 'The same file, question, or role id appears more than once in one inforef list. The duplicates are left in place.',
+    es: 'El mismo id de archivo, pregunta o rol aparece más de una vez en una lista de inforef. Los duplicados se dejan como están.',
+    fr: 'Le même identifiant de fichier, de question ou de rôle apparaît plus d\u2019une fois dans une liste inforef. Les doublons sont laissés en place.',
+  },
   'doctor.rule.references.token.title': {
     en: 'Backup link points at an activity that is not in this file',
     es: 'Un enlace de la copia apunta a una actividad que no está en este archivo',
@@ -848,6 +958,11 @@ const COPY = {
     en: 'Moodle looks for moodle_backup.xml at the root and will reject the wrapper.',
     es: 'Moodle busca moodle_backup.xml en la raíz y rechazará el directorio envolvente.',
     fr: 'Moodle cherche moodle_backup.xml à la racine et rejettera le dossier enveloppant.',
+  },
+  'doctor.rule.archive.unwrap-root.consequence': {
+    en: 'Moodle looks for moodle_backup.xml at the root and rejects a wrapped backup.',
+    es: 'Moodle busca moodle_backup.xml en la raíz y rechaza una copia envuelta.',
+    fr: 'Moodle cherche moodle_backup.xml à la racine et rejette une sauvegarde enveloppée.',
   },
   'doctor.rule.archive.multiple-roots.consequence': {
     en: 'Restore cannot tell which manifest is the course.',
@@ -905,9 +1020,14 @@ const COPY = {
     fr: 'Une cible plus ancienne que la sauvegarde peut encore refuser la restauration.',
   },
   'doctor.rule.metadata.target-older.consequence': {
-    en: 'Restore on that site fails even when the XML is well-formed.',
-    es: 'La restauración en ese sitio falla aunque el XML esté bien formado.',
-    fr: 'La restauration sur ce site échoue même si le XML est bien formé.',
+    en: 'Compatibility is not guaranteed. Later restore steps may fail on features the older site does not implement.',
+    es: 'La compatibilidad no está garantizada. Los pasos posteriores pueden fallar por funciones que el sitio antiguo no implementa.',
+    fr: 'La compatibilité n\u2019est pas garantie. Les étapes suivantes peuvent échouer sur des fonctions que l\u2019ancien site n\u2019implémente pas.',
+  },
+  'doctor.rule.metadata.missing-roles.consequence': {
+    en: 'Restore throws missing_roles_xml_file before role mappings are loaded.',
+    es: 'La restauración lanza missing_roles_xml_file antes de cargar las correspondencias de roles.',
+    fr: 'La restauration lève missing_roles_xml_file avant de charger les correspondances de rôles.',
   },
   'doctor.rule.sections.missing.consequence': {
     en: 'That section is restored from the manifest only, or the step fails closed.',
@@ -969,6 +1089,16 @@ const COPY = {
     es: 'Un hash distinto en esta entrada no aparecería en este análisis.',
     fr: 'Un hash différent dans cette entrée n\u2019apparaîtrait pas dans cette analyse.',
   },
+  'doctor.rule.files.recover-misplaced-content.consequence': {
+    en: 'Moodle looks up the payload with backup_file_manager::get_backup_content_file_location and will not see these bytes at the wrong path.',
+    es: 'Moodle busca el contenido con backup_file_manager::get_backup_content_file_location y no verá estos bytes en la ruta incorrecta.',
+    fr: 'Moodle cherche le contenu avec backup_file_manager::get_backup_content_file_location et ne verra pas ces octets au mauvais chemin.',
+  },
+  'doctor.rule.files.recovery-incomplete.consequence': {
+    en: 'The bytes may still be in the archive under another name. The scan does not call that missing content.',
+    es: 'Los bytes pueden seguir en el archivo con otro nombre. El análisis no lo llama contenido ausente.',
+    fr: 'Les octets peuvent encore être dans l\u2019archive sous un autre nom. L\u2019analyse ne parle pas de contenu manquant.',
+  },
   'doctor.rule.files.unreferenced.consequence': {
     en: 'Restore will not attach it to an activity. Deleting it could drop content the manifest failed to name.',
     es: 'La restauración no lo asociará a una actividad. Borrarlo podría eliminar contenido que el manifiesto no nombró.',
@@ -1019,6 +1149,26 @@ const COPY = {
     es: 'Las correspondencias de restauración de ese id chocan.',
     fr: 'Les correspondances de restauration de cet id se télescopent.',
   },
+  'doctor.rule.questions.missing-bank-file.consequence': {
+    en: 'Restore throws missing_questions_xml_file before categories and questions are mapped.',
+    es: 'La restauración lanza missing_questions_xml_file antes de mapear categorías y preguntas.',
+    fr: 'La restauration lève missing_questions_xml_file avant de mapper les catégories et les questions.',
+  },
+  'doctor.rule.questions.multiple-top-categories.consequence': {
+    en: 'The precheck reports: The backup file contains more than one top-level question categories for context …',
+    es: 'La comprobación previa informa: el archivo de copia contiene más de una categoría de preguntas de nivel superior para el contexto …',
+    fr: 'Le précontrôle signale : le fichier de sauvegarde contient plus d\u2019une catégorie de questions de premier niveau pour le contexte …',
+  },
+  'doctor.rule.questions.attempt-missing-question.consequence': {
+    en: 'Restore stops while upgrading that legacy attempt. Student attempt history is left untouched.',
+    es: 'La restauración se detiene al actualizar ese intento antiguo. El historial de intentos no se toca.',
+    fr: 'La restauration s\u2019arrête en mettant à niveau cette tentative ancienne. L\u2019historique des tentatives n\u2019est pas modifié.',
+  },
+  'doctor.rule.questions.attempt-data-missing.consequence': {
+    en: 'Restore stops while upgrading that legacy attempt.',
+    es: 'La restauración se detiene al actualizar ese intento antiguo.',
+    fr: 'La restauration s\u2019arrête en mettant à niveau cette tentative ancienne.',
+  },
   'doctor.rule.plugins.removed.consequence': {
     en: 'A destination that has dropped the module cannot restore the activity.',
     es: 'Un destino que ya no tiene el módulo no puede restaurar la actividad.',
@@ -1048,6 +1198,21 @@ const COPY = {
     en: 'User restore stops. Conflicts with existing accounts on the destination still cannot be seen from the file alone.',
     es: 'La restauración de usuarios se detiene. Los conflictos con cuentas ya existentes en el destino siguen sin poder verse solo desde el archivo.',
     fr: 'La restauration des utilisateurs s\u2019arrête. Les conflits avec des comptes déjà présents sur la cible restent invisibles depuis le fichier seul.',
+  },
+  'doctor.rule.references.unknown-context.consequence': {
+    en: 'File restore can throw unknown_context_mapping for that context id.',
+    es: 'La restauración de archivos puede lanzar unknown_context_mapping para ese id de contexto.',
+    fr: 'La restauration des fichiers peut lever unknown_context_mapping pour cet identifiant de contexte.',
+  },
+  'doctor.rule.references.inforef-missing-target.consequence': {
+    en: 'Restore may skip that reference or fail the step that expects the record.',
+    es: 'La restauración puede omitir esa referencia o fallar en el paso que espera el registro.',
+    fr: 'La restauration peut ignorer cette référence ou échouer à l\u2019étape qui attend l\u2019enregistrement.',
+  },
+  'doctor.rule.references.inforef-duplicate.consequence': {
+    en: 'Restore may map that id twice or ignore the repeat. The file is not rewritten.',
+    es: 'La restauración puede mapear ese id dos veces o ignorar la repetición. El archivo no se reescribe.',
+    fr: 'La restauration peut mapper cet identifiant deux fois ou ignorer le doublon. Le fichier n\u2019est pas réécrit.',
   },
   'doctor.rule.references.token.consequence': {
     en: 'After restore the link still depends on an activity that was not in the backup.',
@@ -1103,6 +1268,16 @@ const COPY = {
     en: 'A ZIP CRC mismatch blocks a rebuild: rewriting would store the same bytes under a freshly computed CRC and hide the mismatch.',
     es: 'Un CRC de ZIP que no coincide bloquea la reconstrucción: reescribir guardaría los mismos bytes con un CRC recién calculado y ocultaría el desajuste.',
     fr: 'Un CRC ZIP différent bloque la reconstruction : réécrire stockerait les mêmes octets sous un CRC recalculé et masquerait l\u2019écart.',
+  },
+  'doctor.limit.empty-docs': {
+    en: 'An empty roles.xml or questions.xml file is created only when no scanned reference needs it. Those documents follow the Moodle writer roots and have not been restored in Moodle. Account conflicts, external file aliases, server limits, and answer or hint text matched against a question that already exists on the destination are not repaired from the file.',
+    es: 'Un roles.xml o questions.xml vacío solo se crea cuando ninguna referencia analizada lo necesita. Esos documentos siguen las raíces que escribe Moodle y no se han restaurado en Moodle. Los conflictos de cuentas, los alias de archivos externos, los límites del servidor y el texto de una respuesta o pista comparado con una pregunta que ya existe en el destino no se reparan desde el archivo.',
+    fr: 'Un roles.xml ou questions.xml vide n\u2019est créé que si aucune référence analysée n\u2019en a besoin. Ces documents suivent les racines écrites par Moodle et n\u2019ont pas été restaurés dans Moodle. Les conflits de comptes, les alias de fichiers externes, les limites du serveur et le texte d\u2019une réponse ou d\u2019un indice comparé à une question déjà présente sur la cible ne sont pas réparés depuis le fichier.',
+  },
+  'doctor.limit.misplaced': {
+    en: 'A misplaced file is copied to its content-hash path only when another entry at or below the hash budget has the same SHA-1. A larger candidate is reported as not searched, not as missing content.',
+    es: 'Un archivo mal ubicado se copia a la ruta de su hash solo cuando otra entrada dentro del límite de hash tiene el mismo SHA-1. Un candidato mayor se informa como no buscado, no como contenido ausente.',
+    fr: 'Un fichier mal placé est copié vers le chemin de son hash seulement lorsqu\u2019une autre entrée, dans la limite du budget de hash, a le même SHA-1. Un candidat plus grand est signalé comme non exploré, pas comme contenu manquant.',
   },
 } as const
 

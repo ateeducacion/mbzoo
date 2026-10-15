@@ -31,3 +31,24 @@ older target, on that version too):
 
 A legacy 3.x backup must still be left unrewritten and restored by Moodle's
 own conversion, not by this repair.
+
+ADR-0038 adds three more shapes that this task must restore before anyone
+sets `moodleRestoreVerified` for them. None of these was executed on a
+disposable Moodle while the records were written (2026-10-15). Structural
+checks in `packages/core/test/doctor-restore.test.ts` are not a substitute.
+
+1. Empty `roles.xml`. The document is the Moodle 5.2 writer root
+   `roles_definition` with no `role` child. Restore it only on a backup
+   that names no role id. Confirm `restore_dbops::load_roles_to_tempids`
+   accepts the file and that the course still has its activities.
+2. Empty `questions.xml`. The document is `question_categories` with no
+   category. Restore it only on a backup that does not reference the
+   question bank. A backup that does reference the bank must still be
+   refused by MBZ Doctor, not given a fake category.
+3. One enclosing directory removed, and one payload copied to
+   `files/<2 hex>/<sha1>` after its SHA-1 matched. Confirm the restored
+   course shows that file. The original misplaced entry may remain in the
+   archive; Moodle reads the canonical path.
+
+Until those restores are recorded, the empty documents stay
+confirmation-required and the outcome note stays unverified.

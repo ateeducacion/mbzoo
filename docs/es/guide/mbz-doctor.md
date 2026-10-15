@@ -65,6 +65,10 @@ TAR.GZ). No es la exportación por actividad (XML, HTML o ZIP de archivos).
 | Tamaño de archivo declarado | El SHA-1 de los bytes coincide con `contenthash` y `<filesize>` no coincide con esa longitud. No se reescriben los archivos excluidos por la copia, los registros de directorio (nombre `.`) ni las entradas por encima del límite de hash de 8 MiB. | Solo el texto de `<filesize>`. Los bytes se quedan. Una segunda pasada no cambia nada. | Automática. Sin pérdida de contenido. |
 | Caracteres de control ilegales en XML | La entrada contiene un código que XML 1.0 prohíbe (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tabulador, LF y CR se conservan. | Se eliminan esos códigos. El marcado circundante, los elementos desconocidos y los comentarios se conservan. | Requiere confirmación. Puede alterar texto escrito. |
 | Pregunta aleatoria moderna | Véase más abajo. Si falla una precondición, no se edita nada. | Los `question_reference` del cuestionario que apuntan a esa entrada del banco pasan a ser `question_set_reference`. Se elimina la entrada comodín. Las demás preguntas se quedan. | Requiere confirmación. La pérdida de contenido solo se marca cuando ningún hueco del cuestionario referencia el comodín, porque ese camino borra el registro. |
+| Directorio extra alrededor de la raíz | Hay un solo `moodle_backup.xml`, todas las entradas comparten ese prefijo, los destinos siguen siendo únicos y seguros, y el archivo no tiene un fallo de integridad. Dos directorios anidados cuentan como un prefijo. Un archivo fuera del directorio, un segundo manifiesto, una ruta insegura o una colisión lo bloquean. | Cada ruta pierde ese prefijo. El XML y los bytes se copian. Los archivos de plugins se conservan. | Automática. Sin pérdida de contenido. |
+| `roles.xml` vacío | El archivo no está, se pudo leer cada XML dentro del límite de hash y ningún archivo nombra un id de rol. Lo bloquean un rol referenciado, un XML ilegible o un `roles.xml` cuya raíz no es `roles_definition`. | Añade `roles.xml` con raíz `roles_definition`. No se inventa ningún rol, nombre corto ni permiso. | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017). |
+| `questions.xml` vacío | El archivo no está y ningún XML analizado depende del banco (huecos de cuestionario, referencias, lecciones que nombran una pregunta, ids de `inforef` y las mismas etiquetas en XML de plugins). | Añade `questions.xml` con raíz `question_categories`. No se inventa ninguna categoría ni pregunta. No se borran cuestionarios para habilitar esta reparación. | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017). |
+| Contenido de archivo en otra ruta | `files.xml` nombra un archivo físico cuya ruta `files/<2 hex>/<sha1>` no está, y otra entrada dentro del límite de hash tiene exactamente ese SHA-1. Los alias, los registros de directorio (nombre `.`), una entrada canónica en conflicto y un hash que no coincide se dejan como están. | Copia esos bytes a la ruta canónica. La entrada original se queda. `files.xml` no se reescribe. | Automática. Sin pérdida de contenido. |
 
 Una reparación que no cambia ningún byte no produce una descarga.
 
@@ -83,8 +87,9 @@ Estos contenedores rechazan la reconstrucción: archivo ilegible, ruta
 insegura, ruta duplicada, suma de comprobación TAR incorrecta, CRC de ZIP
 incorrecto, `moodle_backup.xml` ausente, más de una raíz de copia. El CRC
 incorrecto se rechaza porque una reescritura guardaría los mismos bytes con
-un CRC recién calculado y ocultaría el desajuste. Un directorio extra
-alrededor de `moodle_backup.xml` es un aviso y no se elimina.
+un CRC recién calculado y ocultaría el desajuste. Un único directorio
+extra alrededor de `moodle_backup.xml` se quita solo cuando se cumple la
+fila de arriba. Cualquier otro envoltorio sigue siendo un aviso.
 
 ## `qtype "random"`
 
@@ -164,18 +169,44 @@ plugins tiene instalados ese sitio. Los módulos retirados del núcleo (chat,
 survey, el assignment antiguo) se nombran según la historia de Moodle. Si
 el destino elegido es anterior a la retirada, el hallazgo es informativo.
 
-No se editan nombres de usuario, correos, roles, calificaciones, intentos
-ni entregas. Un conflicto con un usuario que ya existe en el servidor no se
-puede ver desde el archivo. `users.xml` no se copia al informe.
+Una copia más nueva que el destino que usted escribe es
+`noticenewerbackup`. `restore_prechecks_helper::execute_prechecks` pone
+esa cadena en la lista de avisos cuando `$CFG->version` es menor que el
+`moodle_version` de la copia. Esa comprobación previa no aborta por sí
+sola. Los pasos posteriores pueden fallar. La herramienta compara las
+cadenas de versión que se pueden leer (`4.5`, `3.9`), lo que solo se
+aproxima a la comparación numérica. La versión declarada no se reescribe.
+
+Estos errores de restauración se diagnostican y no se reescriben:
+
+| Identificador de Moodle | Qué hace MBZ Doctor |
+|---|---|
+| `restoremultipletopcats` | Se informa cuando `backup_release` es 3.5 o posterior, los ocho primeros dígitos de `moodle_version` son posteriores a `20180205` y un contexto del banco tiene más de una categoría con padre `0`. Las categorías no se fusionan. |
+| `questionattemptreferstomissingquestion` | Se informa cuando `<states>` o `<sessions>` antiguos nombran un id de pregunta que no está en esta copia. Los intentos no se borran. |
+| `questionattemptdatamissing` | Se informa cuando ese intento antiguo tiene la pregunta pero le falta la sesión o los estados. |
+| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | No son un hallazgo del archivo. `restore_qtype_plugin` los lanza solo cuando la pregunta ya existe en el destino y el texto de una respuesta o de una pista no coincide. La copia no se edita para forzar la coincidencia. |
+| `unknown_context_mapping` | Se informa cuando el `contextid` de un archivo físico no aparece entre los contextos declarados fuera de `files.xml`, y ese conjunto no está vacío. No se inventa ningún contexto. Un análisis XML incompleto no lo emite. |
+| Ids de `inforef` | Se informa una referencia a un archivo, una pregunta o un rol que no está en esta copia, y también un id repetido. Que falte `inforef.xml` no es por sí mismo un error: `restore_load_included_inforef_records` carga el archivo solo si existe. No se sintetiza. |
+
+`restoreuserconflict`, `restorecannotcreateuser` y
+`restoremnethostidmismatch` dependen de las cuentas del destino. No se
+editan nombres de usuario, correos, identificadores de autenticación, ids
+de usuario, calificaciones, intentos ni entregas. `users.xml` no se copia
+al informe.
+
+`restorechecksumfailed` y `errorcopyingbackupfile` son fallos de sesión o
+del servidor, no bytes dañados. La memoria de PHP, los tiempos de espera,
+el tamaño de subida, el disco, los permisos, los plugins que faltan en el
+servidor y el cron no se informan como contenido corrupto.
+`errorminbackup20version` y `errorrestorefrontpagebackup` no se evitan
+reescribiendo la versión o el tipo de curso. Un hash que no coincide con
+sus bytes no se «arregla» guardando el hash nuevo. Un alias de archivo
+externo no se sustituye por un archivo vacío.
 
 No se descargan ni se reconstruyen URL externas, herramientas LTI,
 bibliotecas H5P ni entornos SCORM. Un token `$@…@$` no se solicita. Una
 actividad SCORM o H5P sin bytes empaquetados es un aviso, y solo cuando la
 copia no desactivó la inclusión de archivos.
-
-La memoria del servidor, los límites de tiempo de PHP, el tamaño de subida,
-el disco, los permisos y el cron no son propiedades del `.mbz`. No se
-informan como datos corruptos.
 
 ## Catálogo de reglas
 
@@ -206,12 +237,17 @@ después permanece en pantalla y en el JSON se sustituye por `[omitted]`.
 Estas comprobaciones se han ejecutado en las pruebas unitarias de MBZoo y
 en el navegador con copias sintéticas: ida y vuelta ZIP y TAR.GZ, la
 reparación del tamaño, la de los caracteres ilegales, las precondiciones
-de la pregunta aleatoria moderna, y la negativa a reescribir una pregunta
-aleatoria heredada de Moodle 3.x. No se han ejecutado dentro de Moodle. El
-código comparado al diseñar la regla: forma de pregunta de 3.x, entradas de
-banco de 4.0, conversión del filtro heredado en 4.3–5.2, 4.5, 5.1 (sin la
-excepción) y 5.2 / `main` (la excepción de arriba). Véase AN-009 y
-ADR-0037.
+de la pregunta aleatoria moderna, la negativa a reescribir una pregunta
+aleatoria heredada de Moodle 3.x, quitar un directorio envoltorio, copiar
+un contenido cuyo SHA-1 coincide, y los documentos vacíos `roles.xml` y
+`questions.xml`. No se han ejecutado dentro de Moodle. Los documentos
+vacíos siguen la raíz que escribe Moodle 5.2 y siguen requiriendo
+confirmación porque ningún sitio desechable los ha restaurado (TASK-017).
+El código comparado al diseñar las reglas: `restore_dbops`,
+`restore_prechecks_helper`, `backup_stepslib`, `restore_stepslib` y
+`restore_qtype_plugin` de Moodle 4.5 y 5.2, además de la forma de pregunta
+de 3.x y el camino de la pregunta aleatoria de 4.0 a 5.2 en AN-009. Véase
+AN-010 y ADR-0038.
 
 ## Privacidad
 

@@ -59,11 +59,21 @@ export const RULES = {
   'archive.enclosed': {
     title: 'Backup root is inside an extra directory',
     explanation:
-      'moodle_backup.xml is not at the archive root. MBZoo does not strip the wrapper automatically: an unusual layout is not assumed to be safe to normalise.',
+      'moodle_backup.xml is not at the archive root. A single enclosing directory can be unwrapped when every entry shares that directory and the archive is safe to rebuild. This finding stays when that proof is missing.',
     severity: 'warning',
     category: 'archive',
     consequences: 'Moodle looks for moodle_backup.xml at the root and will reject the wrapper.',
     repairability: 'manual',
+    sources: ['REPO-005'],
+  },
+  'archive.unwrap-root': {
+    title: 'Extra directory around the backup root',
+    explanation:
+      'Every entry sits under one directory and moodle_backup.xml is the only manifest. The repair renames those paths so the manifest is at the archive root. File bytes and XML are copied unchanged.',
+    severity: 'warning',
+    category: 'archive',
+    consequences: 'Moodle looks for moodle_backup.xml at the root and rejects a wrapped backup.',
+    repairability: 'automatic',
     sources: ['REPO-005'],
   },
   'archive.multiple-roots': {
@@ -177,11 +187,22 @@ export const RULES = {
   'metadata.target-older': {
     title: 'Target Moodle is older than the backup',
     explanation:
-      'Moodle does not restore a newer backup onto an older release. The declared backup version is left unchanged: lowering it would select the wrong restore code.',
+      "The backup release is newer than the target you entered. Moodle's restore_prechecks_helper::execute_prechecks records noticenewerbackup as a warning when the site version is lower than the backup's moodle_version. That precheck does not itself abort the restore. Later steps can still fail, and the result depends on the structures in the backup. This comparison uses the release strings, which approximate that numeric check. The declared version is never rewritten.",
     severity: 'warning',
     category: 'compatibility',
-    consequences: 'Restore on that site fails even when the XML is well-formed.',
+    consequences:
+      'Compatibility is not guaranteed. Later restore steps may fail on features the older site does not implement.',
     repairability: 'not-repairable',
+    sources: ['REPO-005'],
+  },
+  'metadata.missing-roles': {
+    title: 'roles.xml is missing',
+    explanation:
+      "restore_dbops::load_roles_to_tempids throws missing_roles_xml_file when the root roles.xml file is absent. Moodle's backup_final_roles_structure_step writes roles_definition even when there are no roles. An empty file is offered only when every scanned XML file has no role id. It has not been restored in Moodle.",
+    severity: 'warning',
+    category: 'metadata',
+    consequences: 'Restore throws missing_roles_xml_file before role mappings are loaded.',
+    repairability: 'manual',
     sources: ['REPO-005'],
   },
   'sections.missing': {
@@ -302,6 +323,28 @@ export const RULES = {
     repairability: 'not-repairable',
     sources: ['REPO-005'],
   },
+  'files.recover-misplaced-content': {
+    title: 'File payload is not at its content-hash path',
+    explanation:
+      'files.xml names a SHA-1 whose canonical files/<2 hex>/<sha1> path is missing, and another archive entry has those exact bytes. The repair copies them to the pool path and leaves the original entry in place. files.xml is not rewritten.',
+    severity: 'critical',
+    category: 'files',
+    consequences:
+      'Moodle looks up the payload with backup_file_manager::get_backup_content_file_location and will not see these bytes at the wrong path.',
+    repairability: 'automatic',
+    sources: ['REPO-005'],
+  },
+  'files.recovery-incomplete': {
+    title: 'File recovery search was not finished',
+    explanation:
+      'A referenced payload is not at its canonical path. At least one other entry is above the hash budget, so its SHA-1 was not computed. The file is not reported as missing content.',
+    severity: 'info',
+    category: 'files',
+    consequences:
+      'The bytes may still be in the archive under another name. The scan does not call that missing content.',
+    repairability: 'not-repairable',
+    sources: ['REPO-005'],
+  },
   'files.unreferenced': {
     title: 'Archive file has no files.xml record',
     explanation:
@@ -404,6 +447,49 @@ export const RULES = {
     repairability: 'manual',
     sources: ['REPO-005'],
   },
+  'questions.missing-bank-file': {
+    title: 'questions.xml is missing',
+    explanation:
+      'restore_dbops::load_categories_and_questions_to_tempids throws missing_questions_xml_file when questions.xml is absent. Moodle writes an empty question_categories document even when the bank is empty. An empty file is offered only when no scanned XML depends on the question bank. It has not been restored in Moodle.',
+    severity: 'warning',
+    category: 'questions',
+    consequences:
+      'Restore throws missing_questions_xml_file before categories and questions are mapped.',
+    repairability: 'manual',
+    sources: ['REPO-005'],
+  },
+  'questions.multiple-top-categories': {
+    title: 'More than one top-level question category',
+    explanation:
+      "Moodle's question-bank precheck counts categories whose parent is 0 in one context. restore_dbops::prechek_precheck_qbanks_by_level reports restoremultipletopcats when backup_release is at least 3.5 and the first eight digits of moodle_version are after 20180205. backup_version is not the field that compare reads. Categories are not merged or deleted.",
+    severity: 'critical',
+    category: 'questions',
+    consequences:
+      'The precheck reports: The backup file contains more than one top-level question categories for context …',
+    repairability: 'manual',
+    sources: ['REPO-005'],
+  },
+  'questions.attempt-missing-question': {
+    title: 'Legacy quiz attempt points at a missing question',
+    explanation:
+      'This activity still has Moodle 2.0 question states or sessions. process_legacy_quiz_attempt_data throws questionattemptreferstomissingquestion when a question id in that attempt is not in the restored question bank. Attempts are not deleted.',
+    severity: 'critical',
+    category: 'questions',
+    consequences:
+      'Restore stops while upgrading that legacy attempt. Student attempt history is left untouched.',
+    repairability: 'not-repairable',
+    sources: ['REPO-005'],
+  },
+  'questions.attempt-data-missing': {
+    title: 'Legacy quiz attempt is missing session or state data',
+    explanation:
+      'process_legacy_quiz_attempt_data throws questionattemptdatamissing when a referenced question has no session or no states. The records that are present are not deleted.',
+    severity: 'critical',
+    category: 'questions',
+    consequences: 'Restore stops while upgrading that legacy attempt.',
+    repairability: 'not-repairable',
+    sources: ['REPO-005'],
+  },
   'plugins.removed': {
     title: 'Activity module was removed from Moodle core',
     explanation:
@@ -467,6 +553,36 @@ export const RULES = {
     repairability: 'manual',
     sources: ['REPO-005'],
   },
+  'references.unknown-context': {
+    title: 'File context id is not declared in this backup',
+    explanation:
+      'restore_dbops::send_files_to_pool throws unknown_context_mapping when the old context id has no mapping. A file record uses a context id that no other scanned element declares. Context ids are not invented. A destination that never restores that component can also fail this way, which this file cannot show.',
+    severity: 'warning',
+    category: 'references',
+    consequences: 'File restore can throw unknown_context_mapping for that context id.',
+    repairability: 'not-repairable',
+    sources: ['REPO-005'],
+  },
+  'references.inforef-missing-target': {
+    title: 'inforef.xml names an id this backup does not contain',
+    explanation:
+      'An inforef file references a file, question, or role id that is not in the scanned backup. A missing inforef.xml is not itself an error: Moodle loads it only when the file exists. No inforef is generated.',
+    severity: 'warning',
+    category: 'references',
+    consequences: 'Restore may skip that reference or fail the step that expects the record.',
+    repairability: 'not-repairable',
+    sources: ['REPO-005'],
+  },
+  'references.inforef-duplicate': {
+    title: 'inforef.xml repeats an id',
+    explanation:
+      'The same file, question, or role id appears more than once in one inforef list. The duplicates are left in place.',
+    severity: 'info',
+    category: 'references',
+    consequences: 'Restore may map that id twice or ignore the repeat. The file is not rewritten.',
+    repairability: 'manual',
+    sources: ['REPO-005'],
+  },
   'references.token': {
     title: 'Backup link points at an activity that is not in this file',
     explanation:
@@ -501,6 +617,8 @@ export const LIMITATIONS: readonly string[] = [
   'File hashes and ZIP CRC-32 are checked only up to the hash budget. Larger payloads are reported as not hashed.',
   'Evidence in a downloaded report names archive paths. It omits file bytes, question text, passwords, usernames and email addresses.',
   'A ZIP CRC mismatch blocks a rebuild: rewriting would store the same bytes under a freshly computed CRC and hide the mismatch.',
+  'An empty roles.xml or questions.xml file is created only when no scanned reference needs it. Those documents follow the Moodle writer roots and have not been restored in Moodle. Account conflicts, external file aliases, server limits, and answer or hint text matched against a question that already exists on the destination are not repaired from the file.',
+  'A misplaced file is copied to its content-hash path only when another entry at or below the hash budget has the same SHA-1. A larger candidate is reported as not searched, not as missing content.',
 ]
 
 interface FindingExtra {

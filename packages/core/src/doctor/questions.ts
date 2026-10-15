@@ -10,7 +10,7 @@
  */
 import { makeFinding } from './catalog.ts'
 import type { Finding, RepairPlan, RepairStep } from './types.ts'
-import { parseRelease, type RandomRestorePath } from './versions.ts'
+import { multipleTopCategoriesFail, parseRelease, type RandomRestorePath } from './versions.ts'
 import {
   ancestorNamed,
   childrenOf,
@@ -87,6 +87,8 @@ export function planQuestions(
   activityFiles: readonly NamedXml[],
   path: RandomRestorePath,
   targetRelease: string,
+  backupRelease = '',
+  moodleVersion = '',
 ): QuestionPlan {
   const findings: Finding[] = []
   const categories: Category[] = []
@@ -318,6 +320,9 @@ export function planQuestions(
     }
   }
 
+  noteMultipleTopCategories(categories, backupRelease, moodleVersion, findings)
+  noteLegacyAttempts(activityFiles, seenQuestionIds, findings)
+
   return { findings, steps, categories: categories.length, questions: questions.length }
 }
 
@@ -482,6 +487,112 @@ function noteEmptyPool(
       params: { categoryId },
     }),
   )
+}
+
+function noteMultipleTopCategories(
+  categories: readonly Category[],
+  release: string,
+  moodleVersion: string,
+  findings: Finding[],
+): void {
+  if (!multipleTopCategoriesFail(release, moodleVersion)) return
+  const tops = new Map<string, Category[]>()
+  for (const category of categories) {
+    if (category.parent !== '' && category.parent !== '0') continue
+    const list = tops.get(category.contextId) ?? []
+    list.push(category)
+    tops.set(category.contextId, list)
+  }
+  for (const [contextId, roots] of tops) {
+    if (roots.length < 2) continue
+    findings.push(
+      makeFinding('questions.multiple-top-categories', {
+        id: `questions.multiple-top-categories:${contextId || 'none'}`,
+        repairability: 'manual',
+        evidence: roots.slice(0, 8).map((category) => {
+          const children = categories.filter((item) => item.parent === category.id).length
+          return {
+            detail: `Category ${category.id} is a top-level category in context ${contextId || '(empty)'} and has ${children} child categories in this backup`,
+          }
+        }),
+        params: { contextId, count: roots.length },
+      }),
+    )
+  }
+}
+
+function noteLegacyAttempts(
+  activityFiles: readonly NamedXml[],
+  seenQuestionIds: ReadonlyMap<string, number>,
+  findings: Finding[],
+): void {
+  const reported = new Set<string>()
+  for (const file of activityFiles) {
+    const elements = scanElements(file.xml)
+    const states = new Map<string, number>()
+    const sessions = new Map<string, number>()
+    let legacy = false
+    for (const el of elements) {
+      if (el.end < 0) continue
+      const parent = el.parent >= 0 ? elements[el.parent] : undefined
+      if (el.name === 'state' && parent?.name === 'states') {
+        legacy = true
+        const id = leafOf(file.xml, elements, el, 'question')
+        if (id !== '' && id !== '0') states.set(id, (states.get(id) ?? 0) + 1)
+      }
+      if (el.name === 'session' && parent?.name === 'sessions') {
+        legacy = true
+        const id = leafOf(file.xml, elements, el, 'questionid')
+        if (id !== '' && id !== '0') sessions.set(id, (sessions.get(id) ?? 0) + 1)
+      }
+    }
+    if (!legacy) continue
+    for (const id of new Set([...states.keys(), ...sessions.keys()])) {
+      const activity = file.activityId
+      const where = {
+        entry: file.name,
+        ...(activity !== undefined ? { activityId: activity } : {}),
+        ...(questionIdOf(id) ?? {}),
+      }
+      if (!seenQuestionIds.has(id)) {
+        const findingId = `questions.attempt-missing-question:${id}`
+        if (reported.has(findingId)) continue
+        reported.add(findingId)
+        findings.push(
+          makeFinding('questions.attempt-missing-question', {
+            id: findingId,
+            evidence: [
+              {
+                ...where,
+                detail: `Legacy attempt references question ${id}, which is not in this backup`,
+              },
+            ],
+            ...(activity !== undefined ? { activityId: activity } : {}),
+            params: { questionId: id },
+          }),
+        )
+        continue
+      }
+      if ((states.get(id) ?? 0) === 0 || (sessions.get(id) ?? 0) === 0) {
+        const findingId = `questions.attempt-data-missing:${id}`
+        if (reported.has(findingId)) continue
+        reported.add(findingId)
+        findings.push(
+          makeFinding('questions.attempt-data-missing', {
+            id: findingId,
+            evidence: [
+              {
+                ...where,
+                detail: `Question ${id} has ${sessions.get(id) ?? 0} legacy sessions and ${states.get(id) ?? 0} legacy states`,
+              },
+            ],
+            ...(activity !== undefined ? { activityId: activity } : {}),
+            params: { questionId: id },
+          }),
+        )
+      }
+    }
+  }
 }
 
 function categoryCycles(categories: readonly Category[]): string[] {

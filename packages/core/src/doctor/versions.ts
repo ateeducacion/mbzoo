@@ -48,6 +48,23 @@ export function targetIsOlder(target: string, source: string): boolean | undefin
   return left.minor < right.minor
 }
 
+/**
+ * Moodle reports `restoremultipletopcats` only when `backup_release` is at
+ * least 3.5 and `backup_version_compare(20180205, '>')` is true (REPO-005,
+ * `restore_dbops::prechek_precheck_qbanks_by_level`). That compare reads the
+ * first eight digits of `moodle_version`, not `backup_version`. A missing
+ * or shorter `moodle_version` does not match, so the precheck does not fire.
+ */
+export function multipleTopCategoriesFail(release: string, moodleVersion: string): boolean {
+  const parsed = parseRelease(release)
+  if (parsed.major === undefined || parsed.minor === undefined) return false
+  const atLeast35 = parsed.major > 3 || (parsed.major === 3 && parsed.minor >= 5)
+  if (!atLeast35) return false
+  const match = /(\d{8})/.exec(moodleVersion)
+  if (!match?.[1]) return false
+  return Number(match[1]) > 20180205
+}
+
 export function targetAtLeast(target: string, removedIn: string): boolean | undefined {
   const left = parseRelease(target)
   const right = parseRelease(removedIn)

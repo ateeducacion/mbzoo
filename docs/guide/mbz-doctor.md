@@ -61,6 +61,10 @@ It is not the per-activity XML / HTML / ZIP export.
 | Declared file size | The SHA-1 of the stored bytes equals `contenthash`, and `<filesize>` does not equal that length. Files the backup excluded, directory records (filename `.`), and entries above the 8 MiB hash budget are not rewritten. | The `<filesize>` text only. The bytes stay. Running it again changes nothing. | Automatic. No content loss. |
 | Illegal XML control characters | The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay. | Those code points are removed. Surrounding markup, unknown elements and comments stay. | Confirmation required. This can alter authored text. |
 | Modern random question | See below. Every precondition has to hold, or nothing is edited. | Quiz `question_reference` elements that point at that bank entry become `question_set_reference` elements. The placeholder bank entry is removed. Other questions stay. | Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record. |
+| Extra directory around the root | Exactly one `moodle_backup.xml`, every entry shares that one directory prefix, destinations stay unique and safe, and the archive has no integrity blocker. Two nested directories count as one prefix. A file outside the wrapper, a second manifest, an unsafe path, or a collision blocks it. | Every path loses that prefix. XML and file bytes are copied. Plugin files stay. | Automatic. No content loss. |
+| Empty `roles.xml` | The file is absent, every XML entry under the hash budget was scanned, and no scanned file names a role id. A referenced role, an unreadable XML file, or a `roles.xml` whose root is not `roles_definition` blocks it. | Adds `roles.xml` whose root is `roles_definition`. No role, shortname, or permission is invented. | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017). |
+| Empty `questions.xml` | The file is absent and no scanned XML depends on the question bank (quiz slots, question references, lessons that name a question, `inforef` question ids, and the same tags in plugin XML). | Adds `questions.xml` whose root is `question_categories`. No category or question is invented. Quiz activities are not deleted to make this available. | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017). |
+| Misplaced file payload | `files.xml` names a physical file whose `files/<2 hex>/<sha1>` path is missing, and another entry at or below the hash budget has that exact SHA-1. Aliases, directory records (`filename` `.`), a conflicting canonical entry, and a hash that does not match are left alone. | Copies those bytes to the canonical path. The original entry stays. `files.xml` is not rewritten. | Automatic. No content loss. |
 
 A repair that does not change any bytes does not produce a download.
 
@@ -80,8 +84,8 @@ These containers refuse a rebuild: unreadable archive, unsafe path,
 duplicate path, TAR checksum failure, ZIP CRC mismatch, missing
 `moodle_backup.xml`, more than one backup root. A CRC mismatch is refused
 because a rewrite would store the same bytes under a newly computed CRC and
-hide the mismatch. An extra directory around `moodle_backup.xml` is a
-warning and is not stripped.
+hide the mismatch. One extra directory around `moodle_backup.xml` is
+unwrapped only when the row above holds. Any other wrapper stays a warning.
 
 ## `qtype "random"`
 
@@ -161,18 +165,43 @@ installed. Removed core modules (chat, survey, the old assignment) are
 named from Moodle's own history. If the chosen target is older than the
 removal, the finding is informational.
 
-Usernames, emails, roles, grades, attempts and submissions are not edited.
-A conflict with a user who already exists on the server cannot be seen from
-the file. `users.xml` is not copied into the report.
+A backup newer than the target you type is `noticenewerbackup`. Moodle's
+`restore_prechecks_helper::execute_prechecks` puts that string on the
+warning list when `$CFG->version` is lower than the backup's
+`moodle_version`. The precheck itself does not abort. Later steps can
+still fail. The tool compares the release strings you can read
+(`4.5`, `3.9`), which only approximate that numeric check. The declared
+version is never rewritten.
+
+These restore errors are diagnosed and not rewritten:
+
+| Moodle identifier | What MBZ Doctor does |
+|---|---|
+| `restoremultipletopcats` | Reported when `backup_release` is at least 3.5 and the first eight digits of `moodle_version` are after `20180205`, and one question-bank context has more than one category whose parent is `0`. Categories are not merged. |
+| `questionattemptreferstomissingquestion` | Reported when legacy `<states>` or `<sessions>` name a question id that is not in this backup. Attempts are not deleted. |
+| `questionattemptdatamissing` | Reported when that legacy attempt has the question but is missing the session or the states. |
+| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | Not a finding on the file. `restore_qtype_plugin` throws them only when the question already exists on the destination and an answer or hint text does not match. The backup is not edited to force a match. |
+| `unknown_context_mapping` | Reported when a physical file's `contextid` is absent from the contexts declared outside `files.xml`, and that set is non-empty. No context id is invented. An unfinished XML scan does not emit it. |
+| `inforef` ids | A reference to a file, question, or role id that is not in this backup is reported, as is a repeated id. A missing `inforef.xml` is not itself an error: `restore_load_included_inforef_records` loads the file only when it exists. The file is not synthesized. |
+
+`restoreuserconflict`, `restorecannotcreateuser`, and
+`restoremnethostidmismatch` depend on accounts on the destination.
+Usernames, emails, authentication identifiers, user ids, grades, attempts,
+and submissions are not edited. `users.xml` is not copied into the report.
+
+`restorechecksumfailed` and `errorcopyingbackupfile` are session or server
+failures, not damaged backup bytes. PHP memory, timeouts, upload limits,
+disk space, permissions, missing server plugins, and cron are not reported
+as corrupt content. `errorminbackup20version` and
+`errorrestorefrontpagebackup` are not bypassed by rewriting the version or
+the course type. A content hash that does not match its bytes is not
+"fixed" by storing the new hash. An external-file alias is not replaced
+with an empty file.
 
 External URLs, LTI tools, H5P libraries and SCORM runtimes are not fetched
 or rebuilt. A `$@…@$` token is not requested. A SCORM or H5P activity with
 no packed bytes is a warning, and only when the backup did not turn file
 inclusion off.
-
-Server memory, PHP time limits, upload size, disk space, permissions and
-cron are not properties of the `.mbz`. They are not reported as corrupt
-backup data.
 
 ## Rule catalog
 
@@ -182,6 +211,7 @@ backup data.
 | `archive.extension` | info | not repairable |
 | `archive.missing-root` | critical | not repairable |
 | `archive.enclosed` | warning | manual |
+| `archive.unwrap-root` | warning | automatic |
 | `archive.multiple-roots` | critical | manual |
 | `archive.unsafe-path` | critical | not repairable |
 | `archive.duplicate-path` | critical | not repairable |
@@ -194,6 +224,7 @@ backup data.
 | `xml.illegal-chars` | warning | confirmation required |
 | `metadata.no-target` | info | not repairable |
 | `metadata.target-older` | warning | not repairable |
+| `metadata.missing-roles` | warning | manual, or confirmation required when the empty file is safe |
 | `sections.missing` | warning | not repairable |
 | `sections.cycle` | warning | manual |
 | `activities.missing` | critical | not repairable |
@@ -206,6 +237,8 @@ backup data.
 | `files.hash` | critical | not repairable |
 | `files.size` | warning | automatic |
 | `files.hash-skipped` | info | not repairable |
+| `files.recover-misplaced-content` | critical | automatic |
+| `files.recovery-incomplete` | info | not repairable |
 | `files.unreferenced` | info | manual |
 | `questions.legacy-random` | info | not repairable |
 | `questions.random-modern` | critical | confirmation required |
@@ -216,12 +249,19 @@ backup data.
 | `questions.outside-bank` | info | not repairable |
 | `questions.bad-filter` | warning | manual |
 | `questions.duplicate-id` | warning | manual |
+| `questions.missing-bank-file` | warning | manual, or confirmation required when the empty file is safe |
+| `questions.multiple-top-categories` | critical | manual |
+| `questions.attempt-missing-question` | critical | not repairable |
+| `questions.attempt-data-missing` | critical | not repairable |
 | `plugins.removed` | warning | not repairable |
 | `plugins.unknown-module` | info | not repairable |
 | `plugins.unknown-qtype` | info | not repairable |
 | `userdata.excluded` | info | not repairable |
 | `userdata.missing` | warning | not repairable |
 | `userdata.malformed` | warning | manual |
+| `references.unknown-context` | warning | not repairable |
+| `references.inforef-missing-target` | warning | not repairable |
+| `references.inforef-duplicate` | info | manual |
 | `references.token` | info | not repairable |
 | `embedded.package` | warning | not repairable |
 
@@ -249,11 +289,17 @@ addresses. Before/after XML stays on screen and is replaced with
 
 These checks have been run in MBZoo's unit tests and in the browser against
 synthetic backups: ZIP and TAR.GZ round-trips, the size repair, the illegal
-character repair, the modern random-question preconditions, and the refusal
-to rewrite a legacy 3.x random question. They have not been run inside
-Moodle. Source compared while designing the rule: Moodle 3.x question
-shape, 4.0 bank entries, 4.3–5.2 legacy filter conversion, 4.5, 5.1 (no
-throw) and 5.2 / `main` (the throw above). See AN-009 and ADR-0037.
+character repair, the modern random-question preconditions, the refusal
+to rewrite a legacy 3.x random question, unwrapping one directory, copying
+a payload whose SHA-1 matches, and the empty `roles.xml` /
+`questions.xml` documents. They have not been run inside Moodle. The empty
+documents follow the Moodle 5.2 writer roots and are still confirmation
+required because no disposable site has restored them (TASK-017). Source
+compared while designing the rules: Moodle 4.5 and 5.2
+`restore_dbops`, `restore_prechecks_helper`, `backup_stepslib`,
+`restore_stepslib`, and `restore_qtype_plugin`, plus the 3.x question
+shape and the 4.0–5.2 random-question path in AN-009. See AN-010 and
+ADR-0038.
 
 ## Privacy
 

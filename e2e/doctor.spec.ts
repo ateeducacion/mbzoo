@@ -141,7 +141,10 @@ test('MBZ Doctor stays usable on a narrow viewport and does not execute backup t
   ).toBeUndefined()
 
   await page.locator('#doctor-filter-repair').selectOption('confirmation-required')
-  await page.locator('.doctor-finding input[type="checkbox"]').check()
+  const illegalCard = page.locator('.doctor-finding', {
+    hasText: 'Illegal XML control characters',
+  })
+  await illegalCard.locator('input[type="checkbox"]').check()
   await page.getByRole('button', { name: 'Repair Selected' }).click()
   await expect(page.locator('#doctor-confirm')).toBeVisible()
   await page.locator('#doctor-confirm-check').check()

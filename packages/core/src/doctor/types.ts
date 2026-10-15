@@ -124,6 +124,28 @@ export interface RepairStep {
   apply(xml: string): string
 }
 
+/** Bytes added next to the manifest. `logicalPath` is relative to that directory. */
+export interface ArchiveAddition {
+  readonly logicalPath: string
+  readonly data: Uint8Array
+}
+
+/**
+ * A structural archive edit that does not rewrite XML in place (ADR-0038).
+ * `stripPrefix` renames every entry. `placeUnder` is where an addition lands
+ * when no unwrap is applied in the same run.
+ */
+export interface ArchiveEditStep {
+  readonly id: string
+  readonly order: number
+  readonly safety: 'automatic' | 'confirmation-required'
+  readonly entries: readonly string[]
+  readonly stripPrefix: string
+  readonly additions: readonly ArchiveAddition[]
+  readonly omit: readonly string[]
+  readonly placeUnder: string
+}
+
 export interface AppliedRepair {
   readonly id: string
   readonly entries: readonly string[]
