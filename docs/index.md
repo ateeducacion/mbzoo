@@ -27,4 +27,6 @@ features:
     details: Hostile-input posture — sanitized HTML, sandboxed opaque-origin previews, no content execution in the app origin.
   - title: Evidence-driven
     details: Every durable claim traces to a registered source, experiment or ADR. Machine-validated research indexes.
+  - title: MBZ Doctor
+    details: Scan a backup for structural problems and download a new file for a few verified repairs. The original stays put, and a scan is not a Moodle restore.
 ---

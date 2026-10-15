@@ -52,6 +52,23 @@ describe('TarGzReader', () => {
     await reader.close()
   })
 
+  test('indexes an empty regular file so a repair can copy it', async () => {
+    const tgz = Bun.gzipSync(
+      tar([
+        {
+          name: 'moodle_backup.xml',
+          data: new TextEncoder().encode('<?xml version="1.0"?><moodle_backup/>'),
+        },
+        { name: 'empty.txt', data: new Uint8Array() },
+      ]).slice().buffer as ArrayBuffer,
+    )
+    const reader = await TarGzReader.open(new Blob([tgz]))
+    const names = (await reader.listEntries()).map((entry) => entry.name).sort()
+    expect(names).toEqual(['empty.txt', 'moodle_backup.xml'])
+    expect((await reader.readEntry('empty.txt')).byteLength).toBe(0)
+    await reader.close()
+  })
+
   test('rejects traversal entry names instead of exposing them', async () => {
     expect(sanitizeTarName('../evil.txt')).toBeUndefined()
     expect(sanitizeTarName('a/../../evil.txt')).toBeUndefined()

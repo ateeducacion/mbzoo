@@ -29,6 +29,7 @@ export default defineConfig({
     ],
     nav: [
       { text: 'Guide', link: '/guide/what-is-mbz' },
+      { text: 'MBZ Doctor', link: '/guide/mbz-doctor' },
       { text: 'Activity support', link: '/guide/activity-support' },
       { text: 'Architecture', link: '/ARCHITECTURE' },
       { text: 'Privacy', link: '/PRIVACY' },
@@ -36,6 +37,7 @@ export default defineConfig({
     sidebar: {
       '/': [
         { text: 'Guide', link: '/guide/what-is-mbz' },
+        { text: 'MBZ Doctor', link: '/guide/mbz-doctor' },
         { text: 'Activity support', link: '/guide/activity-support' },
         { text: 'Development', link: '/guide/development' },
         { text: 'Research system', link: '/guide/research' },

@@ -24,7 +24,12 @@
 import { inflateSync } from 'fflate'
 import type { BackupFormat } from '../model/backup.ts'
 import { MbzParseError } from '../model/backup.ts'
-import { type ArchiveEntryInfo, type ArchiveReader, tooLargeToRead } from './reader.ts'
+import {
+  type ArchiveAnomalies,
+  type ArchiveEntryInfo,
+  type ArchiveReader,
+  tooLargeToRead,
+} from './reader.ts'
 import { sanitizeTarName } from './targz-reader.ts'
 
 const SIG_EOCD = 0x06054b50
@@ -54,17 +59,21 @@ interface ZipEntry {
   readonly compressedSize: number
   readonly uncompressedSize: number
   readonly localHeaderOffset: number
+  readonly crc32: number
 }
 
 export class LazyZipReader implements ArchiveReader {
   readonly format: BackupFormat = 'zip'
   private readonly entries: Map<string, ZipEntry>
+  private readonly notes: ArchiveAnomalies
 
   private constructor(
     private readonly blob: Blob,
     entries: Map<string, ZipEntry>,
+    notes: ArchiveAnomalies,
   ) {
     this.entries = entries
+    this.notes = notes
   }
 
   static async open(blob: Blob): Promise<LazyZipReader> {
@@ -73,15 +82,24 @@ export class LazyZipReader implements ArchiveReader {
       throw new MbzParseError('Not a ZIP archive (bad magic bytes)')
     }
     const directory = await readCentralDirectory(blob)
-    return new LazyZipReader(blob, directory)
+    return new LazyZipReader(blob, directory.entries, directory.notes)
   }
 
   async listEntries(): Promise<ArchiveEntryInfo[]> {
     const out: ArchiveEntryInfo[] = []
     for (const e of this.entries.values()) {
-      out.push({ name: e.name, uncompressedSize: e.uncompressedSize })
+      out.push({
+        name: e.name,
+        uncompressedSize: e.uncompressedSize,
+        compressedSize: e.compressedSize,
+        crc32: e.crc32,
+      })
     }
     return out
+  }
+
+  anomalies(): ArchiveAnomalies {
+    return this.notes
   }
 
   async readEntry(name: string): Promise<Uint8Array> {
@@ -150,7 +168,9 @@ export class LazyZipReader implements ArchiveReader {
 }
 
 /** Locates the end-of-central-directory record and reads the directory. */
-async function readCentralDirectory(blob: Blob): Promise<Map<string, ZipEntry>> {
+async function readCentralDirectory(
+  blob: Blob,
+): Promise<{ entries: Map<string, ZipEntry>; notes: ArchiveAnomalies }> {
   const size = blob.size
   if (size < EOCD_MIN) throw new MbzParseError('ZIP archive too small')
 
@@ -199,6 +219,8 @@ async function readCentralDirectory(blob: Blob): Promise<Map<string, ZipEntry>> 
   const view = new DataView(cd.buffer, cd.byteOffset, cd.byteLength)
   const decoder = new TextDecoder('utf-8')
   const entries = new Map<string, ZipEntry>()
+  const unsafeNames: string[] = []
+  const duplicateNames: string[] = []
   let at = 0
   for (let i = 0; i < totalEntries; i++) {
     if (at + CENTRAL_MIN > cd.byteLength) throw new MbzParseError('Truncated central directory')
@@ -207,6 +229,7 @@ async function readCentralDirectory(blob: Blob): Promise<Map<string, ZipEntry>> 
     }
     const flags = view.getUint16(at + 8, true)
     const method = view.getUint16(at + 10, true)
+    const crc32 = view.getUint32(at + 16, true)
     let compressedSize: number = view.getUint32(at + 20, true)
     let uncompressedSize: number = view.getUint32(at + 24, true)
     const nameLen = view.getUint16(at + 28, true)
@@ -269,10 +292,21 @@ async function readCentralDirectory(blob: Blob): Promise<Map<string, ZipEntry>> 
     }
     // Same traversal guard the tar reader applies (ADR-0009).
     const name = sanitizeTarName(rawName)
-    if (name === undefined) continue
-    entries.set(name, { name, method, compressedSize, uncompressedSize, localHeaderOffset })
+    if (name === undefined) {
+      unsafeNames.push(rawName)
+      continue
+    }
+    if (entries.has(name)) duplicateNames.push(name)
+    entries.set(name, {
+      name,
+      method,
+      compressedSize,
+      uncompressedSize,
+      localHeaderOffset,
+      crc32,
+    })
   }
-  return entries
+  return { entries, notes: { unsafeNames, duplicateNames, checksumFailures: [] } }
 }
 
 /** Reads a little-endian uint64 that must fit a JS safe integer. */

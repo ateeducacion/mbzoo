@@ -3,7 +3,9 @@
  *
  * Scope is deliberately one activity at a time: the activity's module XML,
  * the HTML the Preview tab already sanitized, or its attached files as a
- * ZIP. Whole-backup re-packaging is a separate, still-planned problem.
+ * ZIP. A full-backup rewrite exists only as MBZ Doctor repair output in
+ * @mbzoo/core (ADR-0037). This helper is not that writer and it is not a
+ * general course editor.
  *
  * DOM-free on purpose so it is unit-testable under Bun; the download
  * trigger itself lives in the detail panel.

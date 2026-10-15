@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
+import { LIMITATIONS, RULES } from '@mbzoo/core'
 import { detectLang, STRINGS } from '../src/lib/i18n.ts'
 
 const originalNavigator = globalThis.navigator
@@ -32,6 +33,29 @@ describe('detectLang', () => {
     expect(detectLang()).toBe('fr')
     setLanguage('fr-CA')
     expect(detectLang()).toBe('fr')
+  })
+
+  test('doctor rules have a title, a body and a consequence in every language', () => {
+    for (const id of Object.keys(RULES)) {
+      for (const part of ['title', 'body', 'consequence'] as const) {
+        const key = `doctor.rule.${id}.${part}` as keyof typeof STRINGS.en
+        expect(STRINGS.en[key]).toBeTruthy()
+        expect(STRINGS.es[key]).toBeTruthy()
+        expect(STRINGS.fr[key]).toBeTruthy()
+      }
+    }
+  })
+
+  test('doctor limitations have a translation for every core sentence', () => {
+    for (const line of LIMITATIONS) {
+      const match = Object.entries(STRINGS.en).find(([, value]) => value === line)
+      expect(match?.[0].startsWith('doctor.limit.')).toBe(true)
+      const key = match?.[0] as keyof typeof STRINGS.en
+      expect(STRINGS.es[key]).toBeTruthy()
+      expect(STRINGS.fr[key]).toBeTruthy()
+      expect(STRINGS.es[key]).not.toBe(line)
+      expect(STRINGS.fr[key]).not.toBe(line)
+    }
   })
 
   test('Spanish and French dictionaries cover every English key', () => {

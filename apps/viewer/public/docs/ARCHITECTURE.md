@@ -70,6 +70,16 @@ sliced and inflated on demand (ADR-0029); a TAR.GZ is decompressed into a Blob
 and indexed as it streams, so no allocation is larger than the entry being
 read (ADR-0036). Large-file strategy is tracked as TASK-003 / Q-004..Q-007.
 
+MBZ Doctor (ADR-0037) is a separate pass. It does not run when a course is
+opened. The viewer sends the same file to the parse worker, which calls
+`analyzeBackup` in `packages/core/src/doctor/`. A repair splices the original
+XML and asks `rewriteArchive` for a new Blob. Entries that were not changed
+are copied. A repaired ZIP stores every entry uncompressed, because fflate
+`ZipPassThrough` carries stored bytes rather than a deflate stream. A repaired
+TAR.GZ is a new ustar stream plus gzip and is refused above 512 MiB. The
+original Blob is never written. Per-activity export stays ADR-0016. Reopening
+the result in MBZoo is not a Moodle restore (TASK-017).
+
 ## How claims get verified
 
 Parsers are written against Moodle source (REPO-005) because it is

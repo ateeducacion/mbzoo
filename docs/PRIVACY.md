@@ -49,6 +49,14 @@ attached files as a ZIP) is a deliberate user action: nothing is written
 without a click, and the file is produced in your browser and handed to your
 own download folder. See [Activity support](/guide/activity-support.html).
 
+MBZ Doctor does the same with a repaired `.mbz` and with a diagnostic
+report. Both are produced in the browser after an explicit click. The
+original file is not modified. The JSON report is English technical text
+and omits question text, file bytes, passwords, usernames and email
+addresses. The on-screen before/after preview can show the XML that will
+change; downloaded reports replace that preview with `[omitted]`. A report
+can still name archive paths. See [MBZ Doctor](/guide/mbz-doctor).
+
 ## What this repository never contains
 
 Real institution or personal backups are never committed. Committed fixtures

@@ -28,9 +28,11 @@ this backup or to the original site, and are never fetched (ADR-0019).
 Experimental H5P playback runs inside the same opaque-origin sandbox
 (ADR-0018). Each activity can also be exported on its own —
 its module XML, its rendered content as a standalone HTML file, or its
-attached files as a ZIP. Whole-backup re-packaging and everything else is
-planned — see the
-[activity support guide](https://ateeducacion.github.io/mbzoo/docs/guide/activity-support.html).
+attached files as a ZIP (ADR-0016). MBZ Doctor can scan a backup for
+structural problems and, for a few verified repairs, download a new `.mbz`
+(ADR-0037). That rewrite is not a general course editor, and a file MBZoo
+can reopen has not been proven to restore in Moodle. See the
+[MBZ Doctor guide](https://ateeducacion.github.io/mbzoo/docs/guide/mbz-doctor.html).
 
 ## Try it
 

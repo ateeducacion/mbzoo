@@ -16,3 +16,4 @@ Open, inspect and preview Moodle course backups right in your browser. Local-fir
 - **Tells you when a file names people**: A backup taken with user data carries names, emails and IP addresses. MBZoo says how many people and what kinds of data, before you share the file.
 - **Safe by design**: Hostile-input posture — sanitized HTML, sandboxed opaque-origin previews, no content execution in the app origin.
 - **Evidence-driven**: Every durable claim traces to a registered source, experiment or ADR. Machine-validated research indexes.
+- **MBZ Doctor**: Scan a backup for structural problems and download a new file for a few verified repairs. The original stays put, and a scan is not a Moodle restore.

@@ -1,7 +1,23 @@
 export { LazyZipReader, MAX_ZIP_ENTRY_BYTES } from './archive/lazy-zip-reader.ts'
-export type { ArchiveEntryInfo, ArchiveReader } from './archive/reader.ts'
+export type { ArchiveAnomalies, ArchiveEntryInfo, ArchiveReader } from './archive/reader.ts'
 export { detectFormat } from './archive/reader.ts'
+export { rewriteArchive } from './archive/rewrite.ts'
 export { MAX_TAR_BYTES, sanitizeTarName, TarGzReader } from './archive/targz-reader.ts'
+export { analyzeBackup, inspect } from './doctor/analyze.ts'
+export { LIMITATIONS, RULES, type RuleId } from './doctor/catalog.ts'
+export { type ApplyOptions, applyRepairs } from './doctor/repair.ts'
+export { type ReportSession, redactReport, reportJson, reportText } from './doctor/report.ts'
+export type {
+  AppliedRepair,
+  BackupFacts,
+  DiagnosticReport,
+  DoctorOptions,
+  Finding,
+  Repairability,
+  RepairOutcome,
+  RepairPlan,
+  Severity,
+} from './doctor/types.ts'
 export * from './model/backup.ts'
 export {
   contentHashPath,

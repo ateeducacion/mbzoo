@@ -2199,3 +2199,207 @@ audio.media-preview {
     grid-template-columns: 1fr;
   }
 }
+
+/* MBZ Doctor (ADR-0037). Severity is a word plus a marker, not color alone. */
+.doctor-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.doctor {
+  width: min(960px, calc(100vw - 1.5rem));
+  max-height: min(920px, calc(100dvh - 1.5rem));
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 16px 48px rgba(35, 48, 71, 0.22);
+}
+.doctor::backdrop {
+  background: rgba(35, 48, 71, 0.45);
+}
+.doctor-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(920px, calc(100dvh - 1.5rem));
+  overflow: auto;
+  padding: 16px 18px 20px;
+}
+.doctor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.doctor-head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+.doctor-status {
+  min-height: 1.4em;
+  margin: 0;
+  font-weight: 650;
+}
+.doctor-facts,
+.doctor-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+.doctor-facts div,
+.doctor-summary div {
+  margin: 0;
+}
+.doctor-facts dt,
+.doctor-summary dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.doctor-facts dd,
+.doctor-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.doctor-target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.doctor-target input {
+  max-width: 12rem;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--white);
+  color: inherit;
+}
+.doctor-target p,
+.doctor-note,
+.doctor-confirm p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.doctor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.doctor-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.doctor-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.doctor-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.doctor-filters select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--white);
+  color: inherit;
+}
+.doctor-findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.doctor-finding {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--white);
+}
+.doctor-finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.doctor-finding h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.doctor-sev {
+  font: 700 12px var(--font-body);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.doctor-sev-critical {
+  color: var(--red);
+}
+.doctor-sev-warning {
+  color: var(--orange-deep);
+}
+.doctor-sev-info {
+  color: var(--blue);
+}
+.doctor-sev-critical::before {
+  content: "● ";
+}
+.doctor-sev-warning::before {
+  content: "▲ ";
+}
+.doctor-sev-info::before {
+  content: "○ ";
+}
+.doctor-id {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.doctor-finding p,
+.doctor-limits li {
+  overflow-wrap: anywhere;
+}
+.doctor-preview pre {
+  max-height: 12rem;
+  overflow: auto;
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.doctor-check {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.doctor :focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+@media (max-width: 720px) {
+  .doctor {
+    width: calc(100vw - 0.75rem);
+    max-height: calc(100dvh - 0.75rem);
+  }
+  .doctor-sheet {
+    max-height: calc(100dvh - 0.75rem);
+    padding: 12px;
+  }
+  .doctor-open span {
+    display: inline;
+  }
+}

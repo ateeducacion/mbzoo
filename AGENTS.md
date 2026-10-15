@@ -3,13 +3,16 @@
 **MBZoo** opens, inspects and previews Moodle `.mbz` backups directly in the
 browser. *See what's inside your MBZ.* License: GPL-3.0-or-later (ADR-0035).
 Per-activity export (module XML, rendered content HTML, files ZIP) ships
-(ADR-0016); whole-backup re-packaging is planned, not implemented.
+(ADR-0016). A full-backup rewrite exists only as MBZ Doctor repair output
+(ADR-0037): it copies the archive and replaces repaired entries. It is not
+a general course editor, and a static reopen is not a Moodle restore.
 
 ## Product scope
 
 The current support matrix belongs in `README.md` and the viewer documentation.
 SCORM (ADR-0023/0032) and H5P (ADR-0018) playback are experimental.
-Whole-backup re-packaging remains planned; do not advertise it as implemented.
+Do not advertise a general whole-backup editor. ADR-0037 is repair output
+only, and Moodle restore of that output stays unverified until TASK-017.
 
 ## Repository map
 
@@ -17,7 +20,7 @@ Whole-backup re-packaging remains planned; do not advertise it as implemented.
 apps/viewer/    browser app (Vite, vanilla TS, parse worker, renderers)
 apps/cli/       Bun CLI adapter over the core
 apps/docs/      documentation site bundled with the viewer
-packages/core/  portable parser: model/ archive/ moodle/   (@mbzoo/core)
+packages/core/  portable parser: model/ archive/ moodle/ doctor/  (@mbzoo/core)
 fixtures/       deterministic synthetic .mbz fixtures + generator + manifest
 e2e/            Playwright specs
 research/       evidence system (sources → analysis → decisions); see research/AGENTS.md
