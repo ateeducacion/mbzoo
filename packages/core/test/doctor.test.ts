@@ -195,6 +195,45 @@ describe('analyzeBackup', () => {
     }
   })
 
+  test('coded evidence from broken backups fills to the same English detail (#41)', async () => {
+    const notZip = await analyzeBackup(new Blob([strToU8('plain text')]), {
+      filename: 'course.mbz',
+    })
+    const broken = await analyzeBackup(
+      zip({
+        'moodle_backup.xml': manifest({
+          users: '1',
+          activities: `<activity><moduleid>20</moduleid><sectionid>10</sectionid><modulename>quiz</modulename><title>A</title></activity>
+            <activity><moduleid>20</moduleid><sectionid>10</sectionid><modulename>quiz</modulename><title>B</title></activity>`,
+        }),
+        'sections/section_10/section.xml': sectionXml,
+        'activities/quiz_20/quiz.xml': `${XML}<activity id="20"/>`,
+        'users.xml': new Uint8Array([0x3c, 0xff, 0xfe, 0x3e]),
+        'questions.xml': `${XML}<question_categories><question_category id="5"><contextid>9</contextid><parent>0</parent>
+          <questions><question id="70"><qtype>mytype</qtype></question><question id="70"><qtype>mytype</qtype></question></questions>
+        </question_category></question_categories>`,
+      }),
+      { filename: 'course.zip.bak' },
+    )
+    const items = [...notZip.findings, ...broken.findings].flatMap((finding) => finding.evidence)
+    const codes = items.map((item) => item.code)
+    for (const code of [
+      'archive.no-signature',
+      'archive.container',
+      'activities.missing-module',
+      'activities.duplicate',
+      'xml.utf8',
+      'plugins.not-core-qtype',
+      'questions.duplicate-id',
+    ] as const) {
+      expect(codes).toContain(code)
+    }
+    for (const item of items) {
+      if (item.code === undefined) continue
+      expect(fillEvidence(EVIDENCE_TEXT[item.code], item.params ?? {})).toBe(item.detail)
+    }
+  })
+
   test('distinguishes removed core modules from unknown plugins', async () => {
     const report = await analyzeBackup(
       zip({
