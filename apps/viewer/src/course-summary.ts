@@ -12,7 +12,7 @@
 
 import type { CourseGradebook, CourseInfo, GradeItem, ParsedBackup } from '@mbzoo/core'
 import { detectLang, t } from './lib/i18n.ts'
-import { formatDate, formatNumber } from './lib/preview-utils.ts'
+import { formatDate, formatNumber, splitBytes } from './lib/preview-utils.ts'
 import { appendRawXml } from './lib/raw-xml.ts'
 
 export interface SummaryDeps {
@@ -49,13 +49,6 @@ function el<K extends keyof HTMLElementTagNameMap>(
 /** "4.4 (Build: 20240422)" → "4.4"; the build stamp is noise in a headline. */
 function releaseLabel(release: string): string {
   return release.trim().split(/\s+/)[0] ?? ''
-}
-
-/** Bytes as a number/unit pair so the unit can be set smaller, as in the mockup. */
-function splitBytes(n: number, lang: string): { value: string; unit: string } {
-  if (n < 1024) return { value: formatNumber(n, lang), unit: 'B' }
-  if (n < 1024 * 1024) return { value: formatNumber(n / 1024, lang, 1), unit: 'KB' }
-  return { value: formatNumber(n / (1024 * 1024), lang, 1), unit: 'MB' }
 }
 
 function tile(value: string, label: string, unit?: string): HTMLElement {

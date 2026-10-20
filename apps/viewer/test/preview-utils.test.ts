@@ -15,14 +15,29 @@ import {
   resolveRelative,
   SANDBOX_CSP,
   SCORM_CSP,
+  splitBytes,
   splitRef,
 } from '../src/lib/preview-utils.ts'
 
 describe('formatBytes', () => {
   test('scales units', () => {
-    expect(formatBytes(512)).toBe('512 B')
-    expect(formatBytes(2048)).toBe('2.0 KB')
-    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB')
+    expect(formatBytes(512, 'en')).toBe('512\u00a0B')
+    expect(formatBytes(2048, 'en')).toBe('2\u00a0KB')
+    expect(formatBytes(5.25 * 1024 * 1024, 'en')).toBe('5.3\u00a0MB')
+    expect(formatBytes(3 * 1024 ** 3, 'es')).toBe('3\u00a0GB')
+    expect(formatBytes(1024 ** 5, 'en')).toBe('1,024\u00a0TB')
+  })
+
+  test('uses octets in French (Mo, Go, To)', () => {
+    expect(formatBytes(512, 'fr')).toBe('512\u00a0o')
+    expect(formatBytes(2048, 'fr')).toBe('2\u00a0Ko')
+    expect(formatBytes(5.5 * 1024 * 1024, 'fr')).toBe('5,5\u00a0Mo')
+    expect(formatBytes(3 * 1024 ** 3, 'fr')).toBe('3\u00a0Go')
+    expect(formatBytes(2 * 1024 ** 4, 'fr-CA')).toBe('2\u00a0To')
+  })
+
+  test('splits value and unit for the summary tile', () => {
+    expect(splitBytes(5.5 * 1024 * 1024, 'fr')).toEqual({ value: '5,5', unit: 'Mo' })
   })
 })
 

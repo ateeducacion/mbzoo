@@ -1239,6 +1239,17 @@ test.describe('French locale', () => {
     expect(warnings.filter((w) => w.includes('missing key'))).toEqual([])
   })
 
+  test('backup sizes are in octets', async ({ page }) => {
+    await page.goto('/')
+    await page.setInputFiles('#file-input', USERS_FIXTURE)
+
+    // 4315 bytes → "4,2 Ko", never "KB" or "MB".
+    const sizeTile = page.locator('#detail .course-summary .summary-tile').nth(3)
+    await expect(sizeTile).toContainText('4,2 Ko')
+    await expect(page.locator('#file-size')).toHaveText('· 4,2 Ko')
+    await expect(sizeTile).not.toContainText(/KB|MB/)
+  })
+
   test('resource download and Info values use the French dictionary', async ({ page }) => {
     await page.goto('/')
     await page.setInputFiles('#file-input', FIXTURE)
