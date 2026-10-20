@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { LIMITATIONS, RULES } from '@mbzoo/core'
-import { detectLang, STRINGS } from '../src/lib/i18n.ts'
+import { EVIDENCE_TEXT, LIMITATIONS, RULES } from '@mbzoo/core'
+import { evidenceText } from '../src/doctor-panel.ts'
+import { detectLang, labelled, STRINGS } from '../src/lib/i18n.ts'
 
 const originalNavigator = globalThis.navigator
 
@@ -55,6 +56,46 @@ describe('detectLang', () => {
       expect(STRINGS.fr[key]).toBeTruthy()
       expect(STRINGS.es[key]).not.toBe(line)
       expect(STRINGS.fr[key]).not.toBe(line)
+    }
+  })
+
+  test('doctor evidence has a translation for every core evidence code (#41)', () => {
+    const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
+    for (const [code, english] of Object.entries(EVIDENCE_TEXT)) {
+      const key = `doctor.evidence.${code}` as keyof typeof STRINGS.en
+      expect(STRINGS.en[key]).toBe(english)
+      for (const language of ['es', 'fr'] as const) {
+        expect(STRINGS[language][key]).toBeTruthy()
+        expect(STRINGS[language][key]).not.toBe(english)
+        expect(placeholders(STRINGS[language][key])).toEqual(placeholders(english))
+      }
+    }
+    expect(STRINGS.fr['doctor.evidence.plugins.not-core-module']).toBe(
+      'le module {module} n\u2019est pas dans la liste des modules du cœur connus de MBZoo',
+    )
+  })
+
+  test('evidence text is translated by code and falls back to the English detail (#41)', () => {
+    expect(
+      evidenceText({
+        code: 'plugins.not-core-module',
+        params: { module: '{module}' },
+        detail: 'ignored',
+      }),
+    ).toBe("{module} is not in MBZoo's core module list")
+    expect(evidenceText({ detail: 'activities/forum_1/' })).toBe('activities/forum_1/')
+    expect(labelled('Evidence', 'x')).toBe('Evidence: x')
+  })
+
+  test('French puts a non-breaking space before every colon (#41)', () => {
+    expect(STRINGS.fr.labelled).toBe('{label}\u00a0: {value}')
+    expect(STRINGS.en.labelled).toBe('{label}: {value}')
+    for (const [key, value] of Object.entries(STRINGS.fr)) {
+      // restore_dbops::load_… names a PHP method, not French prose.
+      const prose = value.replace(/\w+::\w+/g, '').replace(/https?:/g, '')
+      for (const match of prose.matchAll(/(.):/g)) {
+        expect(`${key}: ${JSON.stringify(match[1])}`).toBe(`${key}: "\u00a0"`)
+      }
     }
   })
 

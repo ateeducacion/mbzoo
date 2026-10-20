@@ -4,12 +4,14 @@
  */
 import {
   type DiagnosticReport,
+  type Evidence,
   type Finding,
+  fillEvidence,
   type Repairability,
   reportJson,
   type Severity,
 } from '@mbzoo/core'
-import { STRINGS, type StringKey, t } from './lib/i18n.ts'
+import { labelled, STRINGS, type StringKey, t } from './lib/i18n.ts'
 import { formatBytes } from './lib/preview-utils.ts'
 import type { DoctorAnalyzeResponse, DoctorProgress, DoctorRepairResponse } from './worker.ts'
 
@@ -429,7 +431,7 @@ export function initDoctor(deps: DoctorDeps): DoctorController {
       box.value = finding.id
       box.checked = selected.has(finding.id)
       box.disabled = busy
-      box.setAttribute('aria-label', `${ruleText(finding.ruleId, 'title')}: ${finding.id}`)
+      box.setAttribute('aria-label', labelled(ruleText(finding.ruleId, 'title'), finding.id))
       label.append(box)
       head.append(label)
     }
@@ -449,18 +451,23 @@ export function initDoctor(deps: DoctorDeps): DoctorController {
     article.append(head, id, body, meta)
     if (finding.evidence.length > 0) {
       const evidence = document.createElement('p')
-      evidence.textContent = `${t('doctor.evidence')}: ${finding.evidence
-        .map((item) => (item.entry ? `${item.entry} — ${item.detail}` : item.detail))
-        .join(' · ')}`
+      evidence.textContent = labelled(
+        t('doctor.evidence'),
+        finding.evidence
+          .map((item) =>
+            item.entry ? `${item.entry} — ${evidenceText(item)}` : evidenceText(item),
+          )
+          .join(' · '),
+      )
       article.append(evidence)
     }
     const consequences = document.createElement('p')
     const consequence = ruleText(finding.ruleId, 'consequence') || finding.consequences
-    consequences.textContent = `${t('doctor.consequences')}: ${consequence}`
+    consequences.textContent = labelled(t('doctor.consequences'), consequence)
     article.append(consequences)
     if (finding.sources.length > 0) {
       const sources = document.createElement('p')
-      sources.textContent = `${t('doctor.sources')}: ${finding.sources.join(', ')}`
+      sources.textContent = labelled(t('doctor.sources'), finding.sources.join(', '))
       article.append(sources)
     }
     if (finding.activityId !== undefined && deps.hasActivity(finding.activityId)) {
@@ -521,9 +528,9 @@ export function initDoctor(deps: DoctorDeps): DoctorController {
       const summary = document.createElement('p')
       summary.textContent = plan.summary
       const why = document.createElement('p')
-      why.textContent = `${t('doctor.preview.why')}: ${plan.why}`
+      why.textContent = labelled(t('doctor.preview.why'), plan.why)
       const files = document.createElement('p')
-      files.textContent = `${t('doctor.preview.entries')}: ${plan.entries.join(', ')}`
+      files.textContent = labelled(t('doctor.preview.entries'), plan.entries.join(', '))
       const loss = document.createElement('p')
       loss.textContent = plan.contentLoss ? t('doctor.preview.loss') : t('doctor.preview.keep')
       const reversible = document.createElement('p')
@@ -557,12 +564,12 @@ export function initDoctor(deps: DoctorDeps): DoctorController {
     }
     if (applied.length > 0) {
       const item = document.createElement('li')
-      item.textContent = `${t('doctor.applied')}: ${applied.map((item) => item.id).join(', ')}`
+      item.textContent = labelled(t('doctor.applied'), applied.map((item) => item.id).join(', '))
       list.append(item)
     }
     if (skipped.length > 0) {
       const item = document.createElement('li')
-      item.textContent = `${t('doctor.skipped')}: ${skipped.join(', ')}`
+      item.textContent = labelled(t('doctor.skipped'), skipped.join(', '))
       list.append(item)
     }
     if (note) {
@@ -613,13 +620,13 @@ function humanReport(
   const facts = report.facts
   const lines = [
     t('doctor.title'),
-    `${t('doctor.report.generated')}: ${report.generatedAt}`,
-    `${t('doctor.facts.file')}: ${facts.filename}`,
-    `${t('doctor.facts.format')}: ${formatName(facts.format)}`,
-    `${t('doctor.facts.size')}: ${formatBytes(facts.bytes)}`,
-    `${t('doctor.facts.release')}: ${facts.moodleRelease || t('doctor.facts.unset')}`,
-    `${t('doctor.facts.course')}: ${facts.courseName || t('doctor.facts.unset')}`,
-    `${t('doctor.facts.target')}: ${facts.targetRelease || t('doctor.facts.unset')}`,
+    labelled(t('doctor.report.generated'), report.generatedAt),
+    labelled(t('doctor.facts.file'), facts.filename),
+    labelled(t('doctor.facts.format'), formatName(facts.format)),
+    labelled(t('doctor.facts.size'), formatBytes(facts.bytes)),
+    labelled(t('doctor.facts.release'), facts.moodleRelease || t('doctor.facts.unset')),
+    labelled(t('doctor.facts.course'), facts.courseName || t('doctor.facts.unset')),
+    labelled(t('doctor.facts.target'), facts.targetRelease || t('doctor.facts.unset')),
     t('doctor.report.privacy'),
     '',
   ]
@@ -628,16 +635,16 @@ function humanReport(
     lines.push(finding.id)
     lines.push(ruleText(finding.ruleId, 'body'))
     const consequence = ruleText(finding.ruleId, 'consequence')
-    if (consequence) lines.push(`${t('doctor.consequences')}: ${consequence}`)
+    if (consequence) lines.push(labelled(t('doctor.consequences'), consequence))
     lines.push(`${repairText(finding.repairability)} · ${stateText(finding.state)}`)
     for (const item of finding.evidence) {
-      lines.push(`- ${item.entry ? `${item.entry}: ` : ''}${item.detail}`)
+      lines.push(`- ${item.entry ? labelled(item.entry, evidenceText(item)) : evidenceText(item)}`)
     }
     lines.push('')
   }
   if (applied.length > 0)
-    lines.push(`${t('doctor.applied')}: ${applied.map((item) => item.id).join(', ')}`)
-  if (skipped.length > 0) lines.push(`${t('doctor.skipped')}: ${skipped.join(', ')}`)
+    lines.push(labelled(t('doctor.applied'), applied.map((item) => item.id).join(', ')))
+  if (skipped.length > 0) lines.push(labelled(t('doctor.skipped'), skipped.join(', ')))
   lines.push(t('doctor.limitations'))
   for (const line of report.limitations) lines.push(`- ${limitationText(line)}`)
   lines.push(localizeNote(note) || t('doctor.honesty'))
@@ -750,6 +757,14 @@ function ruleText(ruleId: string, part: 'title' | 'body' | 'consequence'): strin
   const key = `doctor.rule.${ruleId}.${part}` as StringKey
   if (!(key in STRINGS.en)) return part === 'title' ? ruleId : ''
   return t(key)
+}
+
+/** Translated evidence; params come from the backup and are filled once (#41). */
+export function evidenceText(item: Evidence): string {
+  if (item.code === undefined) return item.detail
+  const key = `doctor.evidence.${item.code}` as StringKey
+  if (!(key in STRINGS.en)) return item.detail
+  return fillEvidence(t(key), item.params ?? {})
 }
 
 function limitationText(line: string): string {

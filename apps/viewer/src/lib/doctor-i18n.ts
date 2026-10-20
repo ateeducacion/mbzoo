@@ -46,7 +46,7 @@ const COPY = {
   'doctor.targetHint': {
     en: 'Optional. Example: 5.2. Leave blank so version-dependent issues stay conditional.',
     es: 'Opcional. Ejemplo: 5.2. Déjelo en blanco para que los problemas según la versión sigan siendo condicionales.',
-    fr: 'Facultatif. Exemple : 5.2. Laisser vide pour que les problèmes liés à la version restent conditionnels.',
+    fr: 'Facultatif. Exemple\u00a0: 5.2. Laisser vide pour que les problèmes liés à la version restent conditionnels.',
   },
   'doctor.analyze': {
     en: 'Analyze Backup',
@@ -61,7 +61,7 @@ const COPY = {
   'doctor.progress': {
     en: 'Step {done} of {total}: {label}',
     es: 'Paso {done} de {total}: {label}',
-    fr: 'Étape {done} sur {total} : {label}',
+    fr: 'Étape {done} sur {total}\u00a0: {label}',
   },
   'doctor.progress.list': {
     en: 'Listing archive',
@@ -381,7 +381,7 @@ const COPY = {
   'doctor.rule.archive.unreadable.body': {
     en: 'The container could not be indexed. Repair is refused because a partial rebuild could drop or corrupt entries.',
     es: 'No se pudo indexar el contenedor. La reparación se rechaza porque una reconstrucción parcial podría perder o corromper entradas.',
-    fr: 'Le conteneur n\u2019a pas pu être indexé. La réparation est refusée : une reconstruction partielle pourrait perdre ou corrompre des entrées.',
+    fr: 'Le conteneur n\u2019a pas pu être indexé. La réparation est refusée\u00a0: une reconstruction partielle pourrait perdre ou corrompre des entrées.',
   },
   'doctor.rule.archive.extension.title': {
     en: 'File extension does not match the container',
@@ -911,7 +911,7 @@ const COPY = {
   'doctor.rule.references.inforef-missing-target.body': {
     en: 'An inforef file references a file, question, or role id that is not in the scanned backup. A missing inforef.xml is not itself an error: Moodle loads it only when the file exists. No inforef is generated.',
     es: 'Un inforef referencia un id de archivo, pregunta o rol que no está en la copia analizada. La ausencia de inforef.xml no es por sí sola un error: Moodle lo carga solo si el archivo existe. No se genera ningún inforef.',
-    fr: 'Un inforef référence un identifiant de fichier, de question ou de rôle absent de la sauvegarde analysée. L\u2019absence d\u2019inforef.xml n\u2019est pas une erreur en soi : Moodle ne le charge que si le fichier existe. Aucun inforef n\u2019est généré.',
+    fr: 'Un inforef référence un identifiant de fichier, de question ou de rôle absent de la sauvegarde analysée. L\u2019absence d\u2019inforef.xml n\u2019est pas une erreur en soi\u00a0: Moodle ne le charge que si le fichier existe. Aucun inforef n\u2019est généré.',
   },
   'doctor.rule.references.inforef-duplicate.title': {
     en: 'inforef.xml repeats an id',
@@ -1116,7 +1116,7 @@ const COPY = {
   'doctor.rule.questions.random-modern.consequence': {
     en: 'Moodle 5.2 raises: You cannot restore a question with qtype "random". It must be converted to a set reference instead.',
     es: 'Moodle 5.2 lanza: You cannot restore a question with qtype "random". It must be converted to a set reference instead.',
-    fr: 'Moodle 5.2 lève : You cannot restore a question with qtype "random". It must be converted to a set reference instead.',
+    fr: 'Moodle 5.2 lève\u00a0: You cannot restore a question with qtype "random". It must be converted to a set reference instead.',
   },
   'doctor.rule.questions.random-blocked.consequence': {
     en: 'Moodle 5.2 can still throw the random-question coding_exception on this backup.',
@@ -1161,7 +1161,7 @@ const COPY = {
   'doctor.rule.questions.multiple-top-categories.consequence': {
     en: 'The precheck reports: The backup file contains more than one top-level question categories for context …',
     es: 'La comprobación previa informa: el archivo de copia contiene más de una categoría de preguntas de nivel superior para el contexto …',
-    fr: 'Le précontrôle signale : le fichier de sauvegarde contient plus d\u2019une catégorie de questions de premier niveau pour le contexte…',
+    fr: 'Le précontrôle signale\u00a0: le fichier de sauvegarde contient plus d\u2019une catégorie de questions de premier niveau pour le contexte…',
   },
   'doctor.rule.questions.attempt-missing-question.consequence': {
     en: 'Restore stops while upgrading that legacy attempt. Student attempt history is left untouched.',
@@ -1271,7 +1271,7 @@ const COPY = {
   'doctor.limit.crc': {
     en: 'A ZIP CRC mismatch blocks a rebuild: rewriting would store the same bytes under a freshly computed CRC and hide the mismatch.',
     es: 'Un CRC de ZIP que no coincide bloquea la reconstrucción: reescribir guardaría los mismos bytes con un CRC recién calculado y ocultaría el desajuste.',
-    fr: 'Un CRC ZIP différent bloque la reconstruction : réécrire stockerait les mêmes octets sous un CRC recalculé et masquerait l\u2019écart.',
+    fr: 'Un CRC ZIP différent bloque la reconstruction\u00a0: réécrire stockerait les mêmes octets sous un CRC recalculé et masquerait l\u2019écart.',
   },
   'doctor.limit.empty-docs': {
     en: 'An empty roles.xml or questions.xml file is created only when no scanned reference needs it. Those documents follow the Moodle writer roots and have not been restored in Moodle. Account conflicts, external file aliases, server limits, and answer or hint text matched against a question that already exists on the destination are not repaired from the file.',
@@ -1282,6 +1282,371 @@ const COPY = {
     en: 'A misplaced file is copied to its content-hash path only when another entry at or below the hash budget has the same SHA-1. A larger candidate is reported as not searched, not as missing content.',
     es: 'Un archivo mal ubicado se copia a la ruta de su hash solo cuando otra entrada dentro del límite de hash tiene el mismo SHA-1. Un candidato mayor se informa como no buscado, no como contenido ausente.',
     fr: 'Un fichier mal placé est copié vers le chemin de son hash seulement lorsqu\u2019une autre entrée, dans la limite du budget de hash, a le même SHA-1. Un candidat plus grand est signalé comme non exploré, pas comme contenu manquant.',
+  },
+  'doctor.evidence.archive.no-signature': {
+    en: 'The file does not start with a ZIP or gzip signature',
+    es: 'el archivo no empieza con una firma ZIP ni gzip',
+    fr: 'le fichier ne commence pas par une signature ZIP ou gzip',
+  },
+  'doctor.evidence.archive.not-opened': {
+    en: 'The archive could not be opened',
+    es: 'no se pudo abrir el archivo',
+    fr: 'l\u2019archive n\u2019a pas pu être ouverte',
+  },
+  'doctor.evidence.archive.container': {
+    en: '{filename} is a {format} container',
+    es: '{filename} es un contenedor {format}',
+    fr: '{filename} est un conteneur {format}',
+  },
+  'doctor.evidence.archive.no-manifest': {
+    en: 'No moodle_backup.xml entry',
+    es: 'no hay ninguna entrada moodle_backup.xml',
+    fr: 'aucune entrée moodle_backup.xml',
+  },
+  'doctor.evidence.archive.manifest-at': {
+    en: 'Manifest is at {entry}',
+    es: 'el manifiesto está en {entry}',
+    fr: 'le manifeste se trouve dans {entry}',
+  },
+  'doctor.evidence.archive.ratio': {
+    en: '{entry} expands from {compressed} to {uncompressed} bytes',
+    es: '{entry} pasa de {compressed} a {uncompressed} bytes al descomprimirse',
+    fr: '{entry} passe de {compressed} à {uncompressed} octets une fois décompressé',
+  },
+  'doctor.evidence.archive.would-become': {
+    en: '{entry} would become {target}',
+    es: '{entry} pasaría a ser {target}',
+    fr: '{entry} deviendrait {target}',
+  },
+  'doctor.evidence.xml.manifest-malformed': {
+    en: 'moodle_backup.xml is not well-formed',
+    es: 'moodle_backup.xml no es XML bien formado',
+    fr: 'moodle_backup.xml n\u2019est pas un XML bien formé',
+  },
+  'doctor.evidence.xml.malformed': {
+    en: '{entry} is not well-formed',
+    es: '{entry} no es XML bien formado',
+    fr: '{entry} n\u2019est pas un XML bien formé',
+  },
+  'doctor.evidence.xml.size': {
+    en: '{entry} is {bytes} bytes',
+    es: '{entry} ocupa {bytes} bytes',
+    fr: '{entry} fait {bytes} octets',
+  },
+  'doctor.evidence.xml.utf8': {
+    en: '{entry} is not valid UTF-8',
+    es: '{entry} no es UTF-8 válido',
+    fr: '{entry} n\u2019est pas en UTF-8 valide',
+  },
+  'doctor.evidence.xml.illegal-char': {
+    en: '{count} forbidden control character',
+    es: '{count} carácter de control prohibido',
+    fr: '{count} caractère de contrôle interdit',
+  },
+  'doctor.evidence.xml.illegal-chars': {
+    en: '{count} forbidden control characters',
+    es: '{count} caracteres de control prohibidos',
+    fr: '{count} caractères de contrôle interdits',
+  },
+  'doctor.evidence.metadata.target-older': {
+    en: 'Backup release {release}, target {target}',
+    es: 'versión de la copia {release}, destino {target}',
+    fr: 'version de la sauvegarde {release}, cible {target}',
+  },
+  'doctor.evidence.metadata.roles-root': {
+    en: 'roles.xml root is {root}; Moodle expects roles_definition',
+    es: 'la raíz de roles.xml es {root}; Moodle espera roles_definition',
+    fr: 'la racine de roles.xml est {root}, alors que Moodle attend roles_definition',
+  },
+  'doctor.evidence.metadata.roles-root-none': {
+    en: 'roles.xml root is (none); Moodle expects roles_definition',
+    es: 'roles.xml no tiene raíz; Moodle espera roles_definition',
+    fr: 'roles.xml n\u2019a pas de racine, alors que Moodle attend roles_definition',
+  },
+  'doctor.evidence.metadata.roles-referenced': {
+    en: 'A scanned XML file names a role id. The definition is not invented.',
+    es: 'un archivo XML analizado nombra un id de rol. La definición no se inventa.',
+    fr: 'un fichier XML analysé nomme un identifiant de rôle. La définition n\u2019est pas inventée.',
+  },
+  'doctor.evidence.metadata.roles-incomplete': {
+    en: 'Not every XML file could be scanned, so an empty roles.xml is not created.',
+    es: 'no se han podido analizar todos los archivos XML, así que no se crea un roles.xml vacío.',
+    fr: 'tous les fichiers XML n\u2019ont pas pu être analysés, donc aucun roles.xml vide n\u2019est créé.',
+  },
+  'doctor.evidence.metadata.document-unreferenced': {
+    en: '{entry} is absent and no scanned reference requires it',
+    es: '{entry} no existe y ninguna referencia analizada lo necesita',
+    fr: '{entry} est absent et aucune référence analysée n\u2019en a besoin',
+  },
+  'doctor.evidence.sections.missing': {
+    en: 'Section {sectionId} has no section.xml',
+    es: 'la sección {sectionId} no tiene section.xml',
+    fr: 'la section {sectionId} n\u2019a pas de section.xml',
+  },
+  'doctor.evidence.sections.cycle': {
+    en: 'Section {sectionId} is its own ancestor through course-format parent links',
+    es: 'la sección {sectionId} es su propio antecesor a través de los enlaces de sección padre del formato de curso',
+    fr: 'la section {sectionId} est son propre ancêtre par les liens de section parente du format de cours',
+  },
+  'doctor.evidence.activities.missing': {
+    en: '{module} {activityId} is declared and absent',
+    es: '{module} {activityId} está declarada y no existe',
+    fr: '{module} {activityId} est déclarée mais absente',
+  },
+  'doctor.evidence.activities.missing-module': {
+    en: 'module.xml is absent',
+    es: 'falta module.xml',
+    fr: 'module.xml est absent',
+  },
+  'doctor.evidence.activities.bad-section': {
+    en: '{module} {activityId} names section {sectionId}',
+    es: '{module} {activityId} nombra la sección {sectionId}',
+    fr: '{module} {activityId} indique la section {sectionId}',
+  },
+  'doctor.evidence.activities.duplicate': {
+    en: 'Activity id {activityId} is declared {count} times',
+    es: 'el id de actividad {activityId} está declarado {count} veces',
+    fr: 'l\u2019identifiant d\u2019activité {activityId} est déclaré {count} fois',
+  },
+  'doctor.evidence.activities.undeclared': {
+    en: '{entry} is not listed in moodle_backup.xml',
+    es: '{entry} no figura en moodle_backup.xml',
+    fr: '{entry} n\u2019est pas listé dans moodle_backup.xml',
+  },
+  'doctor.evidence.plugins.removed': {
+    en: 'Removed in Moodle {removedIn} ({issue})',
+    es: 'eliminado en Moodle {removedIn} ({issue})',
+    fr: 'supprimé dans Moodle {removedIn} ({issue})',
+  },
+  'doctor.evidence.plugins.not-core-module': {
+    en: "{module} is not in MBZoo's core module list",
+    es: 'el módulo {module} no está en la lista de módulos del núcleo que conoce MBZoo',
+    fr: 'le module {module} n\u2019est pas dans la liste des modules du cœur connus de MBZoo',
+  },
+  'doctor.evidence.plugins.not-core-qtype': {
+    en: "Question type {qtype} is not in MBZoo's core list",
+    es: 'el tipo de pregunta {qtype} no está en la lista del núcleo que conoce MBZoo',
+    fr: 'le type de question {qtype} n\u2019est pas dans la liste du cœur connue de MBZoo',
+  },
+  'doctor.evidence.files.size': {
+    en: 'files.xml says {declared} bytes; the entry is {actual} bytes',
+    es: 'files.xml indica {declared} bytes; la entrada ocupa {actual} bytes',
+    fr: 'files.xml indique {declared} octets, alors que l\u2019entrée en fait {actual}',
+  },
+  'doctor.evidence.files.hash': {
+    en: '{entry} hashes to {hash}',
+    es: 'el hash de {entry} es {hash}',
+    fr: 'le hash de {entry} est {hash}',
+  },
+  'doctor.evidence.files.matches': {
+    en: '{label} matches {source}',
+    es: '{label} coincide con {source}',
+    fr: '{label} correspond à {source}',
+  },
+  'doctor.evidence.files.above-budget-one': {
+    en: '{label}: {count} entry was above the hash budget',
+    es: '{label}: {count} entrada superaba el límite de hash',
+    fr: '{label}\u00a0: {count} entrée dépassait le budget de hash',
+  },
+  'doctor.evidence.files.above-budget': {
+    en: '{label}: {count} entries were above the hash budget',
+    es: '{label}: {count} entradas superaban el límite de hash',
+    fr: '{label}\u00a0: {count} entrées dépassaient le budget de hash',
+  },
+  'doctor.evidence.userdata.missing': {
+    en: 'users.xml is not in the archive',
+    es: 'users.xml no está en el archivo',
+    fr: 'users.xml n\u2019est pas dans l\u2019archive',
+  },
+  'doctor.evidence.userdata.malformed': {
+    en: 'users.xml did not parse',
+    es: 'users.xml no se pudo leer',
+    fr: 'users.xml n\u2019a pas pu être lu',
+  },
+  'doctor.evidence.references.token': {
+    en: 'Token names course-module {moduleId}, which is not in this backup',
+    es: 'el token nombra el módulo de curso {moduleId}, que no está en esta copia',
+    fr: 'le jeton désigne le module de cours {moduleId}, absent de cette sauvegarde',
+  },
+  'doctor.evidence.references.unknown-context': {
+    en: '{filename} uses context {contextId}, which no other scanned element declares',
+    es: '{filename} usa el contexto {contextId}, que ningún otro elemento analizado declara',
+    fr: '{filename} utilise le contexte {contextId}, qu\u2019aucun autre élément analysé ne déclare',
+  },
+  'doctor.evidence.references.inforef-file-repeated': {
+    en: 'file id {id} is repeated in {file}',
+    es: 'el id de archivo {id} se repite en {file}',
+    fr: 'l\u2019identifiant de fichier {id} est répété dans {file}',
+  },
+  'doctor.evidence.references.inforef-question-repeated': {
+    en: 'question id {id} is repeated in {file}',
+    es: 'el id de pregunta {id} se repite en {file}',
+    fr: 'l\u2019identifiant de question {id} est répété dans {file}',
+  },
+  'doctor.evidence.references.inforef-role-repeated': {
+    en: 'role id {id} is repeated in {file}',
+    es: 'el id de rol {id} se repite en {file}',
+    fr: 'l\u2019identifiant de rôle {id} est répété dans {file}',
+  },
+  'doctor.evidence.references.inforef-file-missing': {
+    en: 'file id {id} in {file} is not in this backup',
+    es: 'el id de archivo {id} de {file} no está en esta copia',
+    fr: 'l\u2019identifiant de fichier {id} de {file} est absent de cette sauvegarde',
+  },
+  'doctor.evidence.references.inforef-question-missing': {
+    en: 'question id {id} in {file} is not in this backup',
+    es: 'el id de pregunta {id} de {file} no está en esta copia',
+    fr: 'l\u2019identifiant de question {id} de {file} est absent de cette sauvegarde',
+  },
+  'doctor.evidence.references.inforef-role-missing': {
+    en: 'role id {id} in {file} is not in this backup',
+    es: 'el id de rol {id} de {file} no está en esta copia',
+    fr: 'l\u2019identifiant de rôle {id} de {file} est absent de cette sauvegarde',
+  },
+  'doctor.evidence.embedded.no-bytes': {
+    en: '{module} {activityId} has no file bytes for mod_{module} in this backup',
+    es: '{module} {activityId} no tiene bytes de archivo para mod_{module} en esta copia',
+    fr: '{module} {activityId} n\u2019a aucun octet de fichier pour mod_{module} dans cette sauvegarde',
+  },
+  'doctor.evidence.questions.duplicate-id': {
+    en: 'Question id {questionId} appears {count} times',
+    es: 'el id de pregunta {questionId} aparece {count} veces',
+    fr: 'l\u2019identifiant de question {questionId} apparaît {count} fois',
+  },
+  'doctor.evidence.questions.missing-parent': {
+    en: 'Category {categoryId} names parent {parentId}, which is not in this backup',
+    es: 'la categoría {categoryId} nombra como padre a {parentId}, que no está en esta copia',
+    fr: 'la catégorie {categoryId} indique le parent {parentId}, absent de cette sauvegarde',
+  },
+  'doctor.evidence.questions.category-cycle': {
+    en: 'Category {categoryId} is its own ancestor',
+    es: 'la categoría {categoryId} es su propio antecesor',
+    fr: 'la catégorie {categoryId} est sa propre ancêtre',
+  },
+  'doctor.evidence.questions.legacy-random': {
+    en: 'qtype random on the pre-4.0 restore path (question {questionId})',
+    es: 'qtype random en la ruta de restauración anterior a 4.0 (pregunta {questionId})',
+    fr: 'qtype random sur le chemin de restauration antérieur à 4.0 (question {questionId})',
+  },
+  'doctor.evidence.questions.random-path-unknown': {
+    en: 'Backup release and backup version are both missing, so the legacy and modern restore paths cannot be told apart',
+    es: 'faltan tanto la versión como el número de versión de la copia, así que no se distingue la ruta de restauración antigua de la moderna',
+    fr: 'la version et le numéro de version de la sauvegarde manquent tous deux, donc les chemins de restauration ancien et moderne ne peuvent pas être distingués',
+  },
+  'doctor.evidence.questions.random-target-old': {
+    en: 'Target Moodle {target} is older than 4.0, so a set reference would not match its restore path',
+    es: 'Moodle {target} de destino es anterior a 4.0, así que una referencia de conjunto no encajaría con su ruta de restauración',
+    fr: 'Moodle {target} cible est antérieur à 4.0, donc une référence d\u2019ensemble ne correspondrait pas à son chemin de restauration',
+  },
+  'doctor.evidence.questions.random-no-entry': {
+    en: 'The random question is not inside a question_bank_entry, so there is no question_reference to rewrite and no context id to copy',
+    es: 'la pregunta aleatoria no está dentro de un question_bank_entry, así que no hay question_reference que reescribir ni id de contexto que copiar',
+    fr: 'la question aléatoire n\u2019est pas dans un question_bank_entry, donc il n\u2019y a ni question_reference à réécrire ni identifiant de contexte à copier',
+  },
+  'doctor.evidence.questions.random-mixed-entry': {
+    en: 'Question bank entry {bankEntryId} holds {count} questions. A mixed entry is not converted, and nothing is deleted',
+    es: 'la entrada del banco de preguntas {bankEntryId} contiene {count} preguntas. Una entrada mixta no se convierte y no se borra nada',
+    fr: 'l\u2019entrée de banque de questions {bankEntryId} contient {count} questions. Une entrée mixte n\u2019est pas convertie, et rien n\u2019est supprimé',
+  },
+  'doctor.evidence.questions.random-bad-text': {
+    en: 'The random question text is not 0 or 1, so subcategory inclusion cannot be copied from the legacy questiontext field',
+    es: 'el texto de la pregunta aleatoria no es 0 ni 1, así que la inclusión de subcategorías no se puede copiar del campo antiguo questiontext',
+    fr: 'le texte de la question aléatoire n\u2019est ni 0 ni 1, donc l\u2019inclusion des sous-catégories ne peut pas être copiée depuis l\u2019ancien champ questiontext',
+  },
+  'doctor.evidence.questions.random-no-context': {
+    en: 'Category {categoryId} has no context id to copy into questionscontextid',
+    es: 'la categoría {categoryId} no tiene id de contexto que copiar en questionscontextid',
+    fr: 'la catégorie {categoryId} n\u2019a pas d\u2019identifiant de contexte à copier dans questionscontextid',
+  },
+  'doctor.evidence.questions.random-no-category': {
+    en: 'Category (missing) has no context id to copy into questionscontextid',
+    es: 'la categoría (ausente) no tiene id de contexto que copiar en questionscontextid',
+    fr: 'la catégorie (absente) n\u2019a pas d\u2019identifiant de contexte à copier dans questionscontextid',
+  },
+  'doctor.evidence.questions.random-comma-tag': {
+    en: 'A question tag name contains a comma. Moodle splits legacy tags on the first comma, so the tag would be ambiguous',
+    es: 'el nombre de una etiqueta de pregunta contiene una coma. Moodle separa las etiquetas antiguas por la primera coma, así que la etiqueta sería ambigua',
+    fr: 'un nom d\u2019étiquette de question contient une virgule. Moodle découpe les anciennes étiquettes à la première virgule, donc l\u2019étiquette serait ambiguë',
+  },
+  'doctor.evidence.questions.random-slot-by-id': {
+    en: 'A quiz slot still points at this question by question id. usingcontextid is not in that XML and is not invented',
+    es: 'una posición del cuestionario sigue apuntando a esta pregunta por su id. usingcontextid no está en ese XML y no se inventa',
+    fr: 'un emplacement du test pointe encore vers cette question par son identifiant. usingcontextid n\u2019est pas dans ce XML et n\u2019est pas inventé',
+  },
+  'doctor.evidence.questions.random-has-set': {
+    en: 'The slot already has a question_set_reference, so the question_reference was left in place',
+    es: 'la posición ya tiene un question_set_reference, así que el question_reference se dejó como estaba',
+    fr: 'l\u2019emplacement a déjà un question_set_reference, donc le question_reference a été laissé en place',
+  },
+  'doctor.evidence.questions.random-incomplete-reference': {
+    en: 'The question_reference is missing usingcontextid, component, or questionarea',
+    es: 'al question_reference le falta usingcontextid, component o questionarea',
+    fr: 'il manque usingcontextid, component ou questionarea au question_reference',
+  },
+  'doctor.evidence.questions.outside-entry': {
+    en: 'Slot references question bank entry {bankEntryId}, which is not in this backup',
+    es: 'la posición hace referencia a la entrada del banco de preguntas {bankEntryId}, que no está en esta copia',
+    fr: 'l\u2019emplacement référence l\u2019entrée de banque de questions {bankEntryId}, absente de cette sauvegarde',
+  },
+  'doctor.evidence.questions.outside-question': {
+    en: 'Slot references question {questionId}, which is not in this backup',
+    es: 'la posición hace referencia a la pregunta {questionId}, que no está en esta copia',
+    fr: 'l\u2019emplacement référence la question {questionId}, absente de cette sauvegarde',
+  },
+  'doctor.evidence.questions.bad-filter': {
+    en: 'filtercondition is not valid JSON',
+    es: 'filtercondition no es JSON válido',
+    fr: 'filtercondition n\u2019est pas un JSON valide',
+  },
+  'doctor.evidence.questions.random-modern': {
+    en: 'Question {questionId} in bank entry {bankEntryId}, category {categoryId}',
+    es: 'pregunta {questionId} en la entrada del banco {bankEntryId}, categoría {categoryId}',
+    fr: 'question {questionId} dans l\u2019entrée de banque {bankEntryId}, catégorie {categoryId}',
+  },
+  'doctor.evidence.questions.empty-pool': {
+    en: 'Category {categoryId} has no non-random questions in this backup',
+    es: 'la categoría {categoryId} no tiene preguntas no aleatorias en esta copia',
+    fr: 'la catégorie {categoryId} n\u2019a aucune question non aléatoire dans cette sauvegarde',
+  },
+  'doctor.evidence.questions.top-category': {
+    en: 'Category {categoryId} is a top-level category in context {contextId} and has {count} child categories in this backup',
+    es: 'la categoría {categoryId} es de primer nivel en el contexto {contextId} y tiene {count} subcategorías en esta copia',
+    fr: 'la catégorie {categoryId} est de premier niveau dans le contexte {contextId} et a {count} sous-catégories dans cette sauvegarde',
+  },
+  'doctor.evidence.questions.top-category-no-context': {
+    en: 'Category {categoryId} is a top-level category in context (empty) and has {count} child categories in this backup',
+    es: 'la categoría {categoryId} es de primer nivel en un contexto vacío y tiene {count} subcategorías en esta copia',
+    fr: 'la catégorie {categoryId} est de premier niveau dans un contexte vide et a {count} sous-catégories dans cette sauvegarde',
+  },
+  'doctor.evidence.questions.attempt-missing': {
+    en: 'Legacy attempt references question {questionId}, which is not in this backup',
+    es: 'un intento antiguo hace referencia a la pregunta {questionId}, que no está en esta copia',
+    fr: 'une ancienne tentative référence la question {questionId}, absente de cette sauvegarde',
+  },
+  'doctor.evidence.questions.attempt-data': {
+    en: 'Question {questionId} has {sessions} legacy sessions and {states} legacy states',
+    es: 'la pregunta {questionId} tiene {sessions} sesiones antiguas y {states} estados antiguos',
+    fr: 'la question {questionId} a {sessions} anciennes sessions et {states} anciens états',
+  },
+  'doctor.evidence.questions.bank-referenced': {
+    en: 'A scanned XML file references the question bank. No category or question is invented.',
+    es: 'un archivo XML analizado hace referencia al banco de preguntas. No se inventa ninguna categoría ni pregunta.',
+    fr: 'un fichier XML analysé référence la banque de questions. Aucune catégorie ni question n\u2019est inventée.',
+  },
+  'doctor.evidence.questions.bank-incomplete': {
+    en: 'Not every XML file could be scanned, so an empty questions.xml is not created.',
+    es: 'no se han podido analizar todos los archivos XML, así que no se crea un questions.xml vacío.',
+    fr: 'tous les fichiers XML n\u2019ont pas pu être analysés, donc aucun questions.xml vide n\u2019est créé.',
+  },
+  'doctor.evidence.questions.bank-root': {
+    en: 'questions.xml root is {root}; Moodle expects question_categories',
+    es: 'la raíz de questions.xml es {root}; Moodle espera question_categories',
+    fr: 'la racine de questions.xml est {root}, alors que Moodle attend question_categories',
+  },
+  'doctor.evidence.questions.bank-root-none': {
+    en: 'questions.xml root is (none); Moodle expects question_categories',
+    es: 'questions.xml no tiene raíz; Moodle espera question_categories',
+    fr: 'questions.xml n\u2019a pas de racine, alors que Moodle attend question_categories',
   },
 } as const
 

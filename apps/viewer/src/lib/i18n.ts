@@ -339,6 +339,7 @@ export const STRINGS = {
     'h5p.invalid': 'This .h5p package could not be read — use Download.',
     'h5p.playerUnavailable': 'The H5P player could not be loaded — use Download.',
     'h5p.frameTitle': 'H5P content preview',
+    labelled: '{label}: {value}',
   },
   es: {
     ...DOCTOR_ES,
@@ -675,6 +676,7 @@ export const STRINGS = {
     'h5p.invalid': 'No se pudo leer este paquete .h5p: usa Descargar.',
     'h5p.playerUnavailable': 'No se pudo cargar el reproductor H5P: usa Descargar.',
     'h5p.frameTitle': 'Vista previa de contenido H5P',
+    labelled: '{label}: {value}',
   },
   fr: {
     ...DOCTOR_FR,
@@ -1022,6 +1024,8 @@ export const STRINGS = {
     'h5p.invalid': 'Ce paquet .h5p n\u2019a pas pu être lu — utiliser Télécharger.',
     'h5p.playerUnavailable': 'Le lecteur H5P n\u2019a pas pu être chargé — utiliser Télécharger.',
     'h5p.frameTitle': 'Aperçu du contenu H5P',
+    // French typography puts a non-breaking space before the colon (#41).
+    labelled: '{label}\u00a0: {value}',
   },
 } as const
 
@@ -1055,4 +1059,11 @@ export function t(key: StringKey, vars?: Record<string, string | number>): strin
     }
   }
   return s
+}
+
+/** "Label: value" with the colon spacing of the current language (#41). */
+export function labelled(label: string, value: string): string {
+  return t('labelled')
+    .replace('{label}', () => label)
+    .replace('{value}', () => value)
 }
