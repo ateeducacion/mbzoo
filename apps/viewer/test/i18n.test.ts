@@ -58,6 +58,16 @@ describe('detectLang', () => {
     }
   })
 
+  test('the shortcut hint pairs each key with the arrow it matches (#39)', () => {
+    // main.ts STEP_KEYS: K and ← go back, J and → go forward.
+    for (const language of ['en', 'es', 'fr'] as const) {
+      const hint = STRINGS[language]['nav.shortcuts']
+      expect(hint).toMatch(/K[^J→]*←/)
+      expect(hint).toMatch(/J[^K←]*→/)
+      expect(hint.indexOf('K')).toBeLessThan(hint.indexOf('J'))
+    }
+  })
+
   test('Spanish and French dictionaries cover every English key', () => {
     const english = Object.keys(STRINGS.en).sort()
     expect(Object.keys(STRINGS.es).sort()).toEqual(english)
