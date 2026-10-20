@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { gzipSync, strToU8, zipSync } from 'fflate'
 import { crc32 } from '../src/doctor/bytes.ts'
+import { EVIDENCE_TEXT, fillEvidence } from '../src/doctor/evidence.ts'
 import { analyzeBackup, applyRepairs, reportJson, reportText, TarGzReader } from '../src/index.ts'
 
 const XML = '<?xml version="1.0" encoding="UTF-8"?>'
@@ -168,6 +169,30 @@ describe('analyzeBackup', () => {
     expect(
       olderTarget.findings.some((finding) => finding.ruleId === 'questions.random-modern'),
     ).toBe(false)
+  })
+
+  test('evidence carries a stable code and values next to the English detail (#41)', async () => {
+    const report = await analyzeBackup(
+      zip({
+        'moodle_backup.xml': manifest({
+          activities: `<activity><moduleid>2</moduleid><sectionid>10</sectionid><modulename>scheduler</modulename><title>Book a slot</title></activity>`,
+        }),
+        'sections/section_10/section.xml': sectionXml,
+      }),
+      { filename: 'course.mbz' },
+    )
+    const evidence = report.findings.find(
+      (finding) => finding.id === 'plugins.unknown-module:scheduler',
+    )?.evidence[0]
+    expect(evidence?.code).toBe('plugins.not-core-module')
+    expect(evidence?.params).toEqual({ module: 'scheduler' })
+    expect(evidence?.detail).toBe("scheduler is not in MBZoo's core module list")
+    for (const finding of report.findings) {
+      for (const item of finding.evidence) {
+        if (item.code === undefined) continue
+        expect(fillEvidence(EVIDENCE_TEXT[item.code], item.params ?? {})).toBe(item.detail)
+      }
+    }
   })
 
   test('distinguishes removed core modules from unknown plugins', async () => {

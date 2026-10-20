@@ -11,8 +11,9 @@ import { contentHashPath } from '../moodle/activity-xml.ts'
 import { MAX_XML_BYTES, parseXmlEvents } from '../moodle/xml.ts'
 import { decodeUtf8, encodeUtf8, sha1Hex, stripIllegalXmlChars } from './bytes.ts'
 import { makeFinding } from './catalog.ts'
+import { type EvidenceCode, said } from './evidence.ts'
 import { REBUILD_BLOCKERS } from './policy.ts'
-import type { ArchiveEditStep, DoctorOptions, Finding, RepairPlan } from './types.ts'
+import type { ArchiveEditStep, DoctorOptions, Evidence, Finding, RepairPlan } from './types.ts'
 import { ancestorNamed, decodeEntities, leafOf, scanElements, type XmlEl } from './xml-span.ts'
 
 /** Root written by `backup_final_roles_structure_step` when no roles exist. */
@@ -96,7 +97,10 @@ export function planUnwrap(
       id,
       evidence: samples.map((entry) => ({
         entry: entry.name,
-        detail: `${entry.name} would become ${entry.name.slice(prefix.length)}`,
+        ...said('archive.would-become', {
+          entry: entry.name,
+          target: entry.name.slice(prefix.length),
+        }),
       })),
       params: { count: entries.length, prefix },
       repair,
@@ -143,13 +147,16 @@ export async function recoverMisplaced(input: {
   const findings: Finding[] = []
   const edits: ArchiveEditStep[] = []
   const hashed = new Map<string, string>()
-  const incomplete: string[] = []
+  const incomplete: Evidence[] = []
   const stillMissing: string[] = []
   for (const [hash, labels] of input.missing) {
     const found = await findPayload(input, hash, hashed)
     if (found.status === 'incomplete') {
       incomplete.push(
-        `${labels[0] ?? hash.slice(0, 8)}: ${found.unchecked} entr${found.unchecked === 1 ? 'y was' : 'ies were'} above the hash budget`,
+        said(found.unchecked === 1 ? 'files.above-budget-one' : 'files.above-budget', {
+          label: labels[0] ?? hash.slice(0, 8),
+          count: found.unchecked,
+        }),
       )
       continue
     }
@@ -185,7 +192,10 @@ export async function recoverMisplaced(input: {
         evidence: [
           {
             entry: found.source,
-            detail: `${labels[0] ?? hash.slice(0, 8)} matches ${found.source}`,
+            ...said('files.matches', {
+              label: labels[0] ?? hash.slice(0, 8),
+              source: found.source,
+            }),
           },
         ],
         params: { hash, bytes: found.bytes.byteLength },
@@ -216,7 +226,7 @@ export async function recoverMisplaced(input: {
     findings.push(
       makeFinding('files.recovery-incomplete', {
         id: 'files.recovery-incomplete',
-        evidence: incomplete.slice(0, 8).map((detail) => ({ detail })),
+        evidence: incomplete.slice(0, 8),
         params: { count: incomplete.length },
         confidence: 'medium',
       }),
@@ -253,9 +263,8 @@ export async function planMissingMetadata(input: {
       xml: EMPTY_ROLES_XML,
       referenced,
       complete: scanned.complete,
-      referencedDetail: 'A scanned XML file names a role id. The definition is not invented.',
-      incompleteDetail:
-        'Not every XML file could be scanned, so an empty roles.xml is not created.',
+      referencedDetail: 'metadata.roles-referenced',
+      incompleteDetail: 'metadata.roles-incomplete',
       summary: 'Add an empty roles_definition document.',
     })
   } else if (rolesFile && rootElement(rolesFile.xml) !== 'roles_definition') {
@@ -264,10 +273,7 @@ export async function planMissingMetadata(input: {
         id: 'metadata.missing-roles',
         repairability: 'manual',
         evidence: [
-          {
-            entry: rolesPath,
-            detail: `roles.xml root is ${rootElement(rolesFile.xml) || '(none)'}; Moodle expects roles_definition`,
-          },
+          { entry: rolesPath, ...rootEvidence('metadata.roles-root', rootElement(rolesFile.xml)) },
         ],
       }),
     )
@@ -283,10 +289,8 @@ export async function planMissingMetadata(input: {
       xml: EMPTY_QUESTIONS_XML,
       referenced,
       complete: scanned.complete,
-      referencedDetail:
-        'A scanned XML file references the question bank. No category or question is invented.',
-      incompleteDetail:
-        'Not every XML file could be scanned, so an empty questions.xml is not created.',
+      referencedDetail: 'questions.bank-referenced',
+      incompleteDetail: 'questions.bank-incomplete',
       summary: 'Add an empty question_categories document.',
     })
   } else if (questionsFile && rootElement(questionsFile.xml) !== 'question_categories') {
@@ -297,7 +301,7 @@ export async function planMissingMetadata(input: {
         evidence: [
           {
             entry: questionsPath,
-            detail: `questions.xml root is ${rootElement(questionsFile.xml) || '(none)'}; Moodle expects question_categories`,
+            ...rootEvidence('questions.bank-root', rootElement(questionsFile.xml)),
           },
         ],
       }),
@@ -311,6 +315,13 @@ export async function planMissingMetadata(input: {
   return { findings, edits }
 }
 
+function rootEvidence(
+  code: 'metadata.roles-root' | 'questions.bank-root',
+  root: string,
+): ReturnType<typeof said> {
+  return root === '' ? said(`${code}-none`) : said(code, { root })
+}
+
 function pushEmptyDocument(
   findings: Finding[],
   edits: ArchiveEditStep[],
@@ -322,8 +333,8 @@ function pushEmptyDocument(
     readonly xml: string
     readonly referenced: boolean
     readonly complete: boolean
-    readonly referencedDetail: string
-    readonly incompleteDetail: string
+    readonly referencedDetail: EvidenceCode
+    readonly incompleteDetail: EvidenceCode
     readonly summary: string
   },
 ): void {
@@ -336,10 +347,7 @@ function pushEmptyDocument(
         repairability: 'not-repairable',
         confidence: spec.complete ? 'high' : 'medium',
         evidence: [
-          {
-            entry,
-            detail: spec.referenced ? spec.referencedDetail : spec.incompleteDetail,
-          },
+          { entry, ...said(spec.referenced ? spec.referencedDetail : spec.incompleteDetail) },
         ],
       }),
     )
@@ -367,7 +375,7 @@ function pushEmptyDocument(
     makeFinding(spec.ruleId, {
       id: spec.id,
       repairability: 'confirmation-required',
-      evidence: [{ entry, detail: `${entry} is absent and no scanned reference requires it` }],
+      evidence: [{ entry, ...said('metadata.document-unreferenced', { entry }) }],
       repair,
     }),
   )
@@ -414,14 +422,20 @@ async function scanXml(
         input.existing,
         'xml.limit',
         entry.name,
-        `${entry.name} is ${entry.uncompressedSize} bytes`,
+        said('xml.size', { entry: entry.name, bytes: entry.uncompressedSize }),
       )
       continue
     }
     const text = decodeUtf8(await input.reader.readEntry(entry.name))
     if (text === undefined) {
       complete = false
-      noteOnce(findings, input.existing, 'xml.utf8', entry.name, `${entry.name} is not valid UTF-8`)
+      noteOnce(
+        findings,
+        input.existing,
+        'xml.utf8',
+        entry.name,
+        said('xml.utf8', { entry: entry.name }),
+      )
       continue
     }
     const stripped = stripIllegalXmlChars(text)
@@ -432,7 +446,7 @@ async function scanXml(
         input.existing,
         'xml.malformed',
         entry.name,
-        `${entry.name} is not well-formed`,
+        said('xml.malformed', { entry: entry.name }),
       )
       continue
     }
@@ -446,7 +460,7 @@ function noteOnce(
   existing: readonly Finding[],
   ruleId: 'xml.limit' | 'xml.utf8' | 'xml.malformed',
   entry: string,
-  detail: string,
+  evidence: ReturnType<typeof said>,
 ): void {
   const id = `${ruleId}:${entry}`
   if (
@@ -458,7 +472,7 @@ function noteOnce(
   findings.push(
     makeFinding(ruleId, {
       id,
-      evidence: [{ entry, detail }],
+      evidence: [{ entry, ...evidence }],
     }),
   )
 }
@@ -473,7 +487,7 @@ function noteUnknownContexts(files: readonly ScannedFile[], findings: Finding[])
   const filesXml = files.find((file) => file.relative === 'files.xml')
   if (!filesXml) return
   const elements = scanElements(filesXml.xml)
-  const missing = new Map<string, string>()
+  const missing = new Map<string, Evidence>()
   for (const file of elements) {
     if (file.name !== 'file' || file.end < 0) continue
     const filename = leafOf(filesXml.xml, elements, file, 'filename')
@@ -482,17 +496,14 @@ function noteUnknownContexts(files: readonly ScannedFile[], findings: Finding[])
     if (!NOT_ALIAS.has(repositoryId)) continue
     const contextId = leafOf(filesXml.xml, elements, file, 'contextid')
     if (!/^\d+$/.test(contextId) || known.has(contextId) || missing.has(contextId)) continue
-    missing.set(
-      contextId,
-      `${filename} uses context ${contextId}, which no other scanned element declares`,
-    )
+    missing.set(contextId, said('references.unknown-context', { filename, contextId }))
   }
   if (missing.size === 0) return
   findings.push(
     makeFinding('references.unknown-context', {
       id: 'references.unknown-context',
       confidence: 'medium',
-      evidence: [...missing.values()].slice(0, 8).map((detail) => ({ detail })),
+      evidence: [...missing.values()].slice(0, 8),
       params: { count: missing.size },
     }),
   )
@@ -512,14 +523,18 @@ function noteInforef(files: readonly ScannedFile[], findings: Finding[]): void {
     }
     for (const id of questionElementIds(file.xml)) questionIds.add(id)
   }
-  const missing: { entry: string; detail: string }[] = []
-  const duplicates: { entry: string; detail: string }[] = []
+  const missing: Evidence[] = []
+  const duplicates: Evidence[] = []
   for (const file of files) {
     if (!(file.relative.endsWith('/inforef.xml') || file.relative === 'inforef.xml')) continue
-    const groups: { group: string; item: string; known: ReadonlySet<string>; label: string }[] = [
-      { group: 'fileref', item: 'file', known: fileIds, label: 'file' },
-      { group: 'questionref', item: 'question', known: questionIds, label: 'question' },
-      { group: 'roleref', item: 'role', known: roleIds, label: 'role' },
+    const groups: {
+      group: string
+      item: 'file' | 'question' | 'role'
+      known: ReadonlySet<string>
+    }[] = [
+      { group: 'fileref', item: 'file', known: fileIds },
+      { group: 'questionref', item: 'question', known: questionIds },
+      { group: 'roleref', item: 'role', known: roleIds },
     ]
     for (const group of groups) {
       const ids = groupedIds(file.xml, group.group, group.item)
@@ -528,14 +543,14 @@ function noteInforef(files: readonly ScannedFile[], findings: Finding[]): void {
         if (seen.has(id)) {
           duplicates.push({
             entry: file.name,
-            detail: `${group.label} id ${id} is repeated in ${file.relative}`,
+            ...said(`references.inforef-${group.item}-repeated`, { id, file: file.relative }),
           })
         }
         seen.add(id)
         if (!group.known.has(id)) {
           missing.push({
             entry: file.name,
-            detail: `${group.label} id ${id} in ${file.relative} is not in this backup`,
+            ...said(`references.inforef-${group.item}-missing`, { id, file: file.relative }),
           })
         }
       }

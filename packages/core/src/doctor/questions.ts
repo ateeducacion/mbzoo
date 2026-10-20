@@ -9,6 +9,7 @@
  * deletes a bank entry that still has a slot we could not convert.
  */
 import { makeFinding } from './catalog.ts'
+import { said } from './evidence.ts'
 import type { Finding, RepairPlan, RepairStep } from './types.ts'
 import { multipleTopCategoriesFail, parseRelease, type RandomRestorePath } from './versions.ts'
 import {
@@ -137,7 +138,7 @@ export function planQuestions(
         id: 'questions.duplicate-id',
         evidence: duplicateIds.slice(0, 8).map(([id, count]) => ({
           ...questionIdOf(id),
-          detail: `Question id ${id} appears ${count} times`,
+          ...said('questions.duplicate-id', { questionId: id, count }),
         })),
         params: { count: duplicateIds.length },
       }),
@@ -152,9 +153,12 @@ export function planQuestions(
     findings.push(
       makeFinding('questions.missing-parent', {
         id: 'questions.missing-parent',
-        evidence: missingParents.slice(0, 8).map((category) => ({
-          detail: `Category ${category.id} names parent ${category.parent}, which is not in this backup`,
-        })),
+        evidence: missingParents.slice(0, 8).map((category) =>
+          said('questions.missing-parent', {
+            categoryId: category.id,
+            parentId: category.parent,
+          }),
+        ),
         params: { count: missingParents.length },
       }),
     )
@@ -165,9 +169,9 @@ export function planQuestions(
     findings.push(
       makeFinding('questions.category-cycle', {
         id: 'questions.category-cycle',
-        evidence: cyclic.slice(0, 8).map((id) => ({
-          detail: `Category ${id} is its own ancestor`,
-        })),
+        evidence: cyclic
+          .slice(0, 8)
+          .map((id) => said('questions.category-cycle', { categoryId: id })),
         params: { count: cyclic.length },
       }),
     )
@@ -181,7 +185,7 @@ export function planQuestions(
     findings.push(
       makeFinding('plugins.unknown-qtype', {
         id: `plugins.unknown-qtype:${qtype}`,
-        evidence: [{ detail: `Question type ${qtype} is not in MBZoo's core list` }],
+        evidence: [said('plugins.not-core-qtype', { qtype })],
         params: { qtype },
       }),
     )
@@ -219,7 +223,7 @@ export function planQuestions(
             {
               entry: first.file,
               ...questionIdOf(first.id),
-              detail: `qtype random on the pre-4.0 restore path (question ${first.id})`,
+              ...said('questions.legacy-random', { questionId: first.id }),
             },
           ],
           params: { questionId: first.id, bankEntryId: first.bankEntryId },
@@ -241,7 +245,7 @@ export function planQuestions(
             {
               entry: first.file,
               ...questionIdOf(first.id),
-              detail: reason,
+              ...reason,
             },
           ],
           params: { questionId: first.id, bankEntryId: first.bankEntryId },
@@ -284,10 +288,9 @@ export function planQuestions(
         evidence: outside.slice(0, 8).map((slot) => ({
           entry: slot.file,
           ...(slot.activityId !== undefined ? { activityId: slot.activityId } : {}),
-          detail:
-            slot.bankEntryId !== ''
-              ? `Slot references question bank entry ${slot.bankEntryId}, which is not in this backup`
-              : `Slot references question ${slot.questionId}, which is not in this backup`,
+          ...(slot.bankEntryId !== ''
+            ? said('questions.outside-entry', { bankEntryId: slot.bankEntryId })
+            : said('questions.outside-question', { questionId: slot.questionId })),
         })),
         params: { count: outside.length },
       }),
@@ -310,7 +313,7 @@ export function planQuestions(
               {
                 entry: file.name,
                 ...(file.activityId !== undefined ? { activityId: file.activityId } : {}),
-                detail: 'filtercondition is not valid JSON',
+                ...said('questions.bad-filter'),
               },
             ],
             ...(file.activityId !== undefined ? { activityId: file.activityId } : {}),
@@ -342,43 +345,45 @@ function blockReason(
   siblings: readonly QuestionRow[],
   category: Category | undefined,
   slots: readonly SlotRef[],
-): string | undefined {
-  if (path === 'unknown') {
-    return 'Backup release and backup version are both missing, so the legacy and modern restore paths cannot be told apart'
-  }
+): ReturnType<typeof said> | undefined {
+  if (path === 'unknown') return said('questions.random-path-unknown')
   const target = parseRelease(targetRelease)
   if (target.major !== undefined && target.major < 4) {
-    return `Target Moodle ${targetRelease} is older than 4.0, so a set reference would not match its restore path`
+    return said('questions.random-target-old', { target: targetRelease })
   }
   if (question.bankEntryId === '') {
-    return 'The random question is not inside a question_bank_entry, so there is no question_reference to rewrite and no context id to copy'
+    return said('questions.random-no-entry')
   }
   if (siblings.length !== 1 || siblings.some((row) => row.qtype !== 'random')) {
-    return `Question bank entry ${question.bankEntryId} holds ${siblings.length} questions. A mixed entry is not converted, and nothing is deleted`
+    return said('questions.random-mixed-entry', {
+      bankEntryId: question.bankEntryId,
+      count: siblings.length,
+    })
   }
   if (question.text !== '' && question.text !== '0' && question.text !== '1') {
-    return 'The random question text is not 0 or 1, so subcategory inclusion cannot be copied from the legacy questiontext field'
+    return said('questions.random-bad-text')
   }
   if (!category || category.contextId === '') {
-    return `Category ${question.categoryId || '(missing)'} has no context id to copy into questionscontextid`
+    return question.categoryId === ''
+      ? said('questions.random-no-category')
+      : said('questions.random-no-context', { categoryId: question.categoryId })
   }
   if (question.tags.some((tag) => tag.includes(','))) {
-    return 'A question tag name contains a comma. Moodle splits legacy tags on the first comma, so the tag would be ambiguous'
+    return said('questions.random-comma-tag')
   }
   const legacySlots = slots.filter(
     (slot) => slot.questionId === question.id && slot.bankEntryId === '' && !slot.hasSet,
   )
   if (legacySlots.length > 0) {
-    return 'A quiz slot still points at this question by question id. usingcontextid is not in that XML and is not invented'
+    return said('questions.random-slot-by-id')
   }
   const refs = slots.filter((slot) => slot.bankEntryId === question.bankEntryId)
   const broken = refs.find(
     (slot) => slot.hasSet || slot.using === '' || slot.component === '' || slot.area === '',
   )
   if (broken) {
-    if (broken.hasSet)
-      return 'The slot already has a question_set_reference, so the question_reference was left in place'
-    return 'The question_reference is missing usingcontextid, component, or questionarea'
+    if (broken.hasSet) return said('questions.random-has-set')
+    return said('questions.random-incomplete-reference')
   }
   return undefined
 }
@@ -449,7 +454,11 @@ function buildRandomRepair(
         entry: spec.questionsEntry,
         ...questionIdOf(question.id),
         ...(activityId !== undefined ? { activityId } : {}),
-        detail: `Question ${question.id} in bank entry ${spec.bankEntryId}, category ${spec.categoryId}`,
+        ...said('questions.random-modern', {
+          questionId: question.id,
+          bankEntryId: spec.bankEntryId,
+          categoryId: spec.categoryId,
+        }),
       },
     ],
     params: {
@@ -479,11 +488,7 @@ function noteEmptyPool(
   findings.push(
     makeFinding('questions.empty-pool', {
       id: `questions.empty-pool:${categoryId}`,
-      evidence: [
-        {
-          detail: `Category ${categoryId} has no non-random questions in this backup`,
-        },
-      ],
+      evidence: [said('questions.empty-pool', { categoryId })],
       params: { categoryId },
     }),
   )
@@ -511,9 +516,16 @@ function noteMultipleTopCategories(
         repairability: 'manual',
         evidence: roots.slice(0, 8).map((category) => {
           const children = categories.filter((item) => item.parent === category.id).length
-          return {
-            detail: `Category ${category.id} is a top-level category in context ${contextId || '(empty)'} and has ${children} child categories in this backup`,
-          }
+          return contextId === ''
+            ? said('questions.top-category-no-context', {
+                categoryId: category.id,
+                count: children,
+              })
+            : said('questions.top-category', {
+                categoryId: category.id,
+                contextId,
+                count: children,
+              })
         }),
         params: { contextId, count: roots.length },
       }),
@@ -564,7 +576,7 @@ function noteLegacyAttempts(
             evidence: [
               {
                 ...where,
-                detail: `Legacy attempt references question ${id}, which is not in this backup`,
+                ...said('questions.attempt-missing', { questionId: id }),
               },
             ],
             ...(activity !== undefined ? { activityId: activity } : {}),
@@ -583,7 +595,11 @@ function noteLegacyAttempts(
             evidence: [
               {
                 ...where,
-                detail: `Question ${id} has ${sessions.get(id) ?? 0} legacy sessions and ${states.get(id) ?? 0} legacy states`,
+                ...said('questions.attempt-data', {
+                  questionId: id,
+                  sessions: sessions.get(id) ?? 0,
+                  states: states.get(id) ?? 0,
+                }),
               },
             ],
             ...(activity !== undefined ? { activityId: activity } : {}),

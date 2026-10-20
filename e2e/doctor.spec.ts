@@ -207,6 +207,34 @@ test.describe('French doctor', () => {
     )
     expect(warnings.filter((warning) => warning.includes('missing key'))).toEqual([])
   })
+
+  test('MBZ Doctor translates evidence and spaces colons the French way (#41)', async ({
+    page,
+  }) => {
+    const backup = mutatedFixture((entries) => {
+      const data = entries['moodle_backup.xml']
+      if (!data) throw new Error('Missing moodle_backup.xml')
+      entries['moodle_backup.xml'] = strToU8(
+        strFromU8(data).replace(
+          /<modulename>[^<]+<\/modulename>/,
+          '<modulename>scheduler</modulename>',
+        ),
+      )
+    }, 'scheduler.mbz')
+    await page.goto('/')
+    await page.setInputFiles('#file-input', backup)
+    await expect(page.locator('#course-title')).toHaveText('Demo Course for MBZoo')
+
+    await page.getByRole('button', { name: 'Docteur MBZ', exact: true }).click()
+    await page.getByRole('button', { name: 'Analyser la sauvegarde' }).click()
+    await expect(page.locator('#doctor-status')).toContainText('Analyse terminée')
+    const card = page.locator('.doctor-finding', { hasText: 'plugins.unknown-module:scheduler' })
+    await expect(card).toContainText(
+      'Preuve\u00a0: le module scheduler n\u2019est pas dans la liste des modules du cœur connus de MBZoo',
+    )
+    await expect(card).toContainText('Ce qui peut arriver\u00a0: ')
+    await expect(card).not.toContainText('core module list')
+  })
 })
 
 for (const viewport of [

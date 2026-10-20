@@ -54,7 +54,7 @@ import {
   vfsHeadScripts,
 } from './lib/h5p-player.ts'
 import { composeHvpEntries, hvpFields } from './lib/hvp-package.ts'
-import { detectLang, t } from './lib/i18n.ts'
+import { detectLang, labelled, t } from './lib/i18n.ts'
 import {
   ALLOWED_URI_REGEXP,
   contentKind,
@@ -2794,7 +2794,7 @@ export class Renderer {
       const row = document.createElement('p')
       row.className = 'summary-row'
       const label = document.createElement('b')
-      label.textContent = `${t('submissionTypes')}: `
+      label.textContent = labelled(t('submissionTypes'), '')
       row.appendChild(label)
       row.appendChild(document.createTextNode(submissionTypes.join(', ')))
       container.appendChild(row)

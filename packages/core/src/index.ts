@@ -5,6 +5,12 @@ export { rewriteArchive } from './archive/rewrite.ts'
 export { MAX_TAR_BYTES, sanitizeTarName, TarGzReader } from './archive/targz-reader.ts'
 export { analyzeBackup, inspect } from './doctor/analyze.ts'
 export { LIMITATIONS, RULES, type RuleId } from './doctor/catalog.ts'
+export {
+  EVIDENCE_TEXT,
+  type EvidenceCode,
+  type EvidenceParams,
+  fillEvidence,
+} from './doctor/evidence.ts'
 export { type ApplyOptions, applyRepairs } from './doctor/repair.ts'
 export { type ReportSession, redactReport, reportJson, reportText } from './doctor/report.ts'
 export type {
@@ -12,6 +18,7 @@ export type {
   BackupFacts,
   DiagnosticReport,
   DoctorOptions,
+  Evidence,
   Finding,
   Repairability,
   RepairOutcome,

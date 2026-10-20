@@ -17,6 +17,7 @@ import { parseUsersXml } from '../moodle/users-xml.ts'
 import { MAX_XML_BYTES, parseXmlEvents } from '../moodle/xml.ts'
 import { countIllegalXmlChars, crc32, decodeUtf8, sha1Hex, stripIllegalXmlChars } from './bytes.ts'
 import { LIMITATIONS, makeFinding } from './catalog.ts'
+import { said } from './evidence.ts'
 import { type NamedXml, planQuestions } from './questions.ts'
 import { aliasContentHashes, planMissingMetadata, planUnwrap, recoverMisplaced } from './restore.ts'
 import type {
@@ -24,6 +25,7 @@ import type {
   BackupFacts,
   DiagnosticReport,
   DoctorOptions,
+  Evidence,
   Finding,
   RepairPlan,
   RepairStep,
@@ -123,7 +125,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
     findings.push(
       makeFinding('archive.unreadable', {
         id: 'archive.unreadable',
-        evidence: [{ detail: 'The file does not start with a ZIP or gzip signature' }],
+        evidence: [said('archive.no-signature')],
       }),
     )
     return finish()
@@ -132,7 +134,9 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
     findings.push(
       makeFinding('archive.extension', {
         id: 'archive.extension',
-        evidence: [{ detail: `${filename} is a ${format === 'zip' ? 'ZIP' : 'gzip'} container` }],
+        evidence: [
+          said('archive.container', { filename, format: format === 'zip' ? 'ZIP' : 'gzip' }),
+        ],
         params: { format },
       }),
     )
@@ -145,9 +149,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
     findings.push(
       makeFinding('archive.unreadable', {
         id: 'archive.unreadable',
-        evidence: [
-          { detail: error instanceof Error ? error.message : 'The archive could not be opened' },
-        ],
+        evidence: [error instanceof Error ? { detail: error.message } : said('archive.not-opened')],
       }),
     )
     return finish()
@@ -194,7 +196,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
       findings.push(
         makeFinding('archive.missing-root', {
           id: 'archive.missing-root',
-          evidence: [{ detail: 'No moodle_backup.xml entry' }],
+          evidence: [said('archive.no-manifest')],
         }),
       )
       return finish()
@@ -221,7 +223,12 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
       findings.push(
         makeFinding('archive.enclosed', {
           id: 'archive.enclosed',
-          evidence: [{ entry: manifestEntry.name, detail: `Manifest is at ${manifestEntry.name}` }],
+          evidence: [
+            {
+              entry: manifestEntry.name,
+              ...said('archive.manifest-at', { entry: manifestEntry.name }),
+            },
+          ],
         }),
       )
     }
@@ -242,9 +249,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
         findings.push(
           makeFinding('xml.malformed', {
             id: `xml.malformed:${manifestEntry.name}`,
-            evidence: [
-              { entry: manifestEntry.name, detail: 'moodle_backup.xml is not well-formed' },
-            ],
+            evidence: [{ entry: manifestEntry.name, ...said('xml.manifest-malformed') }],
           }),
         )
         applyManifestFacts(facts, readManifest(structural))
@@ -264,9 +269,10 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
           makeFinding('metadata.target-older', {
             id: 'metadata.target-older',
             evidence: [
-              {
-                detail: `Backup release ${manifest.moodleRelease || manifest.backupRelease}, target ${targetRelease}`,
-              },
+              said('metadata.target-older', {
+                release: manifest.moodleRelease || manifest.backupRelease,
+                target: targetRelease,
+              }),
             ],
             params: { target: targetRelease },
           }),
@@ -287,7 +293,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
         findings.push(
           makeFinding('sections.missing', {
             id: `sections.missing:${section.id}`,
-            evidence: [{ entry: name, detail: `Section ${section.id} has no section.xml` }],
+            evidence: [{ entry: name, ...said('sections.missing', { sectionId: section.id }) }],
             params: { sectionId: section.id },
           }),
         )
@@ -322,7 +328,10 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
             evidence: [
               {
                 entry: dir,
-                detail: `${activity.moduleName} ${activity.id} is declared and absent`,
+                ...said('activities.missing', {
+                  module: activity.moduleName,
+                  activityId: activity.id,
+                }),
               },
             ],
             activityId: activity.id,
@@ -333,7 +342,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
         findings.push(
           makeFinding('activities.missing-module', {
             id: `activities.missing-module:${activity.id}`,
-            evidence: [{ entry: `${dir}module.xml`, detail: 'module.xml is absent' }],
+            evidence: [{ entry: `${dir}module.xml`, ...said('activities.missing-module') }],
             activityId: activity.id,
           }),
         )
@@ -344,9 +353,11 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
           makeFinding('activities.bad-section', {
             id: `activities.bad-section:${activity.id}`,
             evidence: [
-              {
-                detail: `${activity.moduleName} ${activity.id} names section ${activity.sectionId}`,
-              },
+              said('activities.bad-section', {
+                module: activity.moduleName,
+                activityId: activity.id,
+                sectionId: activity.sectionId,
+              }),
             ],
             activityId: activity.id,
             params: { sectionId: activity.sectionId },
@@ -361,7 +372,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
           id: 'activities.duplicate',
           evidence: duplicateActivities.slice(0, 8).map(([id, count]) => ({
             activityId: id,
-            detail: `Activity id ${id} is declared ${count} times`,
+            ...said('activities.duplicate', { activityId: id, count }),
           })),
           params: { count: duplicateActivities.length },
         }),
@@ -380,7 +391,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
       findings.push(
         makeFinding('activities.undeclared', {
           id: `activities.undeclared:${dir}`,
-          evidence: [{ entry: dir, detail: `${dir} is not listed in moodle_backup.xml` }],
+          evidence: [{ entry: dir, ...said('activities.undeclared', { entry: dir }) }],
         }),
       )
     }
@@ -462,7 +473,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
         findings.push(
           makeFinding('userdata.missing', {
             id: 'userdata.missing',
-            evidence: [{ entry: `${prefix}users.xml`, detail: 'users.xml is not in the archive' }],
+            evidence: [{ entry: `${prefix}users.xml`, ...said('userdata.missing') }],
           }),
         )
       } else {
@@ -474,7 +485,7 @@ export async function inspect(blob: Blob, options: DoctorOptions = {}): Promise<
             findings.push(
               makeFinding('userdata.malformed', {
                 id: 'userdata.malformed',
-                evidence: [{ entry: usersEntry.name, detail: 'users.xml did not parse' }],
+                evidence: [{ entry: usersEntry.name, ...said('userdata.malformed') }],
               }),
             )
           }
@@ -640,9 +651,7 @@ async function noteSectionCycles(
   findings.push(
     makeFinding('sections.cycle', {
       id: 'sections.cycle',
-      evidence: cyclic.slice(0, 8).map((id) => ({
-        detail: `Section ${id} is its own ancestor through course-format parent links`,
-      })),
+      evidence: cyclic.slice(0, 8).map((id) => said('sections.cycle', { sectionId: id })),
       params: { count: cyclic.length },
     }),
   )
@@ -675,7 +684,7 @@ function notePlugins(
             {
               activityId: activity.id,
               moduleName: name,
-              detail: `Removed in Moodle ${removed.removedIn} (${removed.issue})`,
+              ...said('plugins.removed', { removedIn: removed.removedIn, issue: removed.issue }),
             },
           ],
           activityId: activity.id,
@@ -692,7 +701,7 @@ function notePlugins(
             {
               activityId: activity.id,
               moduleName: name,
-              detail: `${name} is not in MBZoo's core module list`,
+              ...said('plugins.not-core-module', { module: name }),
             },
           ],
           activityId: activity.id,
@@ -739,7 +748,7 @@ async function scanFiles(
   const aliases = aliasContentHashes(xml)
   const referenced = new Set<string>()
   const pending = new Map<string, string[]>()
-  const mismatched: string[] = []
+  const mismatched: Evidence[] = []
   const skipped: string[] = []
   const sized = new Set<string>()
   for (const record of records.values()) {
@@ -766,7 +775,7 @@ async function scanFiles(
     const bytes = await reader.readEntry(path)
     const actual = await sha1Hex(bytes)
     if (actual !== hash) {
-      mismatched.push(`${path} hashes to ${actual.slice(0, 8)}`)
+      mismatched.push(said('files.hash', { entry: path, hash: actual.slice(0, 8) }))
       continue
     }
     if (record.fileSize === bytes.byteLength || sized.has(hash)) continue
@@ -779,7 +788,7 @@ async function scanFiles(
         evidence: [
           {
             entry: path,
-            detail: `files.xml says ${record.fileSize} bytes; the entry is ${bytes.byteLength} bytes`,
+            ...said('files.size', { declared: record.fileSize, actual: bytes.byteLength }),
           },
         ],
         params: { hash, size: bytes.byteLength },
@@ -810,7 +819,7 @@ async function scanFiles(
     findings.push(
       makeFinding('files.hash', {
         id: 'files.hash',
-        evidence: mismatched.slice(0, 8).map((detail) => ({ detail })),
+        evidence: mismatched.slice(0, 8),
         params: { count: mismatched.length },
       }),
     )
@@ -916,7 +925,11 @@ function noteRatios(entries: readonly ArchiveEntryInfo[], findings: Finding[]): 
       id: 'archive.ratio',
       evidence: hot.slice(0, 8).map((entry) => ({
         entry: entry.name,
-        detail: `${entry.name} expands from ${entry.compressedSize} to ${entry.uncompressedSize} bytes`,
+        ...said('archive.ratio', {
+          entry: entry.name,
+          compressed: entry.compressedSize ?? 0,
+          uncompressed: entry.uncompressedSize,
+        }),
       })),
       params: { count: hot.length },
     }),
@@ -928,7 +941,7 @@ function noteLinks(
   activityIds: ReadonlySet<number>,
   findings: Finding[],
 ): void {
-  const evidence: { entry: string; detail: string; activityId?: number }[] = []
+  const evidence: Evidence[] = []
   const seen = new Set<string>()
   for (const file of texts) {
     const re = new RegExp(BACKUP_LINK_TOKEN.source, 'g')
@@ -941,7 +954,7 @@ function noteLinks(
       seen.add(token)
       evidence.push({
         entry: file.name,
-        detail: `Token names course-module ${link.moduleId}, which is not in this backup`,
+        ...said('references.token', { moduleId: link.moduleId }),
       })
       if (evidence.length >= 12) break
     }
@@ -973,7 +986,7 @@ function notePackages(
           {
             activityId: activity.id,
             moduleName: activity.moduleName,
-            detail: `${activity.moduleName} ${activity.id} has no file bytes for ${`mod_${activity.moduleName}`} in this backup`,
+            ...said('embedded.no-bytes', { module: activity.moduleName, activityId: activity.id }),
           },
         ],
         activityId: activity.id,
@@ -995,7 +1008,10 @@ async function readXml(
       makeFinding('xml.limit', {
         id: `xml.limit:${entry.name}`,
         evidence: [
-          { entry: entry.name, detail: `${entry.name} is ${entry.uncompressedSize} bytes` },
+          {
+            entry: entry.name,
+            ...said('xml.size', { entry: entry.name, bytes: entry.uncompressedSize }),
+          },
         ],
       }),
     )
@@ -1008,7 +1024,7 @@ async function readXml(
     findings.push(
       makeFinding('xml.utf8', {
         id: `xml.utf8:${entry.name}`,
-        evidence: [{ entry: entry.name, detail: `${entry.name} is not valid UTF-8` }],
+        evidence: [{ entry: entry.name, ...said('xml.utf8', { entry: entry.name }) }],
       }),
     )
     return undefined
@@ -1036,7 +1052,7 @@ async function readXml(
         evidence: [
           {
             entry: entry.name,
-            detail: `${illegal} forbidden control character${illegal === 1 ? '' : 's'}`,
+            ...said(illegal === 1 ? 'xml.illegal-char' : 'xml.illegal-chars', { count: illegal }),
           },
         ],
         params: { count: illegal },
@@ -1066,7 +1082,7 @@ async function wellFormed(xml: string): Promise<boolean> {
 function malformed(entry: string): Finding {
   return makeFinding('xml.malformed', {
     id: `xml.malformed:${entry}`,
-    evidence: [{ entry, detail: `${entry} is not well-formed` }],
+    evidence: [{ entry, ...said('xml.malformed', { entry }) }],
   })
 }
 

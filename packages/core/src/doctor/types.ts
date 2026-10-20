@@ -1,6 +1,7 @@
 /**
  * MBZ Doctor result model. A static pass is not a Moodle restore (ADR-0037).
  */
+import type { EvidenceCode, EvidenceParams } from './evidence.ts'
 
 export type Severity = 'critical' | 'warning' | 'info'
 
@@ -37,6 +38,9 @@ export interface Evidence {
   readonly activityId?: number
   readonly moduleName?: string
   readonly questionId?: number
+  /** Stable key for a translated sentence; `detail` is the English text. */
+  readonly code?: EvidenceCode
+  readonly params?: EvidenceParams
   readonly detail: string
 }
 
