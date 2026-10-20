@@ -6,7 +6,7 @@
  * (ADR-0012).
  */
 
-import { t } from './i18n.ts'
+import { detectLang, t } from './i18n.ts'
 import { formatBytes } from './preview-utils.ts'
 import { tokenizeXml } from './xml-highlight.ts'
 
@@ -58,7 +58,7 @@ export function appendRawXml(
 
   const bar = el('div', 'raw-bar')
   bar.appendChild(el('code', 'raw-path', xmlPath))
-  bar.appendChild(el('span', 'raw-size', formatBytes(view.size)))
+  bar.appendChild(el('span', 'raw-size', formatBytes(view.size, detectLang())))
   panel.appendChild(bar)
 
   const pre = el('pre', 'raw-xml')

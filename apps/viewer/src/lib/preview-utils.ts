@@ -70,10 +70,24 @@ export const H5P_CSP =
 export const ALLOWED_URI_REGEXP =
   /^(?:(?:https?|mailto|ftp|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i
 
-export function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+// French counts octets: o, Ko, Mo, Go, To.
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const
+const OCTET_UNITS = ['o', 'Ko', 'Mo', 'Go', 'To'] as const
+
+/** Bytes as a number/unit pair in the UI language, so callers can style the unit. */
+export function splitBytes(n: number, lang: string): { value: string; unit: string } {
+  const units = lang.toLowerCase().startsWith('fr') ? OCTET_UNITS : BYTE_UNITS
+  let i = 0
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024
+    i++
+  }
+  return { value: formatNumber(n, lang, i === 0 ? 0 : 1), unit: units[i] ?? '' }
+}
+
+export function formatBytes(n: number, lang: string): string {
+  const { value, unit } = splitBytes(n, lang)
+  return `${value}\u00a0${unit}`
 }
 
 export function guessMime(name: string): string {

@@ -11,7 +11,7 @@ import {
   reportJson,
   type Severity,
 } from '@mbzoo/core'
-import { labelled, STRINGS, type StringKey, t } from './lib/i18n.ts'
+import { detectLang, labelled, STRINGS, type StringKey, t } from './lib/i18n.ts'
 import { formatBytes } from './lib/preview-utils.ts'
 import type { DoctorAnalyzeResponse, DoctorProgress, DoctorRepairResponse } from './worker.ts'
 
@@ -337,7 +337,7 @@ export function initDoctor(deps: DoctorDeps): DoctorController {
       ? [
           [t('doctor.facts.file'), report.facts.filename],
           [t('doctor.facts.format'), formatName(report.facts.format)],
-          [t('doctor.facts.size'), formatBytes(report.facts.bytes)],
+          [t('doctor.facts.size'), formatBytes(report.facts.bytes, detectLang())],
           [t('doctor.facts.release'), report.facts.moodleRelease || t('doctor.facts.unset')],
           [t('doctor.facts.version'), report.facts.moodleVersion || t('doctor.facts.unset')],
           [t('doctor.facts.backupVersion'), report.facts.backupVersion || t('doctor.facts.unset')],
@@ -354,7 +354,10 @@ export function initDoctor(deps: DoctorDeps): DoctorController {
         ]
       : [
           [t('doctor.facts.file'), source?.name ?? t('doctor.facts.unset')],
-          [t('doctor.facts.size'), source ? formatBytes(source.size) : t('doctor.facts.unset')],
+          [
+            t('doctor.facts.size'),
+            source ? formatBytes(source.size, detectLang()) : t('doctor.facts.unset'),
+          ],
           [t('doctor.facts.course'), t('doctor.facts.unknown')],
         ]
     for (const [label, value] of rows) {
@@ -623,7 +626,7 @@ function humanReport(
     labelled(t('doctor.report.generated'), report.generatedAt),
     labelled(t('doctor.facts.file'), facts.filename),
     labelled(t('doctor.facts.format'), formatName(facts.format)),
-    labelled(t('doctor.facts.size'), formatBytes(facts.bytes)),
+    labelled(t('doctor.facts.size'), formatBytes(facts.bytes, detectLang())),
     labelled(t('doctor.facts.release'), facts.moodleRelease || t('doctor.facts.unset')),
     labelled(t('doctor.facts.course'), facts.courseName || t('doctor.facts.unset')),
     labelled(t('doctor.facts.target'), facts.targetRelease || t('doctor.facts.unset')),

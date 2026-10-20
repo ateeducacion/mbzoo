@@ -178,7 +178,7 @@ function render(backup: ParsedBackup, fileName: string, fileSize: number, elapse
     `${backup.files.size} ${t('files')}`,
   ].join(' · ')
   fileNameEl.textContent = fileName
-  fileSizeEl.textContent = `· ${formatBytes(fileSize)}`
+  fileSizeEl.textContent = `· ${formatBytes(fileSize, detectLang())}`
 
   // Warnings panel (1d): non-blocking notices.
   warningsBox.replaceChildren()
@@ -618,7 +618,7 @@ async function handleBlob(blob: Blob, name: string): Promise<void> {
   doctor.setErrorEntry(false)
   show('loading')
   loadingTitle.textContent = `${t('loading.reading')} ${name}`
-  loadingSub.textContent = `${formatBytes(blob.size)} · ${t('loading.detecting')}`
+  loadingSub.textContent = `${formatBytes(blob.size, detectLang())} · ${t('loading.detecting')}`
   try {
     const result = await parseInWorker(file)
     render(result.backup, name, blob.size, result.elapsedMs)

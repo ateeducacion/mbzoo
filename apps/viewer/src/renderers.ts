@@ -858,7 +858,7 @@ export class Renderer {
     const head = document.createElement('div')
     head.className = 'file-head'
     const nameSpan = document.createElement('span')
-    nameSpan.textContent = `${rec.fileName} (${formatBytes(rec.fileSize)})`
+    nameSpan.textContent = `${rec.fileName} (${formatBytes(rec.fileSize, detectLang())})`
     const kind = document.createElement('span')
     kind.className = 'type-chip'
     kind.textContent = contentKind(rec.mimeType || guessMime(rec.fileName), rec.fileName)
@@ -1258,7 +1258,7 @@ export class Renderer {
     const head = document.createElement('div')
     head.className = 'file-head'
     const name = document.createElement('span')
-    name.textContent = `${pkg.fileName} (${formatBytes(pkg.fileSize)})`
+    name.textContent = `${pkg.fileName} (${formatBytes(pkg.fileSize, detectLang())})`
     head.appendChild(name)
     card.appendChild(head)
     container.appendChild(card)
