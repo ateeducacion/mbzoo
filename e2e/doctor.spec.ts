@@ -196,10 +196,50 @@ test.describe('French doctor', () => {
     })
     await page.goto('/')
     await page.setInputFiles('#file-input', FIXTURE)
-    await page.getByRole('button', { name: 'MBZ Doctor', exact: true }).click()
+    await page.getByRole('button', { name: 'Docteur MBZ', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Docteur MBZ', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Analyser la sauvegarde' })).toBeVisible()
     await page.getByRole('button', { name: 'Analyser la sauvegarde' }).click()
     await expect(page.locator('#doctor-status')).toContainText('Analyse terminée')
+    await expect(page.locator('#doctor-facts')).toContainText('Version Moodle précise')
+    await expect(page.locator('#doctor-findings')).toContainText(
+      'Aucune version Moodle cible sélectionnée',
+    )
     expect(warnings.filter((warning) => warning.includes('missing key'))).toEqual([])
   })
 })
+
+for (const viewport of [
+  { width: 1024, height: 768 },
+  { width: 390, height: 800 },
+]) {
+  test(`doctor has one vertical scroll area at ${viewport.width}px`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+    await page.setInputFiles('#file-input', FIXTURE)
+    const open = page.getByRole('button', { name: 'MBZ Doctor', exact: true })
+    await open.click()
+    await page.getByRole('button', { name: 'Analyze Backup' }).click()
+    await expect(page.locator('#doctor-status')).toContainText('Analysis finished')
+
+    const dialog = page.locator('#doctor')
+    const scrollAreas = await dialog.evaluate((element) =>
+      [element, ...element.querySelectorAll<HTMLElement>('*')]
+        .filter(
+          (node) =>
+            /auto|scroll/.test(getComputedStyle(node).overflowY) &&
+            node.scrollHeight > node.clientHeight,
+        )
+        .map((node) => node.id || node.className),
+    )
+    expect(scrollAreas).toEqual(['doctor'])
+    await page.locator('#doctor-limitations li').last().scrollIntoViewIfNeeded()
+    await expect(page.locator('#doctor-limitations li').last()).toBeInViewport()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(open).toBeFocused()
+    expect(errors).toEqual([])
+  })
+}

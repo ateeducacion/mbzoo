@@ -6,7 +6,7 @@ const COPY = {
   'doctor.open': {
     en: 'MBZ Doctor',
     es: 'MBZ Doctor',
-    fr: 'MBZ Doctor',
+    fr: 'Docteur MBZ',
   },
   'doctor.openTitle': {
     en: 'Analyze this Moodle backup for errors and possible repairs.',
@@ -26,7 +26,7 @@ const COPY = {
   'doctor.title': {
     en: 'MBZ Doctor',
     es: 'MBZ Doctor',
-    fr: 'MBZ Doctor',
+    fr: 'Docteur MBZ',
   },
   'doctor.close': {
     en: 'Close',
@@ -36,7 +36,7 @@ const COPY = {
   'doctor.intro': {
     en: 'The scan stays on this device. The original file is never modified. A repair is a new download.',
     es: 'El análisis permanece en este dispositivo. El archivo original no se modifica. Una reparación es una descarga nueva.',
-    fr: 'L\u2019analyse reste sur cet appareil. Le fichier d\u2019origine n\u2019est jamais modifié. Une réparation est un nouveau téléchargement.',
+    fr: 'L\u2019analyse reste sur cet appareil. Le fichier d\u2019origine n\u2019est jamais modifié. Une réparation produit un nouveau téléchargement.',
   },
   'doctor.target': {
     en: 'Target Moodle version',
@@ -66,7 +66,7 @@ const COPY = {
   'doctor.progress.list': {
     en: 'Listing archive',
     es: 'Listando el archivo',
-    fr: 'Listage de l\u2019archive',
+    fr: 'Listage de la sauvegarde',
   },
   'doctor.progress.manifest': {
     en: 'Reading manifest',
@@ -94,10 +94,14 @@ const COPY = {
     fr: 'Fin',
   },
   'doctor.facts.file': { en: 'File', es: 'Archivo', fr: 'Fichier' },
-  'doctor.facts.format': { en: 'Archive', es: 'Contenedor', fr: 'Conteneur' },
+  'doctor.facts.format': { en: 'Archive', es: 'Contenedor', fr: 'Sauvegarde' },
   'doctor.facts.size': { en: 'Size', es: 'Tamaño', fr: 'Taille' },
-  'doctor.facts.release': { en: 'Moodle release', es: 'Versión de Moodle', fr: 'Version Moodle' },
-  'doctor.facts.version': { en: 'Moodle version', es: 'Versión interna', fr: 'Version interne' },
+  'doctor.facts.release': {
+    en: 'Moodle release',
+    es: 'Versión de Moodle',
+    fr: 'Version Moodle précise',
+  },
+  'doctor.facts.version': { en: 'Moodle version', es: 'Versión interna', fr: 'Version Moodle' },
   'doctor.facts.backupVersion': {
     en: 'Backup version',
     es: 'Versión de la copia',
@@ -116,7 +120,7 @@ const COPY = {
   'doctor.facts.files': {
     en: 'File records',
     es: 'Registros de archivos',
-    fr: 'Fiches de fichiers',
+    fr: 'Enregistrements de fichiers',
   },
   'doctor.facts.users': { en: 'User data', es: 'Datos de usuario', fr: 'Données utilisateur' },
   'doctor.facts.filesIncluded': {
@@ -187,7 +191,7 @@ const COPY = {
   'doctor.state.external-verification-required': {
     en: 'Needs a Moodle restore',
     es: 'Requiere restaurar en Moodle',
-    fr: 'Restauration Moodle requise',
+    fr: 'Nécessite une restauration Moodle',
   },
   'doctor.action.selected': {
     en: 'Repair Selected',
@@ -227,7 +231,7 @@ const COPY = {
   'doctor.jsonNote': {
     en: 'The JSON report is English technical text. It omits question text, file bytes, passwords and personal data. The readable report uses the language of this page and also omits those previews.',
     es: 'El informe JSON es texto técnico en inglés. Omite el enunciado de las preguntas, los bytes de los archivos, las contraseñas y los datos personales. El informe legible usa el idioma de esta página y también omite esas vistas previas.',
-    fr: 'Le rapport JSON est un texte technique en anglais. Il omet le texte des questions, les octets des fichiers, les mots de passe et les données personnelles. Le rapport lisible suit la langue de cette page et omet aussi ces aperçus.',
+    fr: 'Le rapport JSON est un texte technique en anglais. Il omet le texte des questions, les octets des fichiers, les mots de passe et les données personnelles. Le rapport lisible utilise la langue de cette page et omet aussi ces aperçus.',
   },
   'doctor.empty': {
     en: 'No findings match these filters.',
@@ -318,7 +322,7 @@ const COPY = {
   'doctor.repaired': {
     en: 'A new archive is ready. {note}',
     es: 'Hay un archivo nuevo listo. {note}',
-    fr: 'Une nouvelle archive est prête. {note}',
+    fr: 'Une nouvelle sauvegarde est prête. {note}',
   },
   'doctor.failed': {
     en: 'The operation stopped. The original file was not modified.',
@@ -340,9 +344,9 @@ const COPY = {
   'doctor.honesty': {
     en: 'Archive and structural validation passed. Successful restoration in Moodle has not been verified.',
     es: 'La validación del archivo y de la estructura ha pasado. La restauración correcta en Moodle no se ha comprobado.',
-    fr: 'La validation de l\u2019archive et de la structure a réussi. La restauration dans Moodle n\u2019a pas été vérifiée.',
+    fr: 'La validation de la sauvegarde et de la structure a réussi. La restauration dans Moodle n\u2019a pas été vérifiée.',
   },
-  'doctor.category.archive': { en: 'Archive', es: 'Archivo', fr: 'Archive' },
+  'doctor.category.archive': { en: 'Archive', es: 'Archivo', fr: 'Sauvegarde' },
   'doctor.category.xml': { en: 'XML', es: 'XML', fr: 'XML' },
   'doctor.category.metadata': { en: 'Metadata', es: 'Metadatos', fr: 'Métadonnées' },
   'doctor.category.course': { en: 'Course', es: 'Curso', fr: 'Cours' },
@@ -367,12 +371,12 @@ const COPY = {
   'doctor.report.privacy': {
     en: 'Paths may appear below. Question text, file bytes, passwords, usernames and email addresses are omitted.',
     es: 'Abajo pueden aparecer rutas. Se omiten el enunciado de las preguntas, los bytes, las contraseñas, los nombres de usuario y los correos.',
-    fr: 'Des chemins peuvent figurer ci-dessous. Le texte des questions, les octets, les mots de passe, les identifiants et les adresses électroniques sont omis.',
+    fr: 'Des chemins peuvent figurer ci-dessous. Le texte des questions, les octets des fichiers, les mots de passe, les identifiants et les courriels sont omis.',
   },
   'doctor.rule.archive.unreadable.title': {
     en: 'Archive cannot be opened safely',
     es: 'El archivo no se puede abrir con seguridad',
-    fr: 'L\u2019archive ne peut pas être ouverte sans risque',
+    fr: 'La sauvegarde ne peut pas être ouverte sans risque',
   },
   'doctor.rule.archive.unreadable.body': {
     en: 'The container could not be indexed. Repair is refused because a partial rebuild could drop or corrupt entries.',
@@ -392,7 +396,7 @@ const COPY = {
   'doctor.rule.archive.missing-root.title': {
     en: 'moodle_backup.xml is missing',
     es: 'Falta moodle_backup.xml',
-    fr: 'moodle_backup.xml est absent',
+    fr: 'Il manque moodle_backup.xml',
   },
   'doctor.rule.archive.missing-root.body': {
     en: 'A Moodle 2 backup keeps its course manifest at the archive root. Without it this is not a restorable backup.',
@@ -417,7 +421,7 @@ const COPY = {
   'doctor.rule.archive.unwrap-root.body': {
     en: 'Every entry sits under one directory and moodle_backup.xml is the only manifest. The repair renames those paths so the manifest is at the archive root. File bytes and XML are copied unchanged.',
     es: 'Todas las entradas están bajo un directorio y moodle_backup.xml es el único manifiesto. La reparación renombra esas rutas para dejar el manifiesto en la raíz. Los bytes y el XML se copian sin cambios.',
-    fr: 'Toutes les entrées sont sous un seul dossier et moodle_backup.xml est le seul manifeste. La réparation renomme ces chemins pour placer le manifeste à la racine. Les octets et le XML sont copiés tels quels.',
+    fr: 'Toutes les entrées sont sous un seul dossier et moodle_backup.xml est le seul manifeste. La réparation renomme ces chemins pour placer le manifeste à la racine. Les octets de fichiers et le XML sont copiés tels quels.',
   },
   'doctor.rule.archive.multiple-roots.title': {
     en: 'More than one backup manifest',
@@ -432,7 +436,7 @@ const COPY = {
   'doctor.rule.archive.unsafe-path.title': {
     en: 'Unsafe archive path',
     es: 'Ruta de archivo insegura',
-    fr: 'Chemin d\u2019archive dangereux',
+    fr: 'Chemin de sauvegarde non sûr',
   },
   'doctor.rule.archive.unsafe-path.body': {
     en: 'An entry name is absolute or contains "..". It is not extracted and a rebuild will not copy it.',
@@ -442,7 +446,7 @@ const COPY = {
   'doctor.rule.archive.duplicate-path.title': {
     en: 'Duplicate archive path',
     es: 'Ruta de archivo duplicada',
-    fr: 'Chemin d\u2019archive en double',
+    fr: 'Chemin de sauvegarde en double',
   },
   'doctor.rule.archive.duplicate-path.body': {
     en: 'Two entries share one path. A rebuild would have to drop one of them, so it is refused.',
@@ -522,7 +526,7 @@ const COPY = {
   'doctor.rule.metadata.no-target.title': {
     en: 'No target Moodle version selected',
     es: 'No hay versión de Moodle de destino',
-    fr: 'Aucune version Moodle cible',
+    fr: 'Aucune version Moodle cible sélectionnée',
   },
   'doctor.rule.metadata.no-target.body': {
     en: 'Version-dependent incompatibilities stay conditional. They are not treated as unconditional errors.',
@@ -542,7 +546,7 @@ const COPY = {
   'doctor.rule.metadata.missing-roles.title': {
     en: 'roles.xml is missing',
     es: 'Falta roles.xml',
-    fr: 'roles.xml est absent',
+    fr: 'roles.xml est manquant',
   },
   'doctor.rule.metadata.missing-roles.body': {
     en: 'restore_dbops::load_roles_to_tempids throws missing_roles_xml_file when the root roles.xml file is absent. Moodle writes roles_definition even when there are no roles. An empty file is offered only when every scanned XML file has no role id. It has not been restored in Moodle.',
@@ -552,12 +556,12 @@ const COPY = {
   'doctor.rule.sections.missing.title': {
     en: 'Section XML is missing',
     es: 'Falta el XML de la sección',
-    fr: 'Le XML de section est absent',
+    fr: 'Le XML de section est manquant',
   },
   'doctor.rule.sections.missing.body': {
     en: 'moodle_backup.xml lists a section whose section.xml is not in the archive. The declaration is kept.',
     es: 'moodle_backup.xml cita una sección cuyo section.xml no está en el archivo. La declaración se conserva.',
-    fr: 'moodle_backup.xml cite une section dont le section.xml n\u2019est pas dans l\u2019archive. La déclaration est conservée.',
+    fr: 'moodle_backup.xml cite une section dont le section.xml n\u2019est pas dans la sauvegarde. La déclaration est conservée.',
   },
   'doctor.rule.sections.cycle.title': {
     en: 'Section parent cycle',
@@ -572,17 +576,17 @@ const COPY = {
   'doctor.rule.activities.missing.title': {
     en: 'Declared activity is missing',
     es: 'Falta una actividad declarada',
-    fr: 'Une activité déclarée est absente',
+    fr: 'Une activité déclarée est manquante',
   },
   'doctor.rule.activities.missing.body': {
     en: 'moodle_backup.xml lists an activity directory that is not in the archive. The declaration is not removed.',
     es: 'moodle_backup.xml cita un directorio de actividad que no está en el archivo. La declaración no se elimina.',
-    fr: 'moodle_backup.xml cite un dossier d\u2019activité absent de l\u2019archive. La déclaration n\u2019est pas retirée.',
+    fr: 'moodle_backup.xml cite un dossier d\u2019activité absent de la sauvegarde. La déclaration n\u2019est pas retirée.',
   },
   'doctor.rule.activities.missing-module.title': {
     en: 'module.xml is missing',
     es: 'Falta module.xml',
-    fr: 'module.xml est absent',
+    fr: 'module.xml est manquant',
   },
   'doctor.rule.activities.missing-module.body': {
     en: 'The activity directory has no module.xml. It is not deleted.',
@@ -627,17 +631,17 @@ const COPY = {
   'doctor.rule.files.excluded.body': {
     en: 'The root files setting is off. Missing file bytes are expected and are not reported as corruption.',
     es: 'El ajuste de archivos de la raíz está desactivado. La ausencia de bytes es esperable y no se informa como corrupción.',
-    fr: 'Le réglage racine des fichiers est désactivé. L\u2019absence d\u2019octets est attendue et n\u2019est pas signalée comme une corruption.',
+    fr: 'Le réglage racine des fichiers est désactivé. L\u2019absence d\u2019octets de fichiers est attendue et n\u2019est pas signalée comme une corruption.',
   },
   'doctor.rule.files.missing.title': {
     en: 'File bytes are missing',
     es: 'Faltan los bytes del archivo',
-    fr: 'Les octets du fichier sont absents',
+    fr: 'Les octets de fichier sont absents',
   },
   'doctor.rule.files.missing.body': {
     en: 'files.xml points at a content hash that is not in the archive, and the backup included files. No empty placeholder is written.',
     es: 'files.xml apunta a un hash que no está en el archivo, y la copia incluía archivos. No se escribe un sustituto vacío.',
-    fr: 'files.xml pointe vers un hash absent de l\u2019archive, et la sauvegarde incluait les fichiers. Aucun fichier vide n\u2019est écrit.',
+    fr: 'files.xml pointe vers un hash absent de la sauvegarde, et la sauvegarde incluait les fichiers. Aucun fichier vide n\u2019est écrit.',
   },
   'doctor.rule.files.hash.title': {
     en: 'Content hash does not match the bytes',
@@ -647,12 +651,12 @@ const COPY = {
   'doctor.rule.files.hash.body': {
     en: 'The stored bytes hash to a different SHA-1 than files.xml declares. The record and the bytes are both kept.',
     es: 'Los bytes almacenados dan un SHA-1 distinto del que declara files.xml. Se conservan el registro y los bytes.',
-    fr: 'Les octets stockés donnent un SHA-1 différent de celui déclaré dans files.xml. La fiche et les octets sont conservés.',
+    fr: 'Le hash des octets stockés donne un SHA-1 différent de celui déclaré dans files.xml. La fiche et les octets sont conservés.',
   },
   'doctor.rule.files.size.title': {
     en: 'Declared file size does not match the bytes',
     es: 'El tamaño declarado no coincide con los bytes',
-    fr: 'La taille déclarée ne correspond pas aux octets',
+    fr: 'La taille de fichier déclarée ne correspond pas aux octets',
   },
   'doctor.rule.files.size.body': {
     en: 'The SHA-1 matches the entry, so the byte length in files.xml can be set to the length of those bytes. The bytes are not replaced.',
@@ -692,7 +696,7 @@ const COPY = {
   'doctor.rule.files.unreferenced.title': {
     en: 'Archive file has no files.xml record',
     es: 'Un archivo del contenedor no tiene ficha en files.xml',
-    fr: 'Un fichier de l\u2019archive n\u2019a pas de fiche dans files.xml',
+    fr: 'Un fichier de la sauvegarde n\u2019a pas d\u2019enregistrement dans files.xml',
   },
   'doctor.rule.files.unreferenced.body': {
     en: 'A files/ payload has no matching content hash in files.xml. It is kept. It is not treated as safe to delete.',
@@ -712,7 +716,7 @@ const COPY = {
   'doctor.rule.questions.random-modern.title': {
     en: 'Random question in a modern question bank',
     es: 'Pregunta aleatoria en un banco moderno',
-    fr: 'Question aléatoire dans une banque moderne',
+    fr: 'Question aléatoire dans une banque de questions moderne',
   },
   'doctor.rule.questions.random-modern.body': {
     en: 'Moodle 5.2 refuses to insert qtype random on this path. The repair turns the quiz slot reference into a question set reference and removes only that placeholder entry.',
@@ -767,7 +771,7 @@ const COPY = {
   'doctor.rule.questions.outside-bank.body': {
     en: 'A slot reference does not match a question or bank entry in this archive. It may depend on a bank that was not packed. It is not rewritten.',
     es: 'Una referencia no coincide con una pregunta o entrada del banco en este archivo. Puede depender de un banco que no se empaquetó. No se reescribe.',
-    fr: 'Une référence ne correspond à aucune question ni entrée de banque dans cette archive. Elle peut dépendre d\u2019une banque non incluse. Elle n\u2019est pas réécrite.',
+    fr: 'Une référence ne correspond à aucune question ni entrée de banque dans cette sauvegarde. Elle peut dépendre d\u2019une banque non incluse. Elle n\u2019est pas réécrite.',
   },
   'doctor.rule.questions.bad-filter.title': {
     en: 'Question set filter is not JSON',
@@ -782,7 +786,7 @@ const COPY = {
   'doctor.rule.questions.missing-bank-file.title': {
     en: 'questions.xml is missing',
     es: 'Falta questions.xml',
-    fr: 'questions.xml est absent',
+    fr: 'questions.xml est manquant',
   },
   'doctor.rule.questions.missing-bank-file.body': {
     en: 'restore_dbops::load_categories_and_questions_to_tempids throws missing_questions_xml_file when questions.xml is absent. Moodle writes an empty question_categories document even when the bank is empty. An empty file is offered only when no scanned XML depends on the question bank. It has not been restored in Moodle.',
@@ -872,12 +876,12 @@ const COPY = {
   'doctor.rule.userdata.missing.title': {
     en: 'users.xml is missing',
     es: 'Falta users.xml',
-    fr: 'users.xml est absent',
+    fr: 'users.xml est manquant',
   },
   'doctor.rule.userdata.missing.body': {
     en: 'The backup says it includes users, but users.xml is not there. Accounts are not invented.',
     es: 'La copia dice que incluye usuarios, pero users.xml no está. No se inventan cuentas.',
-    fr: 'La sauvegarde dit inclure les utilisateurs, mais users.xml est absent. Aucun compte n\u2019est inventé.',
+    fr: 'La sauvegarde dit inclure les utilisateurs, mais users.xml est manquant. Aucun compte n\u2019est inventé.',
   },
   'doctor.rule.userdata.malformed.title': {
     en: 'users.xml is malformed',
@@ -1062,7 +1066,7 @@ const COPY = {
   'doctor.rule.activities.bad-section.consequence': {
     en: 'The activity may restore into the wrong section or fail the section lookup.',
     es: 'La actividad puede restaurarse en la sección equivocada o fallar al buscar la sección.',
-    fr: 'L\u2019activité peut être restaurée dans la mauvaise section ou échouer à la recherche.',
+    fr: 'L\u2019activité peut être restaurée dans la mauvaise section ou échouer à la recherche de section.',
   },
   'doctor.rule.files.excluded.consequence': {
     en: 'Restore creates the file records without the bytes that were never packed.',
@@ -1097,7 +1101,7 @@ const COPY = {
   'doctor.rule.files.recovery-incomplete.consequence': {
     en: 'The bytes may still be in the archive under another name. The scan does not call that missing content.',
     es: 'Los bytes pueden seguir en el archivo con otro nombre. El análisis no lo llama contenido ausente.',
-    fr: 'Les octets peuvent encore être dans l\u2019archive sous un autre nom. L\u2019analyse ne parle pas de contenu manquant.',
+    fr: 'Les octets peuvent encore être dans la sauvegarde sous un autre nom. L\u2019analyse ne parle pas de contenu manquant.',
   },
   'doctor.rule.files.unreferenced.consequence': {
     en: 'Restore will not attach it to an activity. Deleting it could drop content the manifest failed to name.',
@@ -1157,7 +1161,7 @@ const COPY = {
   'doctor.rule.questions.multiple-top-categories.consequence': {
     en: 'The precheck reports: The backup file contains more than one top-level question categories for context …',
     es: 'La comprobación previa informa: el archivo de copia contiene más de una categoría de preguntas de nivel superior para el contexto …',
-    fr: 'Le précontrôle signale : le fichier de sauvegarde contient plus d\u2019une catégorie de questions de premier niveau pour le contexte …',
+    fr: 'Le précontrôle signale : le fichier de sauvegarde contient plus d\u2019une catégorie de questions de premier niveau pour le contexte…',
   },
   'doctor.rule.questions.attempt-missing-question.consequence': {
     en: 'Restore stops while upgrading that legacy attempt. Student attempt history is left untouched.',
@@ -1227,7 +1231,7 @@ const COPY = {
   'doctor.limit.honesty': {
     en: 'Archive and structural validation is not a Moodle restore. Successful restoration in Moodle has not been verified.',
     es: 'La validación del archivo y de la estructura no es una restauración de Moodle. La restauración correcta en Moodle no se ha comprobado.',
-    fr: 'La validation de l\u2019archive et de la structure n\u2019est pas une restauration Moodle. La restauration dans Moodle n\u2019a pas été vérifiée.',
+    fr: 'La validation de la sauvegarde et de la structure n\u2019est pas une restauration Moodle. La restauration dans Moodle n\u2019a pas été vérifiée.',
   },
   'doctor.limit.version': {
     en: 'The declared Moodle release and backup version are never changed to bypass a compatibility check.',
@@ -1242,7 +1246,7 @@ const COPY = {
   'doctor.limit.unseen': {
     en: 'A missing third-party plugin, a server limit, or a user already on the destination cannot be seen from the .mbz alone.',
     es: 'Un plugin de terceros ausente, un límite del servidor o un usuario que ya existe en el destino no se pueden ver solo desde el .mbz.',
-    fr: 'Un plugin tiers absent, une limite du serveur ou un utilisateur déjà présent sur la cible ne se voient pas depuis le .mbz seul.',
+    fr: 'Un plugin additionnel absent, une limite du serveur ou un utilisateur déjà présent sur la cible ne se voient pas depuis le .mbz seul.',
   },
   'doctor.limit.external': {
     en: 'External URLs, LTI tools, H5P libraries and SCORM runtimes are not fetched or rebuilt.',
@@ -1262,7 +1266,7 @@ const COPY = {
   'doctor.limit.report': {
     en: 'Evidence in a downloaded report names archive paths. It omits file bytes, question text, passwords, usernames and email addresses.',
     es: 'La evidencia de un informe descargado nombra rutas del archivo. Omite bytes, enunciados, contraseñas, nombres de usuario y correos.',
-    fr: 'Les preuves d\u2019un rapport téléchargé nomment des chemins d\u2019archive. Elles omettent les octets, le texte des questions, les mots de passe, les identifiants et les adresses.',
+    fr: 'Les preuves d\u2019un rapport téléchargé nomment des chemins de sauvegarde. Elles omettent les octets, le texte des questions, les mots de passe, les identifiants et les courriels.',
   },
   'doctor.limit.crc': {
     en: 'A ZIP CRC mismatch blocks a rebuild: rewriting would store the same bytes under a freshly computed CRC and hide the mismatch.',

@@ -64,6 +64,18 @@ describe('detectLang', () => {
     expect(Object.keys(STRINGS.fr).sort()).toEqual(english)
   })
 
+  test('doctor translations preserve every interpolation placeholder', () => {
+    for (const [key, english] of Object.entries(STRINGS.en)) {
+      if (!key.startsWith('doctor.')) continue
+      const placeholders = (text: string) => text.match(/\{[^{}]+\}/g)?.sort() ?? []
+      for (const language of ['es', 'fr'] as const) {
+        expect(placeholders(STRINGS[language][key as keyof typeof STRINGS.en])).toEqual(
+          placeholders(english),
+        )
+      }
+    }
+  })
+
   test('French guillemets around placeholders use regular spaces', () => {
     expect(STRINGS.fr.pdfError).toBe(
       'Impossible d\u2019afficher « {name} » en ligne — utiliser Télécharger.',

@@ -2224,8 +2224,6 @@ audio.media-preview {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: min(920px, calc(100dvh - 1.5rem));
-  overflow: auto;
   padding: 16px 18px 20px;
 }
 .doctor-head {
@@ -2396,7 +2394,6 @@ audio.media-preview {
     max-height: calc(100dvh - 0.75rem);
   }
   .doctor-sheet {
-    max-height: calc(100dvh - 0.75rem);
     padding: 12px;
   }
   .doctor-open span {
