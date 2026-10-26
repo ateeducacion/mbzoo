@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0010
 title: Research, evidence and documentation workflow
 status: Accepted
@@ -8,7 +9,9 @@ related: [AN-001]
 ai_tool: opencode
 ai_model: ox-alpha
 ---
+
 ## Decision
+
 Adopt the reference-repo methodology adapted to English/TS:
 - research/ tree with sources → analysis → decisions separation; FACT /
   INTERPRETATION / DECISION layers; `[PENDING]` markers; stable monotonic IDs.
@@ -18,5 +21,6 @@ Adopt the reference-repo methodology adapted to English/TS:
 - Supersession replaces rewriting: new ADR links `supersedes`.
 
 ## Consequences
-+ Claims traceable; agents get machine-checkable rules.
-− Process overhead; kept proportional (single validator, regex frontmatter).
+
+- Claims traceable; agents get machine-checkable rules.
+  − Process overhead; kept proportional (single validator, regex frontmatter).

@@ -1,7 +1,6 @@
 # Test generation (plan → generate → heal)
 
 End-to-end workflow for authoring and maintaining Playwright tests with `playwright-cli`. Every `playwright-cli` action emits the equivalent Playwright TypeScript, and that generated code is the raw material for every test. The sections below can be used independently:
-
 - **How generation works** — the core mechanic everything else relies on: actions become TypeScript, plus how to add assertions.
 - **Plan** — explore the app, produce a spec file describing what to test.
 - **Generate** — turn a spec into Playwright test files. Update the spec if it's vague or stale.
@@ -42,18 +41,18 @@ playwright-cli click e3
 Collect the generated code into a Playwright test:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test('login flow', async ({ page }) => {
   // Generated code from playwright-cli session:
-  await page.goto('https://example.com/login');
-  await page.getByRole('textbox', { name: 'Email' }).fill('user@example.com');
-  await page.getByRole('textbox', { name: 'Password' }).fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.goto('https://example.com/login')
+  await page.getByRole('textbox', { name: 'Email' }).fill('user@example.com')
+  await page.getByRole('textbox', { name: 'Password' }).fill('password123')
+  await page.getByRole('button', { name: 'Sign In' }).click()
 
   // Add assertions
-  await expect(page).toHaveURL(/.*dashboard/);
-});
+  await expect(page).toHaveURL(/.*dashboard/)
+})
 ```
 
 ### Use semantic locators
@@ -62,10 +61,10 @@ The generated code uses role-based locators when possible, which are more resili
 
 ```typescript
 // Generated (good - semantic)
-await page.getByRole('button', { name: 'Submit' }).click();
+await page.getByRole('button', { name: 'Submit' }).click()
 
 // Avoid (fragile - CSS selectors)
-await page.locator('#submit-btn').click();
+await page.locator('#submit-btn').click()
 ```
 
 ### Explore before recording
@@ -82,7 +81,6 @@ playwright-cli click e5
 ### Add assertions manually
 
 Generated code captures actions but not assertions. Add expectations in your test using one of the recommended matchers:
-
 - `toBeVisible()` — element is rendered and visible
 - `toHaveText(text)` — element text content matches
 - `toHaveValue(value) / toBeEmpty()` — input/select value matches
@@ -114,27 +112,27 @@ playwright-cli --raw snapshot e5
 
 ```typescript
 // Generated action
-await page.getByRole('button', { name: 'Submit' }).click();
+await page.getByRole('button', { name: 'Submit' }).click()
 
 // Manual assertions using the outputs above:
-await expect(page.getByRole('alert', { name: 'Success' })).toBeVisible();
-await expect(page.getByTestId('main-header')).toHaveText('Welcome, user');
-await expect(page.getByRole('textbox', { name: 'Email' })).toHaveValue('user@example.com');
-await expect(page.getByRole('checkbox', { name: 'Enable notifications' })).toBeChecked();
+await expect(page.getByRole('alert', { name: 'Success' })).toBeVisible()
+await expect(page.getByTestId('main-header')).toHaveText('Welcome, user')
+await expect(page.getByRole('textbox', { name: 'Email' })).toHaveValue('user@example.com')
+await expect(page.getByRole('checkbox', { name: 'Enable notifications' })).toBeChecked()
 
 // toMatchAriaSnapshot on the whole page, finds a matching region
 await expect(page).toMatchAriaSnapshot(`
   - heading "Welcome, user"
   - link /\\d+ new messages?/
   - button "Sign out"
-`);
+`)
 
 // toMatchAriaSnapshot scoped to a region
 await expect(page.getByRole('navigation')).toMatchAriaSnapshot(`
   - link "Home"
   - link /\\d+ new messages?/
   - link "Profile"
-`);
+`)
 ```
 
 ---
@@ -161,41 +159,41 @@ npm init playwright@latest
 
 ### 1.2 Prerequisite: seed test
 
-A **seed test** is a minimal test that lands the page in the state every scenario starts from: navigation to the app, any required login, feature flags, etc. Scenarios assume a fresh start *after* the seed. `--debug=cli` pauses *inside* this test, so the seed is where every planning and generation session begins.
+A **seed test** is a minimal test that lands the page in the state every scenario starts from: navigation to the app, any required login, feature flags, etc. Scenarios assume a fresh start _after_ the seed. `--debug=cli` pauses _inside_ this test, so the seed is where every planning and generation session begins.
 
 Minimum viable seed:
 
 ```ts
 // tests/seed.spec.ts
-import { test } from '@playwright/test';
+import { test } from '@playwright/test'
 
 test('seed', async ({ page }) => {
-  await page.goto('https://example.com/');
-});
+  await page.goto('https://example.com/')
+})
 ```
 
 Preferred — push navigation into a fixture so scenario tests reuse it:
 
 ```ts
 // tests/fixtures.ts
-import { test as baseTest } from '@playwright/test';
-export { expect } from '@playwright/test';
+import { test as baseTest } from '@playwright/test'
+export { expect } from '@playwright/test'
 
 export const test = baseTest.extend({
   page: async ({ page }, use) => {
-    await page.goto('https://example.com/');
-    await use(page);
+    await page.goto('https://example.com/')
+    await use(page)
   },
-});
+})
 ```
 
 ```ts
 // tests/seed.spec.ts
-import { test } from './fixtures';
+import { test } from './fixtures'
 
 test('seed', async ({ page }) => {
   // Fixture already navigates. This empty body tells agents where to start.
-});
+})
 ```
 
 If no seed exists, create one that at least navigates to the app.
@@ -221,7 +219,6 @@ playwright-cli show --annotate          # ask the user to point at something
 ```
 
 Map out:
-
 - Interactive surfaces (forms, buttons, lists, filters, modals).
 - Primary user journeys end-to-end.
 - Edge cases: empty states, validation errors, very long input, boundary values.
@@ -260,6 +257,7 @@ Save under `specs/<feature>.plan.md`. Use this structure:
     - expect: <outcome>
 
 #### 1.2. <next-scenario>
+
 ...
 
 ### 2. <Next Group>
@@ -269,7 +267,6 @@ Save under `specs/<feature>.plan.md`. Use this structure:
 ```
 
 Guidelines:
-
 - Each scenario is independent and starts from the seed's fresh state — never chain scenarios.
 - Scenario names are kebab-case and match the test file name (`should-add-single-todo` → `should-add-single-todo.spec.ts`).
 - Cover happy path, edge cases, validation, negative flows, persistence.
@@ -318,7 +315,7 @@ Collect the generated code and write the test file at the path given in the spec
 ```ts
 // spec: specs/basic-operations.plan.md
 // seed: tests/seed.spec.ts
-import { test, expect } from './fixtures';   // or '@playwright/test' if no fixtures file
+import { test, expect } from './fixtures' // or '@playwright/test' if no fixtures file
 
 test.describe('Signing in and out', () => {
   test('should sign in', async ({ page }) => {
@@ -326,21 +323,20 @@ test.describe('Signing in and out', () => {
     // (handled by the seed fixture)
 
     // 2. Type 'John Doe' into the username field
-    await page.getByRole('textbox', { name: 'username' }).fill('John Doe');
+    await page.getByRole('textbox', { name: 'username' }).fill('John Doe')
 
     // 3. Type password
-    await page.getByRole('textbox', { name: 'password' }).fill('TestPassword');
+    await page.getByRole('textbox', { name: 'password' }).fill('TestPassword')
 
     // 4. Press Enter to submit
-    await page.getByRole('textbox', { name: 'password' }).press('Enter');
+    await page.getByRole('textbox', { name: 'password' }).press('Enter')
 
-    await expect(page.getByRole('heading')).toContainText('Welcome, John Doe!');
-  });
-});
+    await expect(page.getByRole('heading')).toContainText('Welcome, John Doe!')
+  })
+})
 ```
 
 Rules:
-
 - **One test per file.** File path, describe name, and test name come verbatim from the spec (minus the ordinal).
 - Prefix each numbered step with a `// N. <step text>` comment before its actions.
 - Use the describe group name verbatim from the spec (no `1.` ordinal).
@@ -407,7 +403,6 @@ Never skip hooks or add sleeps as a fix. Never use `networkidle`.
 ### 3.4 Reconcile with the spec
 
 Open the spec referenced by the `// spec:` header in the test file and locate the scenario that matches the test.
-
 - **Fix was purely technical** (locator drift, better assertion shape) and the spec's user-level behaviour still matches the app → leave the spec alone.
 - **Fix changed user-visible steps, inputs, order, or expected outcomes** that the spec describes → update the spec to match reality. Keep the scenario id and file path stable; only the step / expect lines change.
 - **Unclear whether the app change is intentional** (spec is stale) **or a regression** (test was right, app is wrong) → **stop and ask the user**. Provide:
@@ -420,14 +415,14 @@ Only after the user answers, either update the spec (intentional change) or file
 ### 3.5 Iteration and giving up
 
 - Fix failures one at a time; rerun after each.
-- If after thorough investigation you are confident the test is correct but the app is wrong *and* the user has confirmed it's a bug: mark the test `test.fixme(...)` with a comment pointing at the user's decision or issue link. Never silently skip.
+- If after thorough investigation you are confident the test is correct but the app is wrong _and_ the user has confirmed it's a bug: mark the test `test.fixme(...)` with a comment pointing at the user's decision or issue link. Never silently skip.
 
 ---
 
 ## Cross-references
 
-| For... | See |
-|---|---|
-| `--debug=cli` / attach mechanics | [playwright-tests.md](playwright-tests.md) |
-| Mocking requests during exploration/generation | [request-mocking.md](request-mocking.md) |
-| Managing the CLI browser session | [session-management.md](session-management.md) |
+| For...                                         | See                                            |
+| ---------------------------------------------- | ---------------------------------------------- |
+| `--debug=cli` / attach mechanics               | [playwright-tests.md](playwright-tests.md)     |
+| Mocking requests during exploration/generation | [request-mocking.md](request-mocking.md)       |
+| Managing the CLI browser session               | [session-management.md](session-management.md) |

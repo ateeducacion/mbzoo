@@ -1,7 +1,9 @@
 ---
+
 name: browser-qa
 description: Browser-level QA for the MBZoo viewer using Playwright. Use for user-visible viewer behavior, drag/drop, previews, accessibility interactions, browser-specific bugs, or E2E tests.
 ---
+
 # Skill: Browser QA
 
 1. Use the existing Playwright configuration and selectors. Do not add another browser automation stack.

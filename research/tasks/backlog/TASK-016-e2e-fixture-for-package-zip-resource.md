@@ -1,9 +1,11 @@
 ---
+
 id: TASK-016
 title: e2e fixture wrapping a package zip in a mod_resource
 status: open
 priority: low
 ---
+
 ADR-0034 classifies a `.zip` resource (SCORM by imsmanifest.xml, eXe by
 content XML, or a nested `.elp`) and renders it through the existing
 sandbox renderers. `parseImsManifest` and `classifyZip` are unit-tested,

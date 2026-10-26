@@ -1,7 +1,9 @@
 ---
+
 name: systematic-debugging
 description: Diagnose MBZoo failures by reproducing and isolating root cause before patching. Use for parser bugs, worker failures, renderer issues, flaky tests, and cross-browser differences.
 ---
+
 # Skill: Systematic debugging
 
 1. Reproduce first with the smallest safe input. Prefer a deterministic synthetic fixture or a minimal XML/archive fragment; do not start from an opaque real backup unless the bug requires it.

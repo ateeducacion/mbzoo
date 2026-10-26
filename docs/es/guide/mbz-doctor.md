@@ -38,12 +38,12 @@ la actividad** solo aparece si esa actividad está en el curso abierto.
 La gravedad es una palabra y una marca, no solo un color: crítico (●),
 aviso (▲), nota (○).
 
-| Posibilidad | Significado |
-|---|---|
-| Automática | Se puede aplicar con **Reparar todos los problemas seguros**. No se elimina contenido escrito. |
+| Posibilidad           | Significado                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Automática            | Se puede aplicar con **Reparar todos los problemas seguros**. No se elimina contenido escrito.                |
 | Requiere confirmación | Hay que leer la vista previa. Si el cambio puede descartar o alterar registros, hace falta marcar la casilla. |
-| Manual | Solo diagnóstico. MBZoo no lo edita. |
-| No reparable | La copia no contiene los bytes que faltan, o editarla ocultaría un problema peor. |
+| Manual                | Solo diagnóstico. MBZoo no lo edita.                                                                          |
+| No reparable          | La copia no contiene los bytes que faltan, o editarla ocultaría un problema peor.                             |
 
 ## Reparar y descargar
 
@@ -60,15 +60,15 @@ TAR.GZ). No es la exportación por actividad (XML, HTML o ZIP de archivos).
 
 ### Reparaciones admitidas
 
-| Reparación | Cuándo se aplica | Qué cambia | Seguridad |
-|---|---|---|---|
-| Tamaño de archivo declarado | El SHA-1 de los bytes coincide con `contenthash` y `<filesize>` no coincide con esa longitud. No se reescriben los archivos excluidos por la copia, los registros de directorio (nombre `.`) ni las entradas por encima del límite de hash de 8 MiB. | Solo el texto de `<filesize>`. Los bytes se quedan. Una segunda pasada no cambia nada. | Automática. Sin pérdida de contenido. |
-| Caracteres de control ilegales en XML | La entrada contiene un código que XML 1.0 prohíbe (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tabulador, LF y CR se conservan. | Se eliminan esos códigos. El marcado circundante, los elementos desconocidos y los comentarios se conservan. | Requiere confirmación. Puede alterar texto escrito. |
-| Pregunta aleatoria moderna | Véase más abajo. Si falla una precondición, no se edita nada. | Los `question_reference` del cuestionario que apuntan a esa entrada del banco pasan a ser `question_set_reference`. Se elimina la entrada comodín. Las demás preguntas se quedan. | Requiere confirmación. La pérdida de contenido solo se marca cuando ningún hueco del cuestionario referencia el comodín, porque ese camino borra el registro. |
-| Directorio extra alrededor de la raíz | Hay un solo `moodle_backup.xml`, todas las entradas comparten ese prefijo, los destinos siguen siendo únicos y seguros, y el archivo no tiene un fallo de integridad. Dos directorios anidados cuentan como un prefijo. Un archivo fuera del directorio, un segundo manifiesto, una ruta insegura o una colisión lo bloquean. | Cada ruta pierde ese prefijo. El XML y los bytes se copian. Los archivos de plugins se conservan. | Automática. Sin pérdida de contenido. |
-| `roles.xml` vacío | El archivo no está, se pudo leer cada XML dentro del límite de hash y ningún archivo nombra un id de rol. Lo bloquean un rol referenciado, un XML ilegible o un `roles.xml` cuya raíz no es `roles_definition`. | Añade `roles.xml` con raíz `roles_definition`. No se inventa ningún rol, nombre corto ni permiso. | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017). |
-| `questions.xml` vacío | El archivo no está y ningún XML analizado depende del banco (huecos de cuestionario, referencias, lecciones que nombran una pregunta, ids de `inforef` y las mismas etiquetas en XML de plugins). | Añade `questions.xml` con raíz `question_categories`. No se inventa ninguna categoría ni pregunta. No se borran cuestionarios para habilitar esta reparación. | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017). |
-| Contenido de archivo en otra ruta | `files.xml` nombra un archivo físico cuya ruta `files/<2 hex>/<sha1>` no está, y otra entrada dentro del límite de hash tiene exactamente ese SHA-1. Los alias, los registros de directorio (nombre `.`), una entrada canónica en conflicto y un hash que no coincide se dejan como están. | Copia esos bytes a la ruta canónica. La entrada original se queda. `files.xml` no se reescribe. | Automática. Sin pérdida de contenido. |
+| Reparación                            | Cuándo se aplica                                                                                                                                                                                                                                                                                                              | Qué cambia                                                                                                                                                                        | Seguridad                                                                                                                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tamaño de archivo declarado           | El SHA-1 de los bytes coincide con `contenthash` y `<filesize>` no coincide con esa longitud. No se reescriben los archivos excluidos por la copia, los registros de directorio (nombre `.`) ni las entradas por encima del límite de hash de 8 MiB.                                                                          | Solo el texto de `<filesize>`. Los bytes se quedan. Una segunda pasada no cambia nada.                                                                                            | Automática. Sin pérdida de contenido.                                                                                                                         |
+| Caracteres de control ilegales en XML | La entrada contiene un código que XML 1.0 prohíbe (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tabulador, LF y CR se conservan.                                                                                                                                                                            | Se eliminan esos códigos. El marcado circundante, los elementos desconocidos y los comentarios se conservan.                                                                      | Requiere confirmación. Puede alterar texto escrito.                                                                                                           |
+| Pregunta aleatoria moderna            | Véase más abajo. Si falla una precondición, no se edita nada.                                                                                                                                                                                                                                                                 | Los `question_reference` del cuestionario que apuntan a esa entrada del banco pasan a ser `question_set_reference`. Se elimina la entrada comodín. Las demás preguntas se quedan. | Requiere confirmación. La pérdida de contenido solo se marca cuando ningún hueco del cuestionario referencia el comodín, porque ese camino borra el registro. |
+| Directorio extra alrededor de la raíz | Hay un solo `moodle_backup.xml`, todas las entradas comparten ese prefijo, los destinos siguen siendo únicos y seguros, y el archivo no tiene un fallo de integridad. Dos directorios anidados cuentan como un prefijo. Un archivo fuera del directorio, un segundo manifiesto, una ruta insegura o una colisión lo bloquean. | Cada ruta pierde ese prefijo. El XML y los bytes se copian. Los archivos de plugins se conservan.                                                                                 | Automática. Sin pérdida de contenido.                                                                                                                         |
+| `roles.xml` vacío                     | El archivo no está, se pudo leer cada XML dentro del límite de hash y ningún archivo nombra un id de rol. Lo bloquean un rol referenciado, un XML ilegible o un `roles.xml` cuya raíz no es `roles_definition`.                                                                                                               | Añade `roles.xml` con raíz `roles_definition`. No se inventa ningún rol, nombre corto ni permiso.                                                                                 | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017).                                         |
+| `questions.xml` vacío                 | El archivo no está y ningún XML analizado depende del banco (huecos de cuestionario, referencias, lecciones que nombran una pregunta, ids de `inforef` y las mismas etiquetas en XML de plugins).                                                                                                                             | Añade `questions.xml` con raíz `question_categories`. No se inventa ninguna categoría ni pregunta. No se borran cuestionarios para habilitar esta reparación.                     | Requiere confirmación. No entra en **Reparar todos los problemas seguros**. No se ha restaurado en Moodle (TASK-017).                                         |
+| Contenido de archivo en otra ruta     | `files.xml` nombra un archivo físico cuya ruta `files/<2 hex>/<sha1>` no está, y otra entrada dentro del límite de hash tiene exactamente ese SHA-1. Los alias, los registros de directorio (nombre `.`), una entrada canónica en conflicto y un hash que no coincide se dejan como están.                                    | Copia esos bytes a la ruta canónica. La entrada original se queda. `files.xml` no se reescribe.                                                                                   | Automática. Sin pérdida de contenido.                                                                                                                         |
 
 Una reparación que no cambia ningún byte no produce una descarga.
 
@@ -109,7 +109,6 @@ un conjunto. Una copia que sigue ese camino está bien. MBZ Doctor la
 informa como pregunta aleatoria heredada y no la reescribe.
 
 No intente corregir el error así:
-
 - bajando `moodle_release` o `backup_version`,
 - borrando todas las preguntas aleatorias,
 - renombrando `<qtype>random</qtype>` a otro tipo.
@@ -120,7 +119,6 @@ equivocado o eliminar el sorteo para el que se construyó el cuestionario.
 ### Cuándo se ofrece una reparación
 
 Tiene que cumplirse todo esto:
-
 - La versión de la copia es 4.0 o posterior, y el sello de `backup_version`
   falta o es al menos `20220202`. Una versión ausente y sin sello es un
   caso desconocido y no hay reparación. Una versión ausente con sello sigue
@@ -144,7 +142,7 @@ El filtro que se escribe es el JSON heredado que Moodle 4.3 a 5.2 ya
 convierte:
 
 ```json
-{"questioncategoryid": 5, "includingsubcategories": 0}
+{ "questioncategoryid": 5, "includingsubcategories": 0 }
 ```
 
 Las etiquetas, si las hay, se copian como `"0,name"`. El id de categoría es
@@ -179,14 +177,14 @@ aproxima a la comparación numérica. La versión declarada no se reescribe.
 
 Estos errores de restauración se diagnostican y no se reescriben:
 
-| Identificador de Moodle | Qué hace MBZ Doctor |
-|---|---|
-| `restoremultipletopcats` | Se informa cuando `backup_release` es 3.5 o posterior, los ocho primeros dígitos de `moodle_version` son posteriores a `20180205` y un contexto del banco tiene más de una categoría con padre `0`. Las categorías no se fusionan. |
-| `questionattemptreferstomissingquestion` | Se informa cuando `<states>` o `<sessions>` antiguos nombran un id de pregunta que no está en esta copia. Los intentos no se borran. |
-| `questionattemptdatamissing` | Se informa cuando ese intento antiguo tiene la pregunta pero le falta la sesión o los estados. |
-| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | No son un hallazgo del archivo. `restore_qtype_plugin` los lanza solo cuando la pregunta ya existe en el destino y el texto de una respuesta o de una pista no coincide. La copia no se edita para forzar la coincidencia. |
-| `unknown_context_mapping` | Se informa cuando el `contextid` de un archivo físico no aparece entre los contextos declarados fuera de `files.xml`, y ese conjunto no está vacío. No se inventa ningún contexto. Un análisis XML incompleto no lo emite. |
-| Ids de `inforef` | Se informa una referencia a un archivo, una pregunta o un rol que no está en esta copia, y también un id repetido. Que falte `inforef.xml` no es por sí mismo un error: `restore_load_included_inforef_records` carga el archivo solo si existe. No se sintetiza. |
+| Identificador de Moodle                                                     | Qué hace MBZ Doctor                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `restoremultipletopcats`                                                    | Se informa cuando `backup_release` es 3.5 o posterior, los ocho primeros dígitos de `moodle_version` son posteriores a `20180205` y un contexto del banco tiene más de una categoría con padre `0`. Las categorías no se fusionan.                                |
+| `questionattemptreferstomissingquestion`                                    | Se informa cuando `<states>` o `<sessions>` antiguos nombran un id de pregunta que no está en esta copia. Los intentos no se borran.                                                                                                                              |
+| `questionattemptdatamissing`                                                | Se informa cuando ese intento antiguo tiene la pregunta pero le falta la sesión o los estados.                                                                                                                                                                    |
+| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | No son un hallazgo del archivo. `restore_qtype_plugin` los lanza solo cuando la pregunta ya existe en el destino y el texto de una respuesta o de una pista no coincide. La copia no se edita para forzar la coincidencia.                                        |
+| `unknown_context_mapping`                                                   | Se informa cuando el `contextid` de un archivo físico no aparece entre los contextos declarados fuera de `files.xml`, y ese conjunto no está vacío. No se inventa ningún contexto. Un análisis XML incompleto no lo emite.                                        |
+| Ids de `inforef`                                                            | Se informa una referencia a un archivo, una pregunta o un rol que no está en esta copia, y también un id repetido. Que falte `inforef.xml` no es por sí mismo un error: `restore_load_included_inforef_records` carga el archivo solo si existe. No se sintetiza. |
 
 `restoreuserconflict`, `restorecannotcreateuser` y
 `restoremnethostidmismatch` dependen de las cuentas del destino. No se

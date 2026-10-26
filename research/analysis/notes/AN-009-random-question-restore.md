@@ -1,4 +1,5 @@
 ---
+
 id: AN-009
 title: How Moodle restores qtype random, and what a repair may change
 date: 2026-10-14
@@ -77,7 +78,6 @@ runs for legitimate pre-4.0 backups.
 ## Interpretation
 
 A `<qtype>random</qtype>` is not automatically corrupt.
-
 1. Release older than 4.0, or a backup version stamp before `20220202`,
    is the legacy path. Moodle converts it. MBZoo must not rewrite it.
 2. Release 4.0 or newer, with the random question as the only question

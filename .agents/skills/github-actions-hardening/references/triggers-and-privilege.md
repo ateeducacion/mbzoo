@@ -6,16 +6,16 @@ trigger.
 
 ## Trust Matrix
 
-| Trigger | Who can fire it | `GITHUB_TOKEN` | Secrets available | Risk |
-| --- | --- | --- | --- | --- |
-| `push` | Repo collaborators | read/write | yes | Low — trusted authors |
-| `pull_request` (same-repo branch) | Collaborators | read/write | yes | Low |
-| `pull_request` (from a fork) | **Anyone** | **read-only** | **no** | Low by design — even malicious code can't steal anything |
-| `pull_request_target` | **Anyone with a fork** | **read/write** | **yes** | **High** — runs in base-repo context |
-| `workflow_run` | Fires after another workflow | **read/write** | **yes** | **High** |
-| `issue_comment`, `issues` | **Anyone** | **read/write** | **yes** | **High** |
+| Trigger                           | Who can fire it              | `GITHUB_TOKEN` | Secrets available | Risk                                                     |
+| --------------------------------- | ---------------------------- | -------------- | ----------------- | -------------------------------------------------------- |
+| `push`                            | Repo collaborators           | read/write     | yes               | Low — trusted authors                                    |
+| `pull_request` (same-repo branch) | Collaborators                | read/write     | yes               | Low                                                      |
+| `pull_request` (from a fork)      | **Anyone**                   | **read-only**  | **no**            | Low by design — even malicious code can't steal anything |
+| `pull_request_target`             | **Anyone with a fork**       | **read/write** | **yes**           | **High** — runs in base-repo context                     |
+| `workflow_run`                    | Fires after another workflow | **read/write** | **yes**           | **High**                                                 |
+| `issue_comment`, `issues`         | **Anyone**                   | **read/write** | **yes**           | **High**                                                 |
 
-The trap: `pull_request` from a fork is *safe* because GitHub deliberately strips the token down
+The trap: `pull_request` from a fork is _safe_ because GitHub deliberately strips the token down
 and withholds secrets. Maintainers who find that "the secrets don't work on fork PRs" often switch
 to `pull_request_target` to get them back — and in doing so hand a write token and every secret to
 arbitrary contributors.
@@ -35,8 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@<sha>
         with:
-          ref: ${{ github.event.pull_request.head.sha }}   # fork's code
-      - run: npm install && npm test                        # runs the fork's code + scripts
+          ref: ${{ github.event.pull_request.head.sha }} # fork's code
+      - run: npm install && npm test # runs the fork's code + scripts
 ```
 
 `npm install` alone runs arbitrary lifecycle scripts from the PR. With `pull_request_target` those
@@ -45,7 +45,7 @@ scripts can read `secrets.*` and push commits with the write token.
 ## The Safe Two-Workflow Pattern
 
 Split responsibilities. An **unprivileged** workflow runs the untrusted code; a **privileged**
-workflow consumes only the trusted *output*.
+workflow consumes only the trusted _output_.
 
 ```yaml
 # 1) Unprivileged: runs untrusted code, no secrets, read-only token
@@ -76,14 +76,14 @@ jobs:
   comment:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@<sha>   # data only, not executed
+      - uses: actions/download-artifact@<sha> # data only, not executed
       # post results, using the trusted token — but never execute the artifact
 ```
 
 ## Rules
 
-* Treat `pull_request_target`, `workflow_run`, `issue_comment`, and `issues` as privileged.
-* In a privileged workflow, **never** check out and execute PR/fork code.
-* If you only need to label, comment, or triage based on metadata, that is fine — just don't run
+- Treat `pull_request_target`, `workflow_run`, `issue_comment`, and `issues` as privileged.
+- In a privileged workflow, **never** check out and execute PR/fork code.
+- If you only need to label, comment, or triage based on metadata, that is fine — just don't run
   the contributor's code.
-* Prefer `pull_request` (with its safe read-only/no-secrets defaults) whenever possible.
+- Prefer `pull_request` (with its safe read-only/no-secrets defaults) whenever possible.

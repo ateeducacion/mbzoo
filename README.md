@@ -9,7 +9,7 @@
 [![Docs](https://img.shields.io/badge/docs-ateeducacion.github.io%2Fmbzoo%2Fdocs-blue)](https://ateeducacion.github.io/mbzoo/docs/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-*See what's inside your MBZ.*
+_See what's inside your MBZ._
 
 MBZoo opens **Moodle course backups** (`.mbz`) directly in your browser — no
 Moodle installation, no upload. Drop a backup and inspect its structure,

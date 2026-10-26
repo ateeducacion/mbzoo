@@ -28,12 +28,12 @@ live in `research/decisions/adr/`; this page summarizes the shape.
 `packages/core/src/moodle/` holds one parser per thing the format expresses,
 each reading the minimum subset it needs:
 
-| Area | Modules |
-|---|---|
-| Structure | `backup-xml`, `course-xml`, `activity-xml`, `files-xml` |
-| Activities | `lesson-xml`, `book-xml`, `glossary-xml`, `feedback-xml`, `questions-xml` |
-| Grading | `grades-xml`, `grading-xml` |
-| People | `users-xml` |
+| Area          | Modules                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| Structure     | `backup-xml`, `course-xml`, `activity-xml`, `files-xml`                                           |
+| Activities    | `lesson-xml`, `book-xml`, `glossary-xml`, `feedback-xml`, `questions-xml`                         |
+| Grading       | `grades-xml`, `grading-xml`                                                                       |
+| People        | `users-xml`                                                                                       |
 | Cross-cutting | `links` (`$@…@$` tokens), `php-serialized`, `legacy-modules`, `availability`, `module-xml`, `xml` |
 
 Two rules keep that list from becoming a pile: the normalized model in
@@ -41,7 +41,6 @@ Two rules keep that list from becoming a pile: the normalized model in
 package boundary, and XML library objects never escape `src/moodle`.
 
 Key boundaries (see ADRs for rationale):
-
 - **Portable core** (ADR-0004): Web-platform primitives only; the normalized
   model in `packages/core/src/model/backup.ts` is the only cross-package
   contract.
@@ -82,8 +81,8 @@ ADR-0016. Reopening the result in MBZoo is not a Moodle restore (TASK-017).
 ## How claims get verified
 
 Parsers are written against Moodle source (REPO-005) because it is
-authoritative for what a backup *can* contain — and then checked against a
-real backup, because the schema does not say what one *does* contain. Real
+authoritative for what a backup _can_ contain — and then checked against a
+real backup, because the schema does not say what one _does_ contain. Real
 specimens come from institutional and public corpora, from Moodle's own test
 fixtures, and from courses generated in a real Moodle and backed up through
 `backup_controller`. They are recorded in `fixtures/manifest.yaml` with

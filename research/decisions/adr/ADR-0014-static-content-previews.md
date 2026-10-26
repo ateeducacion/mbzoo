@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0014
 title: Static content previews — pdf.js canvas and opaque-origin HTML sandbox
 status: Superseded
@@ -8,6 +9,7 @@ related: [ADR-0009, ADR-0013]
 ai_tool: opencode
 ai_model: ox-alpha
 ---
+
 > **Superseded by ADR-0017.** Decision 2's blob: URL rewriting does not work:
 > the sandbox's opaque origin cannot load app-origin blob: URLs, so every
 > sub-resource silently failed. ADR-0017 restates this record in full with
@@ -15,11 +17,13 @@ ai_model: ox-alpha
 > kept as written.
 
 ## Context
+
 Chrome blocks PDFs rendered via blob URLs inside sandboxed iframes
 ("Chrome blocked this page"), and course HTML files carry CSS/JS that must not
 run with app-origin privileges (ADR-0009).
 
 ## Decision
+
 1. **PDF**: render with pdf.js (Apache-2.0) onto canvas, page-limited, with
    download fallback. No iframe involved.
 2. **HTML**: preview in an iframe with `sandbox="allow-scripts"` only —
@@ -29,7 +33,8 @@ run with app-origin privileges (ADR-0009).
 3. **CSS/JS/text**: shown as text previews; never injected into the app document.
 
 ## Consequences
-+ Real course pages (incl. scripts) can be inspected safely; no network
+
+- Real course pages (incl. scripts) can be inspected safely; no network
   exfiltration channel; no same-origin access.
-− Relative deep-linking inside HTML limited to same-directory matches for now;
+  − Relative deep-linking inside HTML limited to same-directory matches for now;
   full SCORM-style resolution deferred to the launcher milestone (Q-011).

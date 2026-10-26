@@ -22,7 +22,7 @@ sibling page as a `data:` document — strands that page (its own relative
 the injected CSP, so the page could reach the network in violation of
 ADR-0009. Recursive inlining was rejected as O(pages^depth).
 
-Neither problem is caused by the *link*. Both are caused by rendering the
+Neither problem is caused by the _link_. Both are caused by rendering the
 target outside the pipeline. This design keeps the pipeline and restores
 the link.
 
@@ -30,7 +30,6 @@ the link.
 
 A page link inside the sandbox asks MBZoo to navigate; MBZoo decides
 whether to.
-
 1. `rewriteRelativeRefs` keeps defusing the `href` into `data-mbz-page`.
    Nothing about the document's own resolution changes.
 2. When — and only when — a preview is being rendered as part of a
@@ -47,7 +46,7 @@ whether to.
    - `page` is a string that, resolved relative to the directory of the
      page currently displayed, matches the full path of one of **this
      resource's own HTML records**.
-   Anything else is ignored silently.
+     Anything else is ignored silently.
 4. The matched record is rendered through the unchanged pipeline:
    `rewriteRelativeRefs` -> `retargetExternalLinks` -> `injectCsp`. It is
    the same code path the page row already uses.
@@ -71,12 +70,12 @@ record list". That is exactly what step 3 does, and it is cheap.
 ### Threat model
 
 - **Forged navigation.** A hostile package switches the preview to a
-  different page *of the same resource*. That is precisely what the reader
+  different page _of the same resource_. That is precisely what the reader
   can already do by clicking a button in the page row. No escalation.
 - **`event.origin` is `"null"`.** The frame is an opaque origin, so origin
   carries no authority and is never used for authorization. Window identity
   (`event.source`) is not forgeable by the frame's content — but it
-  authenticates a *browsing context*, not a document: a sandboxed frame may
+  authenticates a _browsing context_, not a document: a sandboxed frame may
   navigate itself, and the replacement document keeps the same WindowProxy
   while losing the injected CSP. Each rendered page therefore carries a
   freshly minted token that only that document ever saw. [CORRECTED after
@@ -201,7 +200,7 @@ line-by-line porting, the REPO-005 rule.
 **Embedded PDF.** `sanitizeHtml` uses DOMPurify's `html` profile
 (`renderers.ts:1592`), which drops `<object>`, `<embed>` and `<iframe>`
 entirely — a PDF embedded in a Page vanishes without trace. Detect the
-reference *before* sanitizing and substitute a real pdf.js card. The
+reference _before_ sanitizing and substitute a real pdf.js card. The
 DOMPurify profile is not widened; ADR-0012 keeps its single path.
 
 **Fixture.** `demo-course-zip.mbz` grows a `mod_scorm` activity, an

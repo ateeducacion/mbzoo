@@ -1,7 +1,7 @@
 # AGENTS.md — MBZoo
 
 **MBZoo** opens, inspects and previews Moodle `.mbz` backups directly in the
-browser. *See what's inside your MBZ.* License: GPL-3.0-or-later (ADR-0035).
+browser. _See what's inside your MBZ._ License: GPL-3.0-or-later (ADR-0035).
 Per-activity export (module XML, rendered content HTML, files ZIP) ships
 (ADR-0016). A full-backup rewrite exists only as MBZ Doctor repair output
 (ADR-0037): it copies the archive and replaces repaired entries. It is not
@@ -138,23 +138,23 @@ an existing server. Do not import playground shell selectors or WASM boot waits.
 Read the skill needed for the task, not the whole catalog. Repository rules and
 local domain guidance take precedence over general upstream examples.
 
-| Skill | Use for |
-| --- | --- |
-| [mbz-parser](.agents/skills/mbz-parser/SKILL.md) | Archive/XML normalization and the portable core model |
-| [mbz-viewer](.agents/skills/mbz-viewer/SKILL.md) | Viewer state, worker transport and renderers |
-| [mbz-content-sandbox](.agents/skills/mbz-content-sandbox/SKILL.md) | Executable previews, CSP, iframe permissions and navigation messages |
-| [mbz-security](.agents/skills/mbz-security/SKILL.md) | Reviewing hostile-input trust boundaries |
-| [mbz-performance](.agents/skills/mbz-performance/SKILL.md) | Archive memory, lazy reads, transfers and preview lifetimes |
-| [mbz-fixture](.agents/skills/mbz-fixture/SKILL.md) | Deterministic synthetic backups and specimen provenance |
-| [browser-qa](.agents/skills/browser-qa/SKILL.md) | Authoring E2E specs and verifying viewer behavior |
-| [systematic-debugging](.agents/skills/systematic-debugging/SKILL.md) | Reproducing failures and isolating their cause |
-| [web-quality-audit](.agents/skills/web-quality-audit/SKILL.md) | Requested viewer quality audits |
-| [mbz-research](.agents/skills/mbz-research/SKILL.md) | Registering format/library evidence and experiments |
-| [architecture-decision](.agents/skills/architecture-decision/SKILL.md) | Durable decisions and superseding ADRs |
-| [release-check](.agents/skills/release-check/SKILL.md) | Release verification |
-| [skill-maintenance](.agents/skills/skill-maintenance/SKILL.md) | Updating these instructions and skills |
-| [github-actions-hardening](.agents/skills/github-actions-hardening/SKILL.md) | Writing or reviewing GitHub Actions workflows |
-| [playwright-cli](.agents/skills/playwright-cli/SKILL.md) | Terminal browser exploration; `browser-qa` governs E2E specs |
+| Skill                                                                        | Use for                                                              |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [mbz-parser](.agents/skills/mbz-parser/SKILL.md)                             | Archive/XML normalization and the portable core model                |
+| [mbz-viewer](.agents/skills/mbz-viewer/SKILL.md)                             | Viewer state, worker transport and renderers                         |
+| [mbz-content-sandbox](.agents/skills/mbz-content-sandbox/SKILL.md)           | Executable previews, CSP, iframe permissions and navigation messages |
+| [mbz-security](.agents/skills/mbz-security/SKILL.md)                         | Reviewing hostile-input trust boundaries                             |
+| [mbz-performance](.agents/skills/mbz-performance/SKILL.md)                   | Archive memory, lazy reads, transfers and preview lifetimes          |
+| [mbz-fixture](.agents/skills/mbz-fixture/SKILL.md)                           | Deterministic synthetic backups and specimen provenance              |
+| [browser-qa](.agents/skills/browser-qa/SKILL.md)                             | Authoring E2E specs and verifying viewer behavior                    |
+| [systematic-debugging](.agents/skills/systematic-debugging/SKILL.md)         | Reproducing failures and isolating their cause                       |
+| [web-quality-audit](.agents/skills/web-quality-audit/SKILL.md)               | Requested viewer quality audits                                      |
+| [mbz-research](.agents/skills/mbz-research/SKILL.md)                         | Registering format/library evidence and experiments                  |
+| [architecture-decision](.agents/skills/architecture-decision/SKILL.md)       | Durable decisions and superseding ADRs                               |
+| [release-check](.agents/skills/release-check/SKILL.md)                       | Release verification                                                 |
+| [skill-maintenance](.agents/skills/skill-maintenance/SKILL.md)               | Updating these instructions and skills                               |
+| [github-actions-hardening](.agents/skills/github-actions-hardening/SKILL.md) | Writing or reviewing GitHub Actions workflows                        |
+| [playwright-cli](.agents/skills/playwright-cli/SKILL.md)                     | Terminal browser exploration; `browser-qa` governs E2E specs         |
 
 ### Installation and updates
 

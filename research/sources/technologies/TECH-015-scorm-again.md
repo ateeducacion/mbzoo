@@ -1,4 +1,5 @@
 ---
+
 id: TECH-015
 title: scorm-again
 kind: technology
@@ -7,6 +8,7 @@ version: 3.3.0 (installed, viewer only)
 accessed: 2026-08-25
 license: MIT
 ---
+
 A SCORM 1.2 / SCORM 2004 run-time API for the browser. MBZoo uses it as the
 LMS side of the RTE so a stored package can be opened offline: it supplies
 the data model, error codes and CMI validation that a SCO expects to find on

@@ -1,4 +1,5 @@
 ---
+
 id: REPO-004
 title: "saylordotorg/course_backups"
 kind: external-repository
@@ -7,7 +8,9 @@ commit: master @ 56309a17d2a62eca3de0339bc3fbb3f6527fcec6 (inspected via API)
 accessed: 2026-08-24
 license: "CC BY asserted in README prose; NO LICENSE file; embedded third-party materials under varied licenses"
 ---
+
 ## Facts observed
+
 - ~111 `.mbz` files (~760 MB total) plus ~100 Common Cartridge files;
   content-only backups of Saylor Academy Moodle courses.
 - Verified empirically: 2017 batch = Moodle 3.3.1+, 2020 batch = Moodle 3.8.4+.
@@ -16,6 +19,7 @@ license: "CC BY asserted in README prose; NO LICENSE file; embedded third-party 
 - README states CC BY applies to Saylor's original course materials only.
 
 ## Use in MBZoo
+
 Secondary fixture source: real-world TAR.GZ backups across two Moodle versions.
 Policy (see compliance/licensing): do NOT vendor wholesale into this repo;
 download selectively for manual testing, record provenance + sha256 per file,

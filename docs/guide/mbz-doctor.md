@@ -34,12 +34,12 @@ that activity is in the open course.
 Severity is a word plus a mark, not a color alone: critical (●), warning
 (▲), info (○).
 
-| Repairability | Meaning |
-|---|---|
-| Automatic | Safe to apply with **Repair All Safe Issues**. No authored record is removed. |
+| Repairability         | Meaning                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| Automatic             | Safe to apply with **Repair All Safe Issues**. No authored record is removed.                 |
 | Confirmation required | The preview must be read. If the change can discard or alter records, a checkbox is required. |
-| Manual | Diagnosis only. MBZoo will not edit it. |
-| Not repairable | The backup cannot supply the missing bytes, or editing it would hide a worse problem. |
+| Manual                | Diagnosis only. MBZoo will not edit it.                                                       |
+| Not repairable        | The backup cannot supply the missing bytes, or editing it would hide a worse problem.         |
 
 ## Repair and download
 
@@ -56,15 +56,15 @@ It is not the per-activity XML / HTML / ZIP export.
 
 ### Supported repairs
 
-| Repair | When it runs | What changes | Safety |
-|---|---|---|---|
-| Declared file size | The SHA-1 of the stored bytes equals `contenthash`, and `<filesize>` does not equal that length. Files the backup excluded, directory records (filename `.`), and entries above the 8 MiB hash budget are not rewritten. | The `<filesize>` text only. The bytes stay. Running it again changes nothing. | Automatic. No content loss. |
-| Illegal XML control characters | The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay. | Those code points are removed. Surrounding markup, unknown elements and comments stay. | Confirmation required. This can alter authored text. |
-| Modern random question | See below. Every precondition has to hold, or nothing is edited. | Quiz `question_reference` elements that point at that bank entry become `question_set_reference` elements. The placeholder bank entry is removed. Other questions stay. | Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record. |
-| Extra directory around the root | Exactly one `moodle_backup.xml`, every entry shares that one directory prefix, destinations stay unique and safe, and the archive has no integrity blocker. Two nested directories count as one prefix. A file outside the wrapper, a second manifest, an unsafe path, or a collision blocks it. | Every path loses that prefix. XML and file bytes are copied. Plugin files stay. | Automatic. No content loss. |
-| Empty `roles.xml` | The file is absent, every XML entry under the hash budget was scanned, and no scanned file names a role id. A referenced role, an unreadable XML file, or a `roles.xml` whose root is not `roles_definition` blocks it. | Adds `roles.xml` whose root is `roles_definition`. No role, shortname, or permission is invented. | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017). |
-| Empty `questions.xml` | The file is absent and no scanned XML depends on the question bank (quiz slots, question references, lessons that name a question, `inforef` question ids, and the same tags in plugin XML). | Adds `questions.xml` whose root is `question_categories`. No category or question is invented. Quiz activities are not deleted to make this available. | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017). |
-| Misplaced file payload | `files.xml` names a physical file whose `files/<2 hex>/<sha1>` path is missing, and another entry at or below the hash budget has that exact SHA-1. Aliases, directory records (`filename` `.`), a conflicting canonical entry, and a hash that does not match are left alone. | Copies those bytes to the canonical path. The original entry stays. `files.xml` is not rewritten. | Automatic. No content loss. |
+| Repair                          | When it runs                                                                                                                                                                                                                                                                                     | What changes                                                                                                                                                            | Safety                                                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Declared file size              | The SHA-1 of the stored bytes equals `contenthash`, and `<filesize>` does not equal that length. Files the backup excluded, directory records (filename `.`), and entries above the 8 MiB hash budget are not rewritten.                                                                         | The `<filesize>` text only. The bytes stay. Running it again changes nothing.                                                                                           | Automatic. No content loss.                                                                                                             |
+| Illegal XML control characters  | The entry contains a code point XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F, U+FFFE, U+FFFF). Tab, LF and CR stay.                                                                                                                                                             | Those code points are removed. Surrounding markup, unknown elements and comments stay.                                                                                  | Confirmation required. This can alter authored text.                                                                                    |
+| Modern random question          | See below. Every precondition has to hold, or nothing is edited.                                                                                                                                                                                                                                 | Quiz `question_reference` elements that point at that bank entry become `question_set_reference` elements. The placeholder bank entry is removed. Other questions stay. | Confirmation required. Content loss is flagged only when no quiz slot references the placeholder, because that path deletes the record. |
+| Extra directory around the root | Exactly one `moodle_backup.xml`, every entry shares that one directory prefix, destinations stay unique and safe, and the archive has no integrity blocker. Two nested directories count as one prefix. A file outside the wrapper, a second manifest, an unsafe path, or a collision blocks it. | Every path loses that prefix. XML and file bytes are copied. Plugin files stay.                                                                                         | Automatic. No content loss.                                                                                                             |
+| Empty `roles.xml`               | The file is absent, every XML entry under the hash budget was scanned, and no scanned file names a role id. A referenced role, an unreadable XML file, or a `roles.xml` whose root is not `roles_definition` blocks it.                                                                          | Adds `roles.xml` whose root is `roles_definition`. No role, shortname, or permission is invented.                                                                       | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017).                                   |
+| Empty `questions.xml`           | The file is absent and no scanned XML depends on the question bank (quiz slots, question references, lessons that name a question, `inforef` question ids, and the same tags in plugin XML).                                                                                                     | Adds `questions.xml` whose root is `question_categories`. No category or question is invented. Quiz activities are not deleted to make this available.                  | Confirmation required. Not included in **Repair All Safe Issues**. Not restored in Moodle (TASK-017).                                   |
+| Misplaced file payload          | `files.xml` names a physical file whose `files/<2 hex>/<sha1>` path is missing, and another entry at or below the hash budget has that exact SHA-1. Aliases, directory records (`filename` `.`), a conflicting canonical entry, and a hash that does not match are left alone.                   | Copies those bytes to the canonical path. The original entry stays. `files.xml` is not rewritten.                                                                       | Automatic. No content loss.                                                                                                             |
 
 A repair that does not change any bytes does not produce a download.
 
@@ -105,7 +105,6 @@ takes that path is healthy. MBZ Doctor reports it as **Legacy random
 question (Moodle restores this)** and does not rewrite it.
 
 Do not "fix" the error by:
-
 - lowering `moodle_release` or `backup_version`,
 - deleting every random question,
 - renaming `<qtype>random</qtype>` to another type.
@@ -116,7 +115,6 @@ was built around.
 ### When a repair is offered
 
 All of the following have to be true:
-
 - The backup release is 4.0 or newer, and the `backup_version` stamp is
   missing or at least `20220202`. A missing release with no version is
   unknown, and no repair is offered. A missing release with a version stamp
@@ -139,7 +137,7 @@ The filter written is the legacy JSON Moodle 4.3 through 5.2 already
 converts:
 
 ```json
-{"questioncategoryid": 5, "includingsubcategories": 0}
+{ "questioncategoryid": 5, "includingsubcategories": 0 }
 ```
 
 Tags, when present, are copied as `"0,name"`. The category id is a JSON
@@ -175,14 +173,14 @@ version is never rewritten.
 
 These restore errors are diagnosed and not rewritten:
 
-| Moodle identifier | What MBZ Doctor does |
-|---|---|
-| `restoremultipletopcats` | Reported when `backup_release` is at least 3.5 and the first eight digits of `moodle_version` are after `20180205`, and one question-bank context has more than one category whose parent is `0`. Categories are not merged. |
-| `questionattemptreferstomissingquestion` | Reported when legacy `<states>` or `<sessions>` name a question id that is not in this backup. Attempts are not deleted. |
-| `questionattemptdatamissing` | Reported when that legacy attempt has the question but is missing the session or the states. |
-| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | Not a finding on the file. `restore_qtype_plugin` throws them only when the question already exists on the destination and an answer or hint text does not match. The backup is not edited to force a match. |
-| `unknown_context_mapping` | Reported when a physical file's `contextid` is absent from the contexts declared outside `files.xml`, and that set is non-empty. No context id is invented. An unfinished XML scan does not emit it. |
-| `inforef` ids | A reference to a file, question, or role id that is not in this backup is reported, as is a repeated id. A missing `inforef.xml` is not itself an error: `restore_load_included_inforef_records` loads the file only when it exists. The file is not synthesized. |
+| Moodle identifier                                                           | What MBZ Doctor does                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `restoremultipletopcats`                                                    | Reported when `backup_release` is at least 3.5 and the first eight digits of `moodle_version` are after `20180205`, and one question-bank context has more than one category whose parent is `0`. Categories are not merged.                                      |
+| `questionattemptreferstomissingquestion`                                    | Reported when legacy `<states>` or `<sessions>` name a question id that is not in this backup. Attempts are not deleted.                                                                                                                                          |
+| `questionattemptdatamissing`                                                | Reported when that legacy attempt has the question but is missing the session or the states.                                                                                                                                                                      |
+| `error_question_answers_missing_in_db`, `error_question_hint_missing_in_db` | Not a finding on the file. `restore_qtype_plugin` throws them only when the question already exists on the destination and an answer or hint text does not match. The backup is not edited to force a match.                                                      |
+| `unknown_context_mapping`                                                   | Reported when a physical file's `contextid` is absent from the contexts declared outside `files.xml`, and that set is non-empty. No context id is invented. An unfinished XML scan does not emit it.                                                              |
+| `inforef` ids                                                               | A reference to a file, question, or role id that is not in this backup is reported, as is a repeated id. A missing `inforef.xml` is not itself an error: `restore_load_included_inforef_records` loads the file only when it exists. The file is not synthesized. |
 
 `restoreuserconflict`, `restorecannotcreateuser`, and
 `restoremnethostidmismatch` depend on accounts on the destination.
@@ -205,65 +203,65 @@ inclusion off.
 
 ## Rule catalog
 
-| Id | Severity | Repair |
-|---|---|---|
-| `archive.unreadable` | critical | not repairable |
-| `archive.extension` | info | not repairable |
-| `archive.missing-root` | critical | not repairable |
-| `archive.enclosed` | warning | manual |
-| `archive.unwrap-root` | warning | automatic |
-| `archive.multiple-roots` | critical | manual |
-| `archive.unsafe-path` | critical | not repairable |
-| `archive.duplicate-path` | critical | not repairable |
-| `archive.checksum` | critical | not repairable |
-| `archive.crc` | critical | not repairable |
-| `archive.ratio` | warning | not repairable |
-| `xml.malformed` | critical | not repairable |
-| `xml.utf8` | critical | not repairable |
-| `xml.limit` | warning | not repairable |
-| `xml.illegal-chars` | warning | confirmation required |
-| `metadata.no-target` | info | not repairable |
-| `metadata.target-older` | warning | not repairable |
-| `metadata.missing-roles` | warning | manual, or confirmation required when the empty file is safe |
-| `sections.missing` | warning | not repairable |
-| `sections.cycle` | warning | manual |
-| `activities.missing` | critical | not repairable |
-| `activities.missing-module` | warning | not repairable |
-| `activities.undeclared` | warning | manual |
-| `activities.duplicate` | warning | manual |
-| `activities.bad-section` | warning | manual |
-| `files.excluded` | info | not repairable |
-| `files.missing` | critical | not repairable |
-| `files.hash` | critical | not repairable |
-| `files.size` | warning | automatic |
-| `files.hash-skipped` | info | not repairable |
-| `files.recover-misplaced-content` | critical | automatic |
-| `files.recovery-incomplete` | info | not repairable |
-| `files.unreferenced` | info | manual |
-| `questions.legacy-random` | info | not repairable |
-| `questions.random-modern` | critical | confirmation required |
-| `questions.random-blocked` | critical | manual |
-| `questions.category-cycle` | warning | manual |
-| `questions.missing-parent` | warning | manual |
-| `questions.empty-pool` | warning | not repairable |
-| `questions.outside-bank` | info | not repairable |
-| `questions.bad-filter` | warning | manual |
-| `questions.duplicate-id` | warning | manual |
-| `questions.missing-bank-file` | warning | manual, or confirmation required when the empty file is safe |
-| `questions.multiple-top-categories` | critical | manual |
-| `questions.attempt-missing-question` | critical | not repairable |
-| `questions.attempt-data-missing` | critical | not repairable |
-| `plugins.removed` | warning | not repairable |
-| `plugins.unknown-module` | info | not repairable |
-| `plugins.unknown-qtype` | info | not repairable |
-| `userdata.excluded` | info | not repairable |
-| `userdata.missing` | warning | not repairable |
-| `userdata.malformed` | warning | manual |
-| `references.unknown-context` | warning | not repairable |
-| `references.inforef-missing-target` | warning | not repairable |
-| `references.inforef-duplicate` | info | manual |
-| `references.token` | info | not repairable |
-| `embedded.package` | warning | not repairable |
+| Id                                   | Severity | Repair                                                       |
+| ------------------------------------ | -------- | ------------------------------------------------------------ |
+| `archive.unreadable`                 | critical | not repairable                                               |
+| `archive.extension`                  | info     | not repairable                                               |
+| `archive.missing-root`               | critical | not repairable                                               |
+| `archive.enclosed`                   | warning  | manual                                                       |
+| `archive.unwrap-root`                | warning  | automatic                                                    |
+| `archive.multiple-roots`             | critical | manual                                                       |
+| `archive.unsafe-path`                | critical | not repairable                                               |
+| `archive.duplicate-path`             | critical | not repairable                                               |
+| `archive.checksum`                   | critical | not repairable                                               |
+| `archive.crc`                        | critical | not repairable                                               |
+| `archive.ratio`                      | warning  | not repairable                                               |
+| `xml.malformed`                      | critical | not repairable                                               |
+| `xml.utf8`                           | critical | not repairable                                               |
+| `xml.limit`                          | warning  | not repairable                                               |
+| `xml.illegal-chars`                  | warning  | confirmation required                                        |
+| `metadata.no-target`                 | info     | not repairable                                               |
+| `metadata.target-older`              | warning  | not repairable                                               |
+| `metadata.missing-roles`             | warning  | manual, or confirmation required when the empty file is safe |
+| `sections.missing`                   | warning  | not repairable                                               |
+| `sections.cycle`                     | warning  | manual                                                       |
+| `activities.missing`                 | critical | not repairable                                               |
+| `activities.missing-module`          | warning  | not repairable                                               |
+| `activities.undeclared`              | warning  | manual                                                       |
+| `activities.duplicate`               | warning  | manual                                                       |
+| `activities.bad-section`             | warning  | manual                                                       |
+| `files.excluded`                     | info     | not repairable                                               |
+| `files.missing`                      | critical | not repairable                                               |
+| `files.hash`                         | critical | not repairable                                               |
+| `files.size`                         | warning  | automatic                                                    |
+| `files.hash-skipped`                 | info     | not repairable                                               |
+| `files.recover-misplaced-content`    | critical | automatic                                                    |
+| `files.recovery-incomplete`          | info     | not repairable                                               |
+| `files.unreferenced`                 | info     | manual                                                       |
+| `questions.legacy-random`            | info     | not repairable                                               |
+| `questions.random-modern`            | critical | confirmation required                                        |
+| `questions.random-blocked`           | critical | manual                                                       |
+| `questions.category-cycle`           | warning  | manual                                                       |
+| `questions.missing-parent`           | warning  | manual                                                       |
+| `questions.empty-pool`               | warning  | not repairable                                               |
+| `questions.outside-bank`             | info     | not repairable                                               |
+| `questions.bad-filter`               | warning  | manual                                                       |
+| `questions.duplicate-id`             | warning  | manual                                                       |
+| `questions.missing-bank-file`        | warning  | manual, or confirmation required when the empty file is safe |
+| `questions.multiple-top-categories`  | critical | manual                                                       |
+| `questions.attempt-missing-question` | critical | not repairable                                               |
+| `questions.attempt-data-missing`     | critical | not repairable                                               |
+| `plugins.removed`                    | warning  | not repairable                                               |
+| `plugins.unknown-module`             | info     | not repairable                                               |
+| `plugins.unknown-qtype`              | info     | not repairable                                               |
+| `userdata.excluded`                  | info     | not repairable                                               |
+| `userdata.missing`                   | warning  | not repairable                                               |
+| `userdata.malformed`                 | warning  | manual                                                       |
+| `references.unknown-context`         | warning  | not repairable                                               |
+| `references.inforef-missing-target`  | warning  | not repairable                                               |
+| `references.inforef-duplicate`       | info     | manual                                                       |
+| `references.token`                   | info     | not repairable                                               |
+| `embedded.package`                   | warning  | not repairable                                               |
 
 The English sentences for each id live in `packages/core/src/doctor/catalog.ts`.
 The viewer shows a title, an explanation and a consequence in English,

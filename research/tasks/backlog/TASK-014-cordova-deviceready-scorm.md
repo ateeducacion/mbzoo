@@ -1,9 +1,11 @@
 ---
+
 id: TASK-014
 title: Drive Cordova-wrapped SCORM exports by simulating deviceready
 status: open
 priority: low
 ---
+
 The one SCORM package in the corpus (PRSM107, Adobe Captivate) is packaged
 for a Cordova app container: its <body onload> waits for window.device and
 the `deviceready` event, which no browser fires, and has no timer fallback,

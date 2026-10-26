@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0026
 title: Resolve embedded files by row, and return nothing rather than another row's file
 status: Accepted
@@ -40,14 +41,14 @@ Wiring the remaining call sites turned out to need a decision rather than a
 mechanical change. Moodle scopes several of these file areas **per row**, not
 per activity (REPO-005, each module's `backup_<mod>_stepslib.php`):
 
-| Area | Keyed by |
-| --- | --- |
-| `mod_lesson/page_contents` | page id |
-| `mod_lesson/page_answers`, `page_responses` | answer id |
-| `mod_glossary/entry` | entry id |
-| `mod_feedback/item` | item id |
-| `mod_workshop/submission_content` | example submission id |
-| `question/questiontext`, `answer`, … | question id |
+| Area                                        | Keyed by              |
+| ------------------------------------------- | --------------------- |
+| `mod_lesson/page_contents`                  | page id               |
+| `mod_lesson/page_answers`, `page_responses` | answer id             |
+| `mod_glossary/entry`                        | entry id              |
+| `mod_feedback/item`                         | item id               |
+| `mod_workshop/submission_content`           | example submission id |
+| `question/questiontext`, `answer`, …        | question id           |
 
 `matchFileRecord()` matched on filename plus component, filearea and
 contextid, with a fallback to any same-named file. Two lesson pages that each
@@ -83,7 +84,6 @@ the area by one, and every `@@PLUGINFILE@@`-bearing field will be resolved
 through `resolveHtml()` rather than `safeHtml()`.
 
 Standing rules:
-
 - When an `itemId` is given and no record matches it, return **undefined**.
   Do not fall back to a same-named file in another row: an image that belongs
   to a different page is a wrong answer wearing a right answer's clothes.
@@ -123,7 +123,7 @@ pass over content already in memory.
 
 - **A field mapped to the wrong area shows nothing, silently.** Mitigated by
   taking every mapping from Moodle source rather than inference, and by an
-  e2e that asserts a real embed resolves to a `blob:` URL *and* decodes.
+  e2e that asserts a real embed resolves to a `blob:` URL _and_ decodes.
 
 ## Validation
 

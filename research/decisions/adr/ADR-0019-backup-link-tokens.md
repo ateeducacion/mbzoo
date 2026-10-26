@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0019
 title: Decode Moodle's $@…@$ link tokens instead of letting them resolve against MBZoo
 status: Accepted
@@ -50,7 +51,7 @@ backup and must never fetch remote course content by itself?
 - A link MBZoo cannot resolve must not pretend to lead somewhere, and must
   never appear to point at MBZoo.
 - Nothing may be fetched automatically (ADR-0009): resolving a token is
-  allowed to *offer* a URL, never to load one.
+  allowed to _offer_ a URL, never to load one.
 - `original_wwwroot` comes from the backup and is hostile input.
 - Decode rules are format facts to study, not GPL code to port (REPO-005).
 
@@ -67,7 +68,6 @@ backup and must never fetch remote course content by itself?
 
 We will decode `$@CODE*arg@$` tokens in `packages/core/src/moodle/links.ts`
 and apply the result in the viewer after sanitization, with three outcomes:
-
 - The token names a **course module present in this backup** → the anchor
   gets `data-mbz-activity="<cmid>"` and navigates inside MBZoo. Its `href`
   still points at the original site so exports stay useful.
@@ -77,7 +77,6 @@ and apply the result in the viewer after sanitization, with three outcomes:
 - Anything else → the anchor keeps its text and **loses its href**.
 
 Standing rules:
-
 - An unknown code decodes to an empty path. Never guess a URL shape; add a
   rule only after reading it in Moodle source and citing the file.
 - `original_wwwroot` is accepted only as `http(s)://host…`, so a token can
@@ -109,7 +108,7 @@ someone reads and cites the rule.
   unknown code → no path, plus unit tests per rule shape.
 - **`original_wwwroot` points at a site that no longer exists** (the
   SMR_SEGI/SMR_SOR exports name a defunct `mecd.es` host). Accepted: the
-  link is labelled as the *original* site, and nothing is fetched.
+  link is labelled as the _original_ site, and nothing is fetched.
 
 ## Validation
 
@@ -130,13 +129,13 @@ the three outcomes and that no `$@` survives in a URL attribute.
 Rules were read from `moodle/moodle` `main` on 2026-08-25 via the GitHub
 raw API (paths moved under `public/` in recent releases):
 
-| File | Codes read |
-| --- | --- |
-| `public/backup/moodle2/restore_course_task.class.php` | `COURSEVIEWBYID`, `COURSESECTIONBYID`, `GRADEINDEXBYID`, `GRADEREPORTINDEXBYID`, `BADGESVIEWBYID`, `USERINDEXVIEWBYID`, `PLUGINFILEBYCONTEXT` |
-| `public/mod/page/…/restore_page_activity_task.class.php` | `PAGEVIEWBYID`, `PAGEINDEX` |
-| `public/mod/forum/…/restore_forum_activity_task.class.php` | `FORUMINDEX`, `FORUMVIEWBYID`, `FORUMVIEWBYF`, `FORUMDISCUSSIONVIEW{,PARENT,INSIDE}` |
-| `public/mod/quiz/…/restore_quiz_activity_task.class.php` | `QUIZVIEWBYID`, `QUIZVIEWBYQ`, `QUIZINDEX` |
-| `public/mod/book/…/restore_book_activity_task.class.php` | `BOOKINDEX`, `BOOKVIEWBYID{,CH}`, `BOOKVIEWBYB{,CH}`, `BOOKSTART`, `BOOKCHAPTER` |
+| File                                                       | Codes read                                                                                                                                    |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public/backup/moodle2/restore_course_task.class.php`      | `COURSEVIEWBYID`, `COURSESECTIONBYID`, `GRADEINDEXBYID`, `GRADEREPORTINDEXBYID`, `BADGESVIEWBYID`, `USERINDEXVIEWBYID`, `PLUGINFILEBYCONTEXT` |
+| `public/mod/page/…/restore_page_activity_task.class.php`   | `PAGEVIEWBYID`, `PAGEINDEX`                                                                                                                   |
+| `public/mod/forum/…/restore_forum_activity_task.class.php` | `FORUMINDEX`, `FORUMVIEWBYID`, `FORUMVIEWBYF`, `FORUMDISCUSSIONVIEW{,PARENT,INSIDE}`                                                          |
+| `public/mod/quiz/…/restore_quiz_activity_task.class.php`   | `QUIZVIEWBYID`, `QUIZVIEWBYQ`, `QUIZINDEX`                                                                                                    |
+| `public/mod/book/…/restore_book_activity_task.class.php`   | `BOOKINDEX`, `BOOKVIEWBYID{,CH}`, `BOOKVIEWBYB{,CH}`, `BOOKSTART`, `BOOKCHAPTER`                                                              |
 
 Page, forum, quiz and book agree on a convention every activity module
 follows: `<MOD>VIEWBYID` → `/mod/<mod>/view.php?id=<cmid>` and `<MOD>INDEX`

@@ -5,8 +5,8 @@ You are initializing and establishing the technical foundation of the following 
 **Repository:** https://github.com/ateeducacion/mbzoo
 **Project name:** MBZoo
 **License:** MIT
-**Primary tagline:** *See what's inside your MBZ.*
-**GitHub description:** *Open, inspect, preview and export Moodle `.mbz` backups directly in your browser.*
+**Primary tagline:** _See what's inside your MBZ._
+**GitHub description:** _Open, inspect, preview and export Moodle `.mbz` backups directly in your browser._
 
 Your task is **not to rush into implementing features**.
 
@@ -19,46 +19,39 @@ The repository must be designed for long-term maintenance by both humans and cod
 # 1. Read the reference repositories first
 
 Before making architectural or tooling decisions, study these repositories and their current contents:
-
 1. https://github.com/ateeducacion/normativa_educativa_canaria
-
-   * Especially:
-
-     * `1er-prompt.md`
-     * its evidence/research methodology
-     * source tracking
-     * stable identifiers
-     * generated indexes
-     * traceability rules
+   - Especially:
+     - `1er-prompt.md`
+     - its evidence/research methodology
+     - source tracking
+     - stable identifiers
+     - generated indexes
+     - traceability rules
 
 2. https://github.com/exelearning/moodle-mod_exelearning
-
-   * Especially:
-
-     * `AGENTS.md`
-     * `.agents/skills/`
-     * `research/`
-     * `research/AGENTS.md`
-     * ADR methodology
-     * evidence storage
-     * experiments
-     * generated indexes
-     * `architecture-records.json`
-     * architecture documentation
-     * CI/testing conventions
+   - Especially:
+     - `AGENTS.md`
+     - `.agents/skills/`
+     - `research/`
+     - `research/AGENTS.md`
+     - ADR methodology
+     - evidence storage
+     - experiments
+     - generated indexes
+     - `architecture-records.json`
+     - architecture documentation
+     - CI/testing conventions
 
 3. https://github.com/INTEF-Proyectos/procomun
-
-   * Study its:
-
-     * repository organization
-     * development tooling
-     * CI
-     * documentation
-     * tests
-     * agent instructions, if any
-     * architecture or decision records, if any
-     * conventions that could reasonably be reused
+   - Study its:
+     - repository organization
+     - development tooling
+     - CI
+     - documentation
+     - tests
+     - agent instructions, if any
+     - architecture or decision records, if any
+     - conventions that could reasonably be reused
 
 Do not blindly copy any of them.
 
@@ -109,17 +102,16 @@ The architecture should support these capabilities progressively.
 ## 3.1 Open and inspect
 
 Given a Moodle `.mbz` backup:
-
-* detect its archive format;
-* inspect `moodle_backup.xml`;
-* inspect course metadata;
-* reconstruct sections;
-* reconstruct activities;
-* index Moodle files from `files.xml`;
-* resolve Moodle's content-addressed file store;
-* resolve `@@PLUGINFILE@@` references;
-* expose backup metadata;
-* expose unsupported data safely rather than silently dropping it.
+- detect its archive format;
+- inspect `moodle_backup.xml`;
+- inspect course metadata;
+- reconstruct sections;
+- reconstruct activities;
+- index Moodle files from `files.xml`;
+- resolve Moodle's content-addressed file store;
+- resolve `@@PLUGINFILE@@` references;
+- expose backup metadata;
+- expose unsupported data safely rather than silently dropping it.
 
 The parser must preserve enough source metadata to make debugging possible.
 
@@ -130,12 +122,11 @@ The parser must preserve enough source metadata to make debugging possible.
 Research actual Moodle backup formats from authoritative Moodle documentation and current Moodle source code.
 
 At minimum investigate:
-
-* ZIP;
-* TAR.GZ;
-* ZIP64;
-* large backups;
-* archive entries that cannot fit comfortably in browser memory.
+- ZIP;
+- TAR.GZ;
+- ZIP64;
+- large backups;
+- archive entries that cannot fit comfortably in browser memory.
 
 Do not assume `.mbz == ZIP`.
 
@@ -146,20 +137,19 @@ Record evidence.
 # 5. Course browsing
 
 The viewer should eventually provide useful representations for common Moodle activities and resources such as:
-
-* Label;
-* Page;
-* Book;
-* File;
-* Folder;
-* URL;
-* Assignment;
-* Forum, read-only where practical;
-* Glossary, read-only where practical;
-* Quiz;
-* SCORM;
-* H5P;
-* unknown third-party modules.
+- Label;
+- Page;
+- Book;
+- File;
+- Folder;
+- URL;
+- Assignment;
+- Forum, read-only where practical;
+- Glossary, read-only where practical;
+- Quiz;
+- SCORM;
+- H5P;
+- unknown third-party modules.
 
 Unknown Moodle plugins must fail gracefully.
 
@@ -178,18 +168,17 @@ Treat **viewing** and **executing** as different capabilities.
 Investigate whether `scorm-again` is an appropriate runtime foundation.
 
 Research:
-
-* SCORM 1.2;
-* SCORM 2004;
-* launch requirements;
-* API lifecycle;
-* tracking;
-* score;
-* completion;
-* success;
-* suspend data;
-* sequencing where applicable;
-* sandbox requirements.
+- SCORM 1.2;
+- SCORM 2004;
+- launch requirements;
+- API lifecycle;
+- tracking;
+- score;
+- completion;
+- success;
+- suspend data;
+- sequencing where applicable;
+- sandbox requirements.
 
 Do not implement a new SCORM runtime unless evidence shows an existing library is unsuitable.
 
@@ -220,13 +209,12 @@ optional MBZoo "practice mode"
 ```
 
 A future practice mode may progressively support standard question types such as:
-
-* multichoice;
-* truefalse;
-* shortanswer;
-* numerical;
-* matching;
-* essay display.
+- multichoice;
+- truefalse;
+- shortanswer;
+- numerical;
+- matching;
+- essay display.
 
 Clearly distinguish:
 
@@ -288,19 +276,18 @@ Research realistic strategies for backups in ranges such as:
 Do not load an entire multi-gigabyte backup into memory by default.
 
 Evaluate:
-
-* streaming;
-* random access where archive format permits it;
-* lazy extraction;
-* lazy XML parsing;
-* Web Workers;
-* transferable objects;
-* SharedArrayBuffer only if genuinely justified;
-* OPFS;
-* IndexedDB where appropriate;
-* memory backpressure;
-* object URLs;
-* progressive course rendering.
+- streaming;
+- random access where archive format permits it;
+- lazy extraction;
+- lazy XML parsing;
+- Web Workers;
+- transferable objects;
+- SharedArrayBuffer only if genuinely justified;
+- OPFS;
+- IndexedDB where appropriate;
+- memory backpressure;
+- object URLs;
+- progressive course rendering.
 
 The ideal experience should resemble:
 
@@ -329,39 +316,37 @@ Treat every `.mbz` as an **untrusted file**.
 This is mandatory.
 
 Investigate and explicitly document threats including:
-
-* path traversal / Zip Slip;
-* archive bombs;
-* extreme compression ratios;
-* maliciously huge entries;
-* malformed archives;
-* XML entity expansion;
-* XXE;
-* XML bombs;
-* malicious HTML;
-* JavaScript embedded in course content;
-* SVG script execution;
-* unsafe MIME handling;
-* Blob URL lifetime;
-* unsafe iframe navigation;
-* SCORM packages with arbitrary JavaScript;
-* H5P JavaScript;
-* external network requests;
-* popup escape;
-* same-origin access;
-* malicious filenames;
-* Unicode/path ambiguities;
-* corrupted backups.
+- path traversal / Zip Slip;
+- archive bombs;
+- extreme compression ratios;
+- maliciously huge entries;
+- malformed archives;
+- XML entity expansion;
+- XXE;
+- XML bombs;
+- malicious HTML;
+- JavaScript embedded in course content;
+- SVG script execution;
+- unsafe MIME handling;
+- Blob URL lifetime;
+- unsafe iframe navigation;
+- SCORM packages with arbitrary JavaScript;
+- H5P JavaScript;
+- external network requests;
+- popup escape;
+- same-origin access;
+- malicious filenames;
+- Unicode/path ambiguities;
+- corrupted backups.
 
 Interactive content must not execute with arbitrary access to the MBZoo application context.
 
 Research a sandbox architecture using mechanisms such as:
-
-* sandboxed iframes;
-* opaque origins where possible;
-* restrictive CSP;
-* `postMessage` bridges;
-* explicit capability boundaries.
+- sandboxed iframes;
+- opaque origins where possible;
+- restrictive CSP;
+- `postMessage` bridges;
+- explicit capability boundaries.
 
 Do not simply insert backup HTML with unsanitized `innerHTML`.
 
@@ -372,26 +357,24 @@ Security decisions must have ADRs.
 # 10. Privacy model
 
 Moodle backups may contain:
-
-* names;
-* email addresses;
-* student submissions;
-* grades;
-* comments;
-* logs;
-* messages;
-* private files;
-* other personal information.
+- names;
+- email addresses;
+- student submissions;
+- grades;
+- comments;
+- logs;
+- messages;
+- private files;
+- other personal information.
 
 MBZoo should follow a local-first model.
 
 For the web viewer:
-
-* no course data should leave the browser by default;
-* no telemetry should include course contents;
-* no third-party analytics should be introduced by default;
-* external resources referenced by the course require careful consideration;
-* exporting data must be an explicit user action.
+- no course data should leave the browser by default;
+- no telemetry should include course contents;
+- no third-party analytics should be introduced by default;
+- external resources referenced by the course require careful consideration;
+- exporting data must be an explicit user action.
 
 Create documentation explaining this model.
 
@@ -404,7 +387,6 @@ Never commit real Moodle backups containing personal information.
 Tests need realistic `.mbz` backups, but repository fixtures must be safe.
 
 Prefer:
-
 1. synthetic backups generated for MBZoo;
 2. deliberately created Moodle demo courses;
 3. properly licensed public examples;
@@ -413,15 +395,14 @@ Prefer:
 Never add an arbitrary real institution course backup to Git.
 
 For every fixture record:
-
-* source;
-* Moodle version;
-* backup options;
-* included activity types;
-* license/provenance;
-* whether it contains user data;
-* SHA-256 checksum;
-* expected parser characteristics.
+- source;
+- Moodle version;
+- backup options;
+- included activity types;
+- license/provenance;
+- whether it contains user data;
+- SHA-256 checksum;
+- expected parser characteristics.
 
 Create a fixture manifest.
 
@@ -511,26 +492,24 @@ Record the decision.
 TypeScript is the leading candidate, but do not accept it merely because it has already been suggested.
 
 Evaluate at least:
-
-* TypeScript;
-* Rust/WASM for performance-critical components;
-* whether any additional language has a justified role.
+- TypeScript;
+- Rust/WASM for performance-critical components;
+- whether any additional language has a justified role.
 
 Consider:
-
-* browser execution;
-* streaming;
-* archive support;
-* XML parsing;
-* developer productivity;
-* code sharing with CLI;
-* testing;
-* ecosystem maturity;
-* maintainability;
-* contributor accessibility;
-* bundle size;
-* WASM startup/copying costs;
-* memory behaviour.
+- browser execution;
+- streaming;
+- archive support;
+- XML parsing;
+- developer productivity;
+- code sharing with CLI;
+- testing;
+- ecosystem maturity;
+- maintainability;
+- contributor accessibility;
+- bundle size;
+- WASM startup/copying costs;
+- memory behaviour.
 
 The expected outcome may well be:
 
@@ -547,7 +526,6 @@ Create an ADR.
 Bun is the leading candidate for repository tooling.
 
 Evaluate separately its suitability as:
-
 1. package manager;
 2. workspace/monorepo manager;
 3. script runner;
@@ -564,25 +542,24 @@ Do not write an ADR whose reasoning is merely "Bun is fast".
 Research current Bun documentation and behaviour as of the execution date.
 
 Evaluate:
-
-* workspaces;
-* isolated installs;
-* lockfile behaviour;
-* catalogs if useful;
-* `bun:test`;
-* coverage;
-* package compatibility;
-* executable compilation;
-* Web Worker bundling;
-* browser targeting;
-* source maps;
-* code splitting;
-* HMR;
-* WASM;
-* plugin ecosystem;
-* long-term portability;
-* CI setup;
-* security/supply-chain implications.
+- workspaces;
+- isolated installs;
+- lockfile behaviour;
+- catalogs if useful;
+- `bun:test`;
+- coverage;
+- package compatibility;
+- executable compilation;
+- Web Worker bundling;
+- browser targeting;
+- source maps;
+- code splitting;
+- HMR;
+- WASM;
+- plugin ecosystem;
+- long-term portability;
+- CI setup;
+- security/supply-chain implications.
 
 ---
 
@@ -619,31 +596,29 @@ Vite
 ```
 
 Compare them using actual requirements for MBZoo:
-
-* Workers;
-* large binary assets;
-* code splitting;
-* WASM;
-* HMR;
-* browser compatibility;
-* static deployment;
-* GitHub Pages;
-* bundle analysis;
-* CSP;
-* service worker/PWA potential;
-* test integration.
+- Workers;
+- large binary assets;
+- code splitting;
+- WASM;
+- HMR;
+- browser compatibility;
+- static deployment;
+- GitHub Pages;
+- bundle analysis;
+- CSP;
+- service worker/PWA potential;
+- test integration.
 
 If uncertainty remains, create a minimal reproducible experiment instead of guessing.
 
 Record:
-
-* commands;
-* versions;
-* environment;
-* build time;
-* bundle output;
-* browser behaviour;
-* limitations.
+- commands;
+- versions;
+- environment;
+- build time;
+- bundle output;
+- browser behaviour;
+- limitations.
 
 Then create an ADR.
 
@@ -656,23 +631,21 @@ Do not introduce React because it is common.
 Evaluate the UI complexity.
 
 Compare at least:
-
-* vanilla TypeScript + DOM;
-* Lit;
-* Preact;
-* another lightweight framework only if justified.
+- vanilla TypeScript + DOM;
+- Lit;
+- Preact;
+- another lightweight framework only if justified.
 
 Consider:
-
-* course tree;
-* activity renderers;
-* progressive loading;
-* state management;
-* accessibility;
-* bundle size;
-* component isolation;
-* contributor familiarity;
-* long-term maintenance.
+- course tree;
+- activity renderers;
+- progressive loading;
+- state management;
+- accessibility;
+- bundle size;
+- component isolation;
+- contributor familiarity;
+- long-term maintenance.
 
 The viewer should remain lightweight.
 
@@ -687,27 +660,25 @@ Record the decision.
 Research and compare current libraries rather than selecting one from memory.
 
 Evaluate at least relevant candidates such as:
-
-* zip.js;
-* fflate;
-* other actively maintained browser archive libraries;
-* WASM-based options if relevant.
+- zip.js;
+- fflate;
+- other actively maintained browser archive libraries;
+- WASM-based options if relevant.
 
 Requirements include:
-
-* ZIP;
-* ZIP64;
-* large files;
-* Web Streams;
-* Workers;
-* random access;
-* extraction of individual entries;
-* memory behaviour;
-* browser support;
-* TypeScript API quality;
-* maintenance;
-* license;
-* security history.
+- ZIP;
+- ZIP64;
+- large files;
+- Web Streams;
+- Workers;
+- random access;
+- extraction of individual entries;
+- memory behaviour;
+- browser support;
+- TypeScript API quality;
+- maintenance;
+- license;
+- security history.
 
 TAR.GZ may require a different strategy.
 
@@ -722,21 +693,19 @@ Create an experiment using realistic archive sizes if necessary.
 Moodle backups are XML-heavy.
 
 Evaluate:
-
-* DOM-based parsing;
-* SAX/event-based parsing;
-* streaming XML libraries;
-* current TypeScript/browser XML libraries.
+- DOM-based parsing;
+- SAX/event-based parsing;
+- streaming XML libraries;
+- current TypeScript/browser XML libraries.
 
 Requirements:
-
-* large `files.xml`;
-* predictable memory usage;
-* no external entity resolution;
-* malformed XML handling;
-* namespaces where applicable;
-* TypeScript support;
-* browser and CLI reuse.
+- large `files.xml`;
+- predictable memory usage;
+- no external entity resolution;
+- malformed XML handling;
+- namespaces where applicable;
+- TypeScript support;
+- browser and CLI reuse.
 
 Do not select the XML parser based solely on API convenience.
 
@@ -833,52 +802,48 @@ Evaluate and document at least:
 ## Unit tests
 
 Candidates:
-
-* `bun:test`;
-* Vitest if browser-oriented functionality materially benefits from it.
+- `bun:test`;
+- Vitest if browser-oriented functionality materially benefits from it.
 
 ## Browser integration / E2E
 
 Use Playwright unless research identifies a stronger reason not to.
 
 Test relevant functionality against:
-
-* Chromium;
-* Firefox;
-* WebKit.
+- Chromium;
+- Firefox;
+- WebKit.
 
 Do not assume JavaScriptCore/Bun tests prove browser interoperability.
 
 ## Parser fixtures
 
 Use golden fixtures for:
-
-* empty course;
-* sections;
-* pages;
-* books;
-* files;
-* assignments;
-* quiz;
-* SCORM;
-* H5P;
-* user data;
-* malformed backup;
-* unsupported plugin;
-* ZIP;
-* TAR.GZ;
-* ZIP64 where practical.
+- empty course;
+- sections;
+- pages;
+- books;
+- files;
+- assignments;
+- quiz;
+- SCORM;
+- H5P;
+- user data;
+- malformed backup;
+- unsupported plugin;
+- ZIP;
+- TAR.GZ;
+- ZIP64 where practical.
 
 ## Security tests
 
 Include explicit tests for:
-
-* traversal paths;
-* archive bombs or safe simulated equivalents;
-* malicious HTML;
-* XML attacks;
-* invalid MIME metadata;
-* dangerous filenames.
+- traversal paths;
+- archive bombs or safe simulated equivalents;
+- malicious HTML;
+- XML attacks;
+- invalid MIME metadata;
+- dangerous filenames.
 
 ## Performance tests
 
@@ -893,12 +858,11 @@ Do not put unstable wall-clock thresholds into normal CI without justification.
 Evaluate current tools and select a deliberately small stack.
 
 Candidates include:
-
-* Biome;
-* ESLint;
-* Prettier;
-* TypeScript compiler;
-* dependency/license auditing tools.
+- Biome;
+- ESLint;
+- Prettier;
+- TypeScript compiler;
+- dependency/license auditing tools.
 
 Prefer fewer overlapping tools.
 
@@ -974,13 +938,12 @@ Record decisions that affect the supply chain.
 Every production dependency should have a reason.
 
 Before introducing a major dependency record:
-
-* purpose;
-* license;
-* maintenance status;
-* bundle impact where relevant;
-* browser support;
-* alternatives considered.
+- purpose;
+- license;
+- maintenance status;
+- bundle impact where relevant;
+- browser support;
+- alternatives considered.
 
 Prefer permissively licensed dependencies compatible with MIT distribution.
 
@@ -1056,14 +1019,13 @@ Adopt these rules.
 ## Evidence before preference
 
 A durable technical claim should point to one of:
-
-* official documentation;
-* source code with repository + commit/tag;
-* specification;
-* reproducible experiment;
-* benchmark;
-* issue/PR;
-* previous ADR.
+- official documentation;
+- source code with repository + commit/tag;
+- specification;
+- reproducible experiment;
+- benchmark;
+- issue/PR;
+- previous ADR.
 
 ## Separate layers
 
@@ -1095,36 +1057,34 @@ Do not manufacture a source, version, benchmark or result.
 ## External sources
 
 Record:
-
-* stable ID;
-* title;
-* canonical URL;
-* source type;
-* version/tag/commit where relevant;
-* access date;
-* license when relevant;
-* short summary;
-* claims supported by the source.
+- stable ID;
+- title;
+- canonical URL;
+- source type;
+- version/tag/commit where relevant;
+- access date;
+- license when relevant;
+- short summary;
+- claims supported by the source.
 
 Do not mirror entire third-party documentation unnecessarily.
 
 ## Experiments
 
 Each experiment must record:
-
-* objective;
-* hypothesis;
-* environment;
-* OS;
-* runtime versions;
-* dependency versions;
-* exact command;
-* fixture;
-* measurements;
-* result;
-* limitations;
-* conclusion;
-* repository commit where applicable.
+- objective;
+- hypothesis;
+- environment;
+- OS;
+- runtime versions;
+- dependency versions;
+- exact command;
+- fixture;
+- measurements;
+- result;
+- limitations;
+- conclusion;
+- repository commit where applicable.
 
 An experiment should be reproducible by another contributor.
 
@@ -1166,20 +1126,19 @@ Preserve history.
 # 29. ADR policy
 
 Create an ADR for durable decisions such as:
-
-* primary implementation language;
-* Bun usage;
-* frontend build system;
-* monorepo structure;
-* archive processing strategy;
-* XML parser;
-* normalized model;
-* activity plugin architecture;
-* large-file strategy;
-* sandbox model;
-* testing strategy;
-* UI technology;
-* dependency/licensing policy.
+- primary implementation language;
+- Bun usage;
+- frontend build system;
+- monorepo structure;
+- archive processing strategy;
+- XML parser;
+- normalized model;
+- activity plugin architecture;
+- large-file strategy;
+- sandbox model;
+- testing strategy;
+- UI technology;
+- dependency/licensing policy.
 
 An ADR must include:
 
@@ -1208,19 +1167,18 @@ Do not create an ADR for trivial implementation details.
 Use an SDD before implementing a substantial cross-cutting feature.
 
 An SDD should describe:
-
-* problem;
-* goals;
-* non-goals;
-* functional design;
-* architecture;
-* data flow;
-* interfaces;
-* security;
-* failure behaviour;
-* testing;
-* migration/compatibility where relevant;
-* implementation plan.
+- problem;
+- goals;
+- non-goals;
+- functional design;
+- architecture;
+- data flow;
+- interfaces;
+- security;
+- failure behaviour;
+- testing;
+- migration/compatibility where relevant;
+- implementation plan.
 
 Extract durable decisions into ADRs instead of burying them only in the SDD.
 
@@ -1264,22 +1222,21 @@ AGENTS.md
 ```
 
 It must explain:
-
-* project purpose;
-* current maturity;
-* repository map;
-* architecture boundaries;
-* mandatory commands;
-* coding conventions;
-* security rules;
-* testing expectations;
-* documentation rules;
-* evidence rules;
-* ADR/SDD workflow;
-* fixture/privacy restrictions;
-* definition of done;
-* files generated automatically;
-* what agents must never do.
+- project purpose;
+- current maturity;
+- repository map;
+- architecture boundaries;
+- mandatory commands;
+- coding conventions;
+- security rules;
+- testing expectations;
+- documentation rules;
+- evidence rules;
+- ADR/SDD workflow;
+- fixture/privacy restrictions;
+- definition of done;
+- files generated automatically;
+- what agents must never do.
 
 Do not let `AGENTS.md` become a historical diary.
 
@@ -1328,54 +1285,49 @@ Possible responsibilities:
 ### `mbz-research`
 
 How to:
-
-* research Moodle internals;
-* register a source;
-* distinguish fact/interpretation;
-* create experiments;
-* update generated indexes.
+- research Moodle internals;
+- register a source;
+- distinguish fact/interpretation;
+- create experiments;
+- update generated indexes.
 
 ### `mbz-fixture`
 
 How to:
-
-* create a safe test Moodle backup;
-* strip personal data;
-* document provenance;
-* calculate checksums;
-* add expected properties.
+- create a safe test Moodle backup;
+- strip personal data;
+- document provenance;
+- calculate checksums;
+- add expected properties.
 
 ### `architecture-decision`
 
 How to:
-
-* determine whether an ADR is required;
-* research alternatives;
-* reference evidence;
-* write/supersede ADRs.
+- determine whether an ADR is required;
+- research alternatives;
+- reference evidence;
+- write/supersede ADRs.
 
 ### `mbz-parser`
 
 Project-specific invariants for:
-
-* archive handling;
-* XML;
-* file lookup;
-* normalized model;
-* trust boundaries;
-* parser tests.
+- archive handling;
+- XML;
+- file lookup;
+- normalized model;
+- trust boundaries;
+- parser tests.
 
 ### `release-check`
 
 Future release gates:
-
-* tests;
-* build;
-* licensing;
-* generated indexes;
-* security;
-* documentation;
-* artifacts.
+- tests;
+- build;
+- licensing;
+- generated indexes;
+- security;
+- documentation;
+- artifacts.
 
 Follow the current Agent Skills specification/conventions.
 
@@ -1434,16 +1386,15 @@ See what's inside your MBZ.
 ```
 
 Explain:
-
-* what MBZoo is;
-* that `.mbz` means Moodle course backup;
-* local-first/client-side processing;
-* current maturity;
-* what currently works;
-* planned capabilities;
-* privacy model;
-* development commands;
-* license.
+- what MBZoo is;
+- that `.mbz` means Moodle course backup;
+- local-first/client-side processing;
+- current maturity;
+- what currently works;
+- planned capabilities;
+- privacy model;
+- development commands;
+- license.
 
 Do not advertise capabilities that are only planned.
 
@@ -1464,15 +1415,14 @@ The viewer itself must target WCAG 2.2 AA where practical.
 Research appropriate automated accessibility testing.
 
 Consider:
-
-* axe;
-* Playwright accessibility tests;
-* keyboard navigation;
-* semantic course tree;
-* focus management;
-* screen-reader announcements during long parsing operations;
-* reduced motion;
-* contrast.
+- axe;
+- Playwright accessibility tests;
+- keyboard navigation;
+- semantic course tree;
+- focus management;
+- screen-reader announcements during long parsing operations;
+- reduced motion;
+- contrast.
 
 Accessibility is a quality requirement, not a late feature.
 
@@ -1497,14 +1447,13 @@ Source code and technical documentation remain English.
 Define and document a browser support policy based on actual required Web APIs.
 
 Pay particular attention to:
-
-* Web Workers;
-* Web Streams;
-* File API;
-* OPFS;
-* Compression Streams;
-* transferable objects;
-* WASM if used.
+- Web Workers;
+- Web Streams;
+- File API;
+- OPFS;
+- Compression Streams;
+- transferable objects;
+- WASM if used.
 
 Do not silently depend on APIs that exclude an important supported browser.
 
@@ -1537,14 +1486,13 @@ It does **not** need to launch SCORM, H5P or Moodle quizzes yet.
 Use one or more safe synthetic fixtures.
 
 The vertical slice should demonstrate:
-
-* monorepo works;
-* browser app works;
-* parser package works;
-* Worker boundary if selected;
-* tests work;
-* CI works;
-* build is deployable as static files.
+- monorepo works;
+- browser app works;
+- parser package works;
+- Worker boundary if selected;
+- tests work;
+- CI works;
+- build is deployable as static files.
 
 Do not build a polished application before validating the architecture.
 
@@ -1704,11 +1652,10 @@ notes
 ```
 
 Pay special attention to dependencies related to:
-
-* Moodle;
-* SCORM;
-* H5P;
-* archive handling.
+- Moodle;
+- SCORM;
+- H5P;
+- archive handling.
 
 Do not infer license compatibility from package popularity.
 
@@ -1744,59 +1691,57 @@ CI and local development should execute the same underlying commands.
 # 46. Definition of done for this bootstrap task
 
 Do not consider this first task complete until:
-
-* the three reference repositories have been inspected and recorded;
-* relevant upstream Moodle documentation/source has been inspected;
-* project goals and non-goals are documented;
-* research/evidence structure exists;
-* source records exist;
-* initial research questions exist;
-* important technology options have been compared;
-* experiments have been run where documentation alone is insufficient;
-* foundational ADRs have been written;
-* root `AGENTS.md` exists;
-* `research/AGENTS.md` exists if justified;
-* useful project-specific Agent Skills exist;
-* the monorepo has been bootstrapped;
-* the selected tooling is configured;
-* strict TypeScript checking works if TypeScript is selected;
-* lint/format tooling works;
-* unit testing works;
-* browser testing infrastructure works;
-* CI works;
-* MIT license exists;
-* security/privacy principles are documented;
-* safe fixture policy exists;
-* at least one synthetic fixture exists;
-* the thin vertical slice can open a test `.mbz` and render meaningful course metadata/structure;
-* documentation states clearly what is and is not implemented;
-* generated research indexes validate correctly.
+- the three reference repositories have been inspected and recorded;
+- relevant upstream Moodle documentation/source has been inspected;
+- project goals and non-goals are documented;
+- research/evidence structure exists;
+- source records exist;
+- initial research questions exist;
+- important technology options have been compared;
+- experiments have been run where documentation alone is insufficient;
+- foundational ADRs have been written;
+- root `AGENTS.md` exists;
+- `research/AGENTS.md` exists if justified;
+- useful project-specific Agent Skills exist;
+- the monorepo has been bootstrapped;
+- the selected tooling is configured;
+- strict TypeScript checking works if TypeScript is selected;
+- lint/format tooling works;
+- unit testing works;
+- browser testing infrastructure works;
+- CI works;
+- MIT license exists;
+- security/privacy principles are documented;
+- safe fixture policy exists;
+- at least one synthetic fixture exists;
+- the thin vertical slice can open a test `.mbz` and render meaningful course metadata/structure;
+- documentation states clearly what is and is not implemented;
+- generated research indexes validate correctly.
 
 ---
 
 # 47. Things you must not do
 
 Do not:
-
-* invent research findings;
-* invent benchmark numbers;
-* assume a library is maintained without checking;
-* choose technology only because it is fashionable;
-* assume `.mbz` is always ZIP;
-* upload backups to a remote service;
-* commit real personal Moodle data;
-* execute arbitrary course JavaScript in the main application origin;
-* blindly copy Moodle GPL code into MIT TypeScript code;
-* claim MBZoo faithfully runs Moodle quizzes without proving it;
-* implement every activity immediately;
-* add a large frontend framework without evidence;
-* split the monorepo into many packages without real boundaries;
-* create duplicate agent instruction files that will drift;
-* edit generated indexes manually;
-* rewrite accepted ADR history;
-* store conclusions without their supporting evidence;
-* create GitHub issues or pull requests merely to obtain IDs;
-* push, merge or publish releases unless explicitly authorized.
+- invent research findings;
+- invent benchmark numbers;
+- assume a library is maintained without checking;
+- choose technology only because it is fashionable;
+- assume `.mbz` is always ZIP;
+- upload backups to a remote service;
+- commit real personal Moodle data;
+- execute arbitrary course JavaScript in the main application origin;
+- blindly copy Moodle GPL code into MIT TypeScript code;
+- claim MBZoo faithfully runs Moodle quizzes without proving it;
+- implement every activity immediately;
+- add a large frontend framework without evidence;
+- split the monorepo into many packages without real boundaries;
+- create duplicate agent instruction files that will drift;
+- edit generated indexes manually;
+- rewrite accepted ADR history;
+- store conclusions without their supporting evidence;
+- create GitHub issues or pull requests merely to obtain IDs;
+- push, merge or publish releases unless explicitly authorized.
 
 ---
 
@@ -1906,4 +1851,3 @@ Recommend **one** next implementation milestone.
 Do not hide uncertainty.
 
 The repository after this task should be a trustworthy technical foundation for MBZoo, not merely a generated project skeleton.
-

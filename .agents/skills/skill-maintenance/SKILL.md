@@ -1,7 +1,9 @@
 ---
+
 name: skill-maintenance
 description: Create, review or update project Agent Skills under .agents/skills without duplicating stale repository guidance.
 ---
+
 # Skill: Skill maintenance
 
 1. A skill must have a narrow trigger and actionable project behavior. Put repo-wide canonical invariants in `AGENTS.md`; skills should specialize them for a task/domain.

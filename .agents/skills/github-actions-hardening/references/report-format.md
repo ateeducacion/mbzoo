@@ -58,8 +58,8 @@ End with the explicit line:
 
 ## Style Rules
 
-* Quote the exact offending line and give its location.
-* Explain risk in plain English — what an attacker actually does, not just the rule name.
-* Per-finding confidence: High / Medium / Low.
-* Don't inflate severity: a fork `pull_request` (read-only token, no secrets) running untrusted
+- Quote the exact offending line and give its location.
+- Explain risk in plain English — what an attacker actually does, not just the rule name.
+- Per-finding confidence: High / Medium / Low.
+- Don't inflate severity: a fork `pull_request` (read-only token, no secrets) running untrusted
   code is not CRITICAL on its own.

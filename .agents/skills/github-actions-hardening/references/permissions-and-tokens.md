@@ -20,14 +20,14 @@ permissions: {}
 jobs:
   build:
     permissions:
-      contents: read          # checkout only
+      contents: read # checkout only
     runs-on: ubuntu-latest
     steps: [...]
 
   comment:
     permissions:
       contents: read
-      pull-requests: write    # this job posts a comment; nothing else
+      pull-requests: write # this job posts a comment; nothing else
     runs-on: ubuntu-latest
     steps: [...]
 ```
@@ -37,10 +37,10 @@ Common scopes: `contents`, `pull-requests`, `issues`, `actions`, `packages`, `id
 
 ## Findings to Flag
 
-* No `permissions:` block anywhere → MEDIUM (inherits possibly-broad default).
-* `permissions: write-all` → HIGH.
-* A `write` scope the job's steps never use → HIGH (drop it).
-* Top-level `write` that should live on one job → MEDIUM (move it down).
+- No `permissions:` block anywhere → MEDIUM (inherits possibly-broad default).
+- `permissions: write-all` → HIGH.
+- A `write` scope the job's steps never use → HIGH (drop it).
+- Top-level `write` that should live on one job → MEDIUM (move it down).
 
 ## OIDC Instead of Long-Lived Cloud Secrets
 
@@ -50,7 +50,7 @@ provider trusts, scoped to that repo/branch, expiring in minutes.
 
 ```yaml
 permissions:
-  id-token: write     # required to request the OIDC token
+  id-token: write # required to request the OIDC token
   contents: read
 jobs:
   deploy:
@@ -69,8 +69,8 @@ specific branch/environment so a fork or another repo cannot assume the role.
 
 ## Secret Hygiene
 
-* Reference secrets only in the jobs that need them.
-* Never `echo` a secret or enable shell tracing (`set -x`) in a step that handles one.
-* Don't pass secrets into third-party actions you haven't pinned and reviewed.
-* Remember fork `pull_request` runs get no secrets — don't try to "fix" that by switching to
+- Reference secrets only in the jobs that need them.
+- Never `echo` a secret or enable shell tracing (`set -x`) in a step that handles one.
+- Don't pass secrets into third-party actions you haven't pinned and reviewed.
+- Remember fork `pull_request` runs get no secrets — don't try to "fix" that by switching to
   `pull_request_target` (see `triggers-and-privilege.md`).

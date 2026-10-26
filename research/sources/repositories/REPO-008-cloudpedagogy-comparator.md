@@ -1,4 +1,5 @@
 ---
+
 id: REPO-008
 title: "cloudpedagogy/cloudpedagogy-moodle-course-comparator (+ content-mapper, book-qa)"
 kind: external-repository
@@ -8,6 +9,7 @@ license: "[PENDING: verification required — README contains a placeholder lice
 ai_tool: opencode
 ai_model: ox-alpha
 ---
+
 Comparator models Book chapters (id/title/content/order/subchapter) — informed
 MBZoo's book-xml.ts. Content Mapper: content-vs-activity tree distinction,
 labels as headings, filters. Book QA: heading/alt/link checks (future QA tab

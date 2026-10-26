@@ -1,7 +1,9 @@
 ---
+
 name: mbz-viewer
 description: Invariants for apps/viewer UI, worker integration and activity renderers. Load before changing viewer state, DOM rendering, previews, styles or worker messaging.
 ---
+
 # Skill: MBZoo viewer work
 
 - Keep the viewer Vite + vanilla TypeScript unless an evidence-backed architectural decision changes ADR-0007. Do not introduce a framework for local convenience.

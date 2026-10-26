@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0023
 title: Experimental SCORM playback — scorm-again in the same document as the SCO
 status: Accepted
@@ -55,7 +56,7 @@ iframe with the existing injected CSP.
 
 The arrangement Moodle itself uses. It cannot work here. `SANDBOX_CSP` sets
 `frame-src 'none'`, and even if it did not, a `blob:` URL minted inside an
-opaque origin yields *another* opaque origin: the nested SCO would be
+opaque origin yields _another_ opaque origin: the nested SCO would be
 cross-origin with its own parent and could not read `window.parent.API`.
 Making it work would mean widening the CSP and adopting scorm-again's
 `CrossFrameAPI`/`CrossFrameLMS` postMessage bridge, which against an opaque
@@ -70,7 +71,6 @@ usually renders nothing at all.
 ## Decision
 
 We will ship **experimental SCORM playback** using scorm-again (TECH-015).
-
 - The course structure is read from `scorm.xml`, never from
   `imsmanifest.xml`: Moodle has already resolved the manifest, including the
   `item` → `resource` mapping and `xml:base`. `packages/core/src/moodle/

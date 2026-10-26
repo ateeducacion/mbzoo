@@ -1,11 +1,12 @@
 ---
+
 id: ADR-NNNN
 title: One-line decision title
 status: Proposed # Proposed | Accepted | Rejected | Superseded
 date: YYYY-MM-DD
-sources: [TECH-NNN, REPO-NNN]   # registered source records
-experiments: [EXP-NNN]          # if applicable
-related: []                     # AN-NNN / ADR-NNNN this decision rests on
+sources: [TECH-NNN, REPO-NNN] # registered source records
+experiments: [EXP-NNN] # if applicable
+related: [] # AN-NNN / ADR-NNNN this decision rests on
 supersedes: []
 ai_tool: opencode | claude-code | grok | antigravity | none | …
 ai_model: model identifier, or "human-only"
@@ -100,12 +101,12 @@ marking Accepted. Delete these comments before submitting.
 
 ### Comparative matrix
 
-| Criterion | Option A | Option B | Option C |
-|---|---|---|---|
-| Runtime / toolchain | | | |
-| Footprint / dependencies | | | |
-| Security / privacy | | | |
-| License / maintenance | | | |
+| Criterion                | Option A | Option B | Option C |
+| ------------------------ | -------- | -------- | -------- |
+| Runtime / toolchain      |          |          |          |
+| Footprint / dependencies |          |          |          |
+| Security / privacy       |          |          |          |
+| License / maintenance    |          |          |          |
 
 ### Option notes
 

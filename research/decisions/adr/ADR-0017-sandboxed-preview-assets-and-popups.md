@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0017
 title: Sandboxed previews — inline data: assets and author links in a new tab
 status: Accepted
@@ -75,7 +76,6 @@ the preview.
 We will keep ADR-0014's shape and change two things.
 
 Restated in full, superseding ADR-0014:
-
 1. **PDF**: pdf.js onto canvas, page-limited, download fallback. No
    iframe. (Unchanged.)
 2. **HTML**: an iframe with an opaque origin plus injected CSP. The grant
@@ -161,19 +161,19 @@ Restated in full, superseding ADR-0014:
 
 The frame's opaque origin is the whole point of ADR-0014 and was treated
 as immovable. That fixes the asset problem's shape: whatever the frame
-loads must be carried *in* the document, because anything addressed by
+loads must be carried _in_ the document, because anything addressed by
 app-origin URL is unreachable by construction.
 
 ### Comparative matrix
 
-| Criterion | A: data: + popups | B: allow-same-origin | C: leave broken |
-|---|---|---|---|
-| Assets load | Yes | Yes | No |
-| Author links work | Yes, in a new tab | Yes | Only outside the frame |
-| Frame can reach app DOM/storage | No | **Yes** | No |
-| Network egress | No (`connect-src 'none'`) | No | No |
-| New risk | Script can open a tab | Full app compromise | None |
-| Cost | +33% payload | None | Preview misrepresents backup |
+| Criterion                       | A: data: + popups         | B: allow-same-origin | C: leave broken              |
+| ------------------------------- | ------------------------- | -------------------- | ---------------------------- |
+| Assets load                     | Yes                       | Yes                  | No                           |
+| Author links work               | Yes, in a new tab         | Yes                  | Only outside the frame       |
+| Frame can reach app DOM/storage | No                        | **Yes**              | No                           |
+| Network egress                  | No (`connect-src 'none'`) | No                   | No                           |
+| New risk                        | Script can open a tab     | Full app compromise  | None                         |
+| Cost                            | +33% payload              | None                 | Preview misrepresents backup |
 
 ### Option notes
 
@@ -190,21 +190,21 @@ cost recorded rather than hidden.
 
 ### Adversarial review
 
-- *Does `allow-popups-to-escape-sandbox` let the frame touch MBZoo?* No.
+- _Does `allow-popups-to-escape-sandbox` let the frame touch MBZoo?_ No.
   It affects the **opened** context, not the opener. The frame stays on
   an opaque origin with no `allow-same-origin`.
-- *Can the frame replace the MBZoo page?* No. `allow-top-navigation` is
+- _Can the frame replace the MBZoo page?_ No. `allow-top-navigation` is
   not granted, and the e2e test asserts its absence.
-- *Does `data:` let the frame exfiltrate?* No. `connect-src 'none'`, and
+- _Does `data:` let the frame exfiltrate?_ No. `connect-src 'none'`, and
   data: URIs are constructed by MBZoo from bytes already read out of the
   user's own file.
-- *Can an author's `rel="opener"` re-enable window.opener?* No. `rel` is
+- _Can an author's `rel="opener"` re-enable window.opener?_ No. `rel` is
   replaced, not appended.
-- *Could `script-src data:` smuggle new code?* The frame already executed
+- _Could `script-src data:` smuggle new code?_ The frame already executed
   arbitrary author script under `'unsafe-inline'` before this change.
   The isolation boundary, not the script's transport, is what contains
   it.
-- *What breaks first at scale?* A site with a large video: the 8 MB cap
+- _What breaks first at scale?_ A site with a large video: the 8 MB cap
   drops it and the element renders empty. Preferable to inlining a
   hundred-megabyte base64 string into a document.
 

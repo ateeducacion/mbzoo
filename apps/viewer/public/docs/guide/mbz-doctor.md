@@ -1,4 +1,4 @@
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/mbz-doctor.md.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
 
 # MBZ Doctor
 
@@ -141,7 +141,7 @@ The filter written is the legacy JSON Moodle 4.3 through 5.2 already
 converts:
 
 ```json
-{"questioncategoryid": 5, "includingsubcategories": 0}
+{ "questioncategoryid": 5, "includingsubcategories": 0 }
 ```
 
 Tags, when present, are copied as `"0,name"`. The category id is a JSON

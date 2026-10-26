@@ -1,11 +1,12 @@
 ---
+
 name: mbz-parser
 description: Project invariants for packages/core parsing code. Load before touching archive, XML, Moodle normalization, or model files.
 ---
+
 # Skill: MBZoo parser work
 
 Invariants; violating any of these is a bug:
-
 - `packages/core` uses Web-platform APIs only (ADR-0004). No Node, DOM, Bun or Vite globals.
 - Treat archive paths, XML values, counts, sizes and identifiers as hostile input. Validate at trust boundaries; unknown/unsupported data should produce useful warnings instead of silent loss or avoidable crashes.
 - XML parsing goes through `src/moodle/xml.ts`; do not introduce direct parser-library imports elsewhere without changing ADR-0006.

@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0011
 title: Monorepo layout — three packages, boundaries proven before splitting
 status: Accepted
@@ -7,7 +8,9 @@ sources: [REPO-003]
 ai_tool: opencode
 ai_model: ox-alpha
 ---
+
 ## Decision
+
 ```
 apps/viewer    Vite vanilla-TS web app (+ parse worker)
 apps/cli       Bun CLI adapter
@@ -22,5 +25,6 @@ only when a real boundary demands it (first candidates: activities renderers,
 exporter).
 
 ## Consequences
-+ Minimal dependency graph (viewer→core, cli→core).
-− core will grow until the activities milestone; watch import coupling.
+
+- Minimal dependency graph (viewer→core, cli→core).
+  − core will grow until the activities milestone; watch import coupling.

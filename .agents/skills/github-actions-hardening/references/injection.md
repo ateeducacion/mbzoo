@@ -7,17 +7,17 @@ that resolves to data an outside contributor controls is therefore a command-inj
 
 These can be set by anyone who can open an issue, PR, or comment:
 
-| Context | Set by |
-| --- | --- |
-| `github.event.issue.title` / `.body` | Issue author |
-| `github.event.pull_request.title` / `.body` | PR author |
-| `github.event.pull_request.head.ref` / `.head.label` | PR author (branch name) |
-| `github.head_ref` | PR author (branch name) |
-| `github.event.comment.body` | Commenter |
-| `github.event.review.body` / `.review_comment.body` | Reviewer |
-| `github.event.commits.*.message` / `head_commit.message` | Commit author |
-| `github.event.commits.*.author.email` / `.name` | Commit author |
-| `github.event.pages.*.page_name` | Wiki editor |
+| Context                                                  | Set by                  |
+| -------------------------------------------------------- | ----------------------- |
+| `github.event.issue.title` / `.body`                     | Issue author            |
+| `github.event.pull_request.title` / `.body`              | PR author               |
+| `github.event.pull_request.head.ref` / `.head.label`     | PR author (branch name) |
+| `github.head_ref`                                        | PR author (branch name) |
+| `github.event.comment.body`                              | Commenter               |
+| `github.event.review.body` / `.review_comment.body`      | Reviewer                |
+| `github.event.commits.*.message` / `head_commit.message` | Commit author           |
+| `github.event.commits.*.author.email` / `.name`          | Commit author           |
+| `github.event.pages.*.page_name`                         | Wiki editor             |
 
 A branch named `$(<attacker-command>)` or an issue titled `"; <attacker-command> #` becomes shell
 when interpolated into a `run:` step.
@@ -33,7 +33,7 @@ when interpolated into a `run:` step.
 
 ## The Safe Pattern — Pass Through `env:`
 
-Bind the untrusted value to an environment variable, then reference the *shell* variable (quoted).
+Bind the untrusted value to an environment variable, then reference the _shell_ variable (quoted).
 The shell variable is data, never re-parsed as workflow syntax:
 
 ```yaml

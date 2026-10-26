@@ -1,4 +1,5 @@
 ---
+
 id: ADR-0032
 title: A SCO travels with its package as a virtual filesystem, XHR included
 status: Accepted
@@ -61,16 +62,15 @@ following Content Security Policy directive`, observed on PRSM107 once the
 VFS was in place).
 
 Standing rules:
-
 0. `'unsafe-eval'` is granted to SCO documents only, never to `SANDBOX_CSP`
-   or `H5P_CSP`. It adds no reach: the frame already executes arbitrary
-   inline script from the same package, on an opaque origin with no
-   network, no storage and no parent access, so code that arrives as a
-   string has exactly the privileges of code that arrived as a `<script>`.
-   What it removes is one defence against string-to-code conversion, which
-   in this frame defends nothing — the strings and the scripts come from the
-   same package. A test locks that the two policies differ by that single
-   source.
+or `H5P_CSP`. It adds no reach: the frame already executes arbitrary
+inline script from the same package, on an opaque origin with no
+network, no storage and no parent access, so code that arrives as a
+string has exactly the privileges of code that arrived as a `<script>`.
+What it removes is one defence against string-to-code conversion, which
+in this frame defends nothing — the strings and the scripts come from the
+same package. A test locks that the two policies differ by that single
+source.
 1. The shim serves package paths only. It never widens what leaves the
    frame; a URL outside the package behaves exactly as today.
 2. The VFS is bounded (`MAX_SCO_VFS_BYTES`); records that do not fit are

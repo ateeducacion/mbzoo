@@ -1,4 +1,5 @@
 ---
+
 id: REPO-005
 title: "moodle/moodle (upstream source + docs)"
 kind: external-repository
@@ -7,7 +8,9 @@ commit: branch main, accessed 2026-08-24
 accessed: 2026-08-24
 license: GPL-3.0-or-later (studied for format understanding only; no code ported)
 ---
+
 ## Key facts (each verified against named files)
+
 - `lib/filestorage/mbz_packer.php`: .mbz is either ZIP ("moodle2" default pre-2.9)
   or tar+gz; tgz opt-in since 2.6 (MDL-41838), default since 2.9 (MDL-49298).
 - `lib/filestorage/tgz_packer.php` docblock: POSIX ustar output; filename ≤100,
