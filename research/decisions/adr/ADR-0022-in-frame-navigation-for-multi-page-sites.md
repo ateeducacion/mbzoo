@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0022
 title: Multi-page sites navigate in-frame through a validated request to MBZoo
 status: Accepted
@@ -50,7 +49,7 @@ and the document doing the asking is hostile input?
 ## Options
 
 1. **Keep every page link inert (ADR-0020).** Honest but unusable for
-   exported courseware, whose navigation _is_ the links. Rejected.
+   exported courseware, whose navigation *is* the links. Rejected.
 2. **Recursively process and inline siblings.** Correct at depth 1,
    O(pages^depth) beyond it, and duplicates every shared asset per page.
    Rejected in ADR-0020 and still rejected.
@@ -59,7 +58,8 @@ and the document doing the asking is hostile input?
 
 ## Decision
 
-We will let a sandboxed page _request_ navigation, and let MBZoo decide.
+We will let a sandboxed page *request* navigation, and let MBZoo decide.
+
 - `rewriteRelativeRefs` still removes the `href`. A reference that resolves
   to an HTML record which is genuinely one of this render's pages becomes
   `data-mbz-page`; any other HTML record becomes `data-mbz-page-inert` and
@@ -82,7 +82,7 @@ We will let a sandboxed page _request_ navigation, and let MBZoo decide.
    been through `rewriteRelativeRefs` + `retargetExternalLinks` +
    `injectCsp` must not be reachable from the frame. (Carried forward from
    ADR-0020, unchanged.)
-2. A navigation request is authorized by _what it names_, never by where it
+2. A navigation request is authorized by *what it names*, never by where it
    claims to come from. `event.origin` is `"null"` for an opaque origin and
    must never be used as authority.
 3. Window identity alone does not authenticate a document. Every rendered
@@ -158,7 +158,7 @@ first version of this ADR would have asserted guarantees MBZoo did not have.
 
 **Window identity authenticates a browsing context, not a document.**
 `frame.contentWindow` returns a WindowProxy whose identity survives a
-cross-document navigation. A sandboxed frame may navigate _itself_ —
+cross-document navigation. A sandboxed frame may navigate *itself* —
 `allow-top-navigation` governs the top-level context, not the frame's own —
 and `SANDBOX_CSP` contains no directive that governs it: `frame-src` covers
 nested contexts, `form-action` covers submissions, `connect-src` covers
@@ -184,8 +184,9 @@ because `dispose()` removes the listener synchronously before any dispatch.
 ### Two defects found in code this decision touches
 
 Both pre-date this ADR and are fixed here rather than left in place.
+
 - `rewriteRelativeRefs` passed a backup-controlled reference as the
-  _replacement_ argument of `String.replace`, where `$'` expands to the
+  *replacement* argument of `String.replace`, where `$'` expands to the
   portion of the string after the match. A reference containing `$'` would
   splice the rest of the document into an attribute. Replacements now go
   through a literal `replaceOnce`.
@@ -207,5 +208,5 @@ resource's own record list".
 
 What the token adds is narrower and worth stating precisely: it does not
 defend against a hostile script in the document MBZoo composed, because that
-script can read the token. It defends against a _different_ document
+script can read the token. It defends against a *different* document
 inheriting the same browsing context.

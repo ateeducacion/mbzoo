@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0033
 title: Legacy .elp projects are rendered from their contentv3.xml mirror
 status: Accepted
@@ -42,6 +41,7 @@ without reimplementing the eXe site generator?
 Parse `contentv3.xml` (or `contentv2.xml`) into the node tree and render each
 node's iDevice HTML through the single sanitize path (ADR-0012), with image
 references resolved from the package by filename.
+
 - `packages/core/src/moodle/elp-xml.ts` reads the object graph: it builds a
   small element tree, indexes every `reference` id, and walks
   Package → root Node → `idevices` + `children`, resolving references in
@@ -53,6 +53,7 @@ references resolved from the package by filename.
   applied to the legacy format.
 
 Standing rules:
+
 1. Only the XML mirror is read. `content.data` stays opaque (ADR-0025);
    there is no jelly decoder in the browser.
 2. Legacy content reaches the DOM only through `sanitizeHtml` (ADR-0012).

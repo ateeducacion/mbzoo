@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0018
 title: Experimental H5P playback — h5p-standalone inside the opaque-origin sandbox
 status: Accepted
@@ -71,6 +70,7 @@ We will ship **experimental H5P playback** using h5p-standalone (TECH-014)
 inside the existing sandbox model.
 
 Standing rules:
+
 1. The player page runs in an iframe with `sandbox="allow-scripts"` only —
    no new tokens (`allow-same-origin`, popups, forms, downloads) are added
    for H5P (ADR-0014).
@@ -157,22 +157,22 @@ virtual filesystem. In `iframe` mode the core runs inside a nested frame;
 
 ### Comparative matrix
 
-| Criterion        | A: h5p-standalone sandbox            | B: Lumi Node.js stack   | C: download-only |
-| ---------------- | ------------------------------------ | ----------------------- | ---------------- |
-| Runtime          | Browser-only, lazy chunk             | Node server + client    | —                |
-| Dependencies     | One MIT-declared package (TECH-014)  | Server framework family | None             |
-| Security surface | Same iframe+CSP as ADR-0014          | New server + APIs       | None             |
-| License risk     | Vendored core GPL question [PENDING] | GPL-3.0                 | None             |
-| Honest now       | Yes, as experimental                 | No (needs backend)      | Yes              |
+| Criterion | A: h5p-standalone sandbox | B: Lumi Node.js stack | C: download-only |
+|---|---|---|---|
+| Runtime | Browser-only, lazy chunk | Node server + client | — |
+| Dependencies | One MIT-declared package (TECH-014) | Server framework family | None |
+| Security surface | Same iframe+CSP as ADR-0014 | New server + APIs | None |
+| License risk | Vendored core GPL question [PENDING] | GPL-3.0 | None |
+| Honest now | Yes, as experimental | No (needs backend) | Yes |
 
 ### Adversarial review
 
-- _Can the package reach the network?_ `connect-src 'none'`; the fetch shim
+- *Can the package reach the network?* `connect-src 'none'`; the fetch shim
   answers only from in-memory entries; subresources resolve to blob URLs.
   The e2e probe asserts no request leaves the page.
-- _Can it touch the app?_ Opaque origin (`allow-scripts` only): parent DOM,
+- *Can it touch the app?* Opaque origin (`allow-scripts` only): parent DOM,
   storage and cookies are inaccessible; no postMessage bridge exists.
-- _What if the package is malformed?_ Unzip/parse failures degrade to the
+- *What if the package is malformed?* Unzip/parse failures degrade to the
   existing download card; the renderer catches and annotates.
-- _Dependency lock-in?_ Player is isolated behind `h5p-player.ts`; swapping
+- *Dependency lock-in?* Player is isolated behind `h5p-player.ts`; swapping
   engines would not touch renderers.

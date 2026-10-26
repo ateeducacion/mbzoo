@@ -1,5 +1,4 @@
 ---
-
 id: REPO-002
 title: "exelearning/moodle-mod_exelearning"
 kind: external-repository
@@ -8,9 +7,7 @@ commit: local clone inspected 2026-08-24 (/Users/ernesto/Downloads/git/mod_exele
 accessed: 2026-08-24
 license: GPL-3.0-or-later
 ---
-
 ## Facts observed (local clone)
-
 - `research/AGENTS.md`: 16 binding principles (evidence-before-preference,
   append-only ledger, stable IDs, no vendoring, reproducible experiments).
 - ADRs at `research/decisiones/adr/DEC-<issue>-<nn>-<slug>.md` with YAML
@@ -25,11 +22,9 @@ license: GPL-3.0-or-later
 - CI: concurrency-cancel groups, coverage ratchet, Dependabot-pinned actions.
 
 ## License caution
-
-GPL-3.0 repository: conventions and _ideas_ are reusable; **no code copying**
+GPL-3.0 repository: conventions and *ideas* are reusable; **no code copying**
 into MIT MBZoo (root AGENTS.md rule).
 
 ## Relevance to MBZoo
-
 Primary template for the research/evidence system, ADR validation approach and
 experiment record format. PHP-specific machinery not applicable.

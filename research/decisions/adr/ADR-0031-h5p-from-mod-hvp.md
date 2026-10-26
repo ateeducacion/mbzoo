@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0031
 title: H5P content stored by mod_hvp is composed into a package, not looked for as one
 status: Accepted
@@ -60,7 +59,7 @@ player and without pretending the input is something it is not?
 ## Decision
 
 `composeHvpEntries` builds the same path → bytes map `unzipH5p` would have
-produced: `h5p.json` (title, main library, one preloaded dependency),
+produced: `h5p.json` (title, main library, one preloaded dependency), 
 `content/content.json` (= `json_content`), `content/<media>` (this instance's
 `content` records), and every file of every library reachable — through
 `preloadedDependencies` — from two kinds of root: the main library, and
@@ -71,6 +70,7 @@ parameters are the only record the backup carries of them. The player is
 then invoked exactly as for a `.h5p`.
 
 Standing rules:
+
 1. `machine_name` must match `^[A-Za-z][\w.]*$` and versions must be
    integers, or the activity is not composed. They become folder names.
 2. Only libraries reachable from the main library or from a sub-content
@@ -78,7 +78,7 @@ Standing rules:
    degrades to the fallback note, never a silent gap.
 3. Composition is bounded by `MAX_HVP_PACKAGE_BYTES` and a library count
    cap; a backup cannot make the frame hold the course's whole tree.
-4. Media is selected by the hvp _instance_ id, read from the `<activity id>`
+4. Media is selected by the hvp *instance* id, read from the `<activity id>`
    root attribute (`ParsedActivity.instanceId`), never by the course-module
    id the tree carries. The two differ in every real backup, and using the
    wrong one silently yields a package with no media at all.

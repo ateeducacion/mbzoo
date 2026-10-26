@@ -1,5 +1,4 @@
 ---
-
 id: REPO-003
 title: "procomun_2 (INTEF-Proyectos/procomun)"
 kind: external-repository
@@ -8,9 +7,7 @@ commit: local clone inspected 2026-08-24 (/Users/ernesto/Downloads/git/procomun_
 accessed: 2026-08-24
 license: "[PENDING: verification required — public GitHub org currently 404]"
 ---
-
 ## Facts observed (local clone)
-
 Modern Bun + TypeScript monorepo:
 - Workspaces `apps/*`, `packages/*`; Bun 1.3.x lockfile; Biome lint/format;
   bun:test unit + integration suites; Playwright E2E incl. @axe-core/playwright;
@@ -23,12 +20,10 @@ Modern Bun + TypeScript monorepo:
 - GitHub Pages used for static PR previews (ADR-0010 in that repo).
 
 ## Note
-
 The public GitHub organization INTEF-Proyectos/procomun returned 404 on
 2026-08-24; findings are from the provided local clone. The legacy
 ctt-gob-es/procomun repo is unrelated.
 
 ## Relevance to MBZoo
-
 Confirms the Bun+TS+Biome+Playwright toolchain pattern in a sibling ATE/INTEF
 project; adopt ADR-before-stack discipline and axe-core in E2E.

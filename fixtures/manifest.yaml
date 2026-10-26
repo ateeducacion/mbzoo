@@ -13,55 +13,10 @@ fixtures:
     moodle_version_target: "3.8 schema shapes"
     includes:
       sections: 3
-      activities:
-        [
-          page,
-          label,
-          page(content),
-          quiz(2 questions),
-          glossary(2 entries),
-          resource,
-          assign,
-          supermodule(unknown-plugin),
-          h5pactivity(synthetic .h5p: nested libs,
-          string versions,
-          content/ image),
-          feedback(label + multichoice + pagebreak + textarea),
-          lesson(branching: content page + question page),
-          choice(2 options),
-          forum(qanda,
-          no discussions),
-          data(2 fields),
-          workshop(instructions + example),
-          imscp(PHP-serialized TOC),
-          url,
-          folder(text + 8-bit WAV tone),
-          chat,
-          wiki,
-          survey(retired 5.0),
-          assignment(retired 4.2),
-          subsection(delegated section owning a page),
-          scorm(SCORM 1.2: organization + 2 launchable SCOs,
-          one loading a script dynamically and by XHR,
-          content tree + package zip),
-          hvp(mod_hvp: hvp.xml + libraries/content areas,
-          no .h5p),
-        ]
+      activities: [page, label, page(content), quiz(2 questions), glossary(2 entries), resource, assign, supermodule(unknown-plugin), h5pactivity(synthetic .h5p: nested libs, string versions, content/ image), feedback(label + multichoice + pagebreak + textarea), lesson(branching: content page + question page), choice(2 options), forum(qanda, no discussions), data(2 fields), workshop(instructions + example), imscp(PHP-serialized TOC), url, folder(text + 8-bit WAV tone), chat, wiki, survey(retired 5.0), assignment(retired 4.2), subsection(delegated section owning a page), scorm(SCORM 1.2: organization + 2 launchable SCOs, one loading a script dynamically and by XHR, content tree + package zip), hvp(mod_hvp: hvp.xml + libraries/content areas, no .h5p)]
       embedded: [lesson page image + question image, both via @@PLUGINFILE@@ in per-row file areas]
-      grading:
-        [
-          assign grade item (max/pass/weight),
-          assign rubric (2 criteria),
-          course gradebook (2 categories,
-          2 letters),
-        ]
-      packages:
-        [
-          epub(EPUB 3: 2-chapter spine + relative css/image),
-          elpx(eXeLearning 4: content.xml + exported 2-page site),
-          elp(eXeLearning 2.x legacy: contentv3.xml,
-          2 nodes),
-        ]
+      grading: [assign grade item (max/pass/weight), assign rubric (2 criteria), course gradebook (2 categories, 2 letters)]
+      packages: [epub(EPUB 3: 2-chapter spine + relative css/image), elpx(eXeLearning 4: content.xml + exported 2-page site), elp(eXeLearning 2.x legacy: contentv3.xml, 2 nodes)]
       files_indexed: 24
     expected_parser_result:
       course_fullname: Demo Course for MBZoo

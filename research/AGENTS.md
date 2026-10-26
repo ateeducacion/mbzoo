@@ -1,6 +1,7 @@
 # Research rules for agents
 
 Scope: everything under `research/`. For repo-wide rules see the root `AGENTS.md`.
+
 1. Read `status.yaml` before writing anything here; append, never rewrite history.
 2. Register a source record **before** citing it. One file per source, named
    `<ID>-<slug>.md`, frontmatter first field `id:`.

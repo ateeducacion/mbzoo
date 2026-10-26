@@ -7,137 +7,40 @@ metadata:
 
 decisions:
   ADR-0001: { title: Primary implementation language, status: Accepted, date: 2026-08-24 }
-  ADR-0002:
-    { title: Bun for repository tooling and CLI runtime, status: Accepted, date: 2026-08-24 }
+  ADR-0002: { title: Bun for repository tooling and CLI runtime, status: Accepted, date: 2026-08-24 }
   ADR-0003: { title: Browser build strategy — Bun vs Vite, status: Accepted, date: 2026-08-24 }
   ADR-0004: { title: Portable core with runtime adapters, status: Accepted, date: 2026-08-24 }
-  ADR-0005:
-    { title: Archive abstraction and large-file strategy, status: Accepted, date: 2026-08-24 }
+  ADR-0005: { title: Archive abstraction and large-file strategy, status: Accepted, date: 2026-08-24 }
   ADR-0006: { title: XML parsing strategy, status: Accepted, date: 2026-08-24 }
-  ADR-0007:
-    { title: UI architecture — vanilla TypeScript first, status: Accepted, date: 2026-08-24 }
+  ADR-0007: { title: UI architecture — vanilla TypeScript first, status: Accepted, date: 2026-08-24 }
   ADR-0008: { title: Testing strategy, status: Accepted, date: 2026-08-24 }
   ADR-0009: { title: Untrusted-content security model, status: Accepted, date: 2026-08-24 }
-  ADR-0010:
-    { title: Research, evidence and documentation workflow, status: Accepted, date: 2026-08-24 }
+  ADR-0010: { title: Research, evidence and documentation workflow, status: Accepted, date: 2026-08-24 }
   ADR-0011: { title: Monorepo package layout, status: Accepted, date: 2026-08-24 }
-  ADR-0022:
-    {
-      title: Multi-page sites navigate in-frame through a validated request to MBZoo,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0023:
-    {
-      title: Experimental SCORM playback — scorm-again in the same document as the SCO,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0024:
-    {
-      title: EPUB reading — a spine reader of our own,
-      not a reader library,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0025:
-    {
-      title: eXeLearning packages are classified by what is inside them,
-      not by their extension,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0027:
-    {
-      title: Every browser runs on every change,
-      and the worker stays one chunk,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0028:
-    {
-      title: A resource is the file Moodle marked,
-      not the file whose name looks right,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0029:
-    {
-      title: Read archives lazily — ZIP by central directory,
-      TAR.GZ streamed into one buffer,
-      status: Superseded,
-      date: 2026-08-25,
-    }
-  ADR-0030:
-    {
-      title: Sections form a tree when the course format says so,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0031:
-    {
-      title: H5P content stored by mod_hvp is composed into a package,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0032:
-    {
-      title: A SCO travels with its package as a virtual filesystem,
-      XHR included,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0033:
-    {
-      title: Legacy .elp projects are rendered from their contentv3.xml mirror,
-      status: Accepted,
-      date: 2026-08-25,
-    }
-  ADR-0036:
-    {
-      title: The decompressed tar is staged in a Blob,
-      not in one ArrayBuffer,
-      status: Proposed,
-      date: 2026-08-28,
-    }
+  ADR-0022: { title: Multi-page sites navigate in-frame through a validated request to MBZoo, status: Accepted, date: 2026-08-25 }
+  ADR-0023: { title: Experimental SCORM playback — scorm-again in the same document as the SCO, status: Accepted, date: 2026-08-25 }
+  ADR-0024: { title: EPUB reading — a spine reader of our own, not a reader library, status: Accepted, date: 2026-08-25 }
+  ADR-0025: { title: eXeLearning packages are classified by what is inside them, not by their extension, status: Accepted, date: 2026-08-25 }
+  ADR-0027: { title: Every browser runs on every change, and the worker stays one chunk, status: Accepted, date: 2026-08-25 }
+  ADR-0028: { title: A resource is the file Moodle marked, not the file whose name looks right, status: Accepted, date: 2026-08-25 }
+  ADR-0029: { title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer, status: Superseded, date: 2026-08-25 }
+  ADR-0030: { title: Sections form a tree when the course format says so, status: Accepted, date: 2026-08-25 }
+  ADR-0031: { title: H5P content stored by mod_hvp is composed into a package, status: Accepted, date: 2026-08-25 }
+  ADR-0032: { title: A SCO travels with its package as a virtual filesystem, XHR included, status: Accepted, date: 2026-08-25 }
+  ADR-0033: { title: Legacy .elp projects are rendered from their contentv3.xml mirror, status: Accepted, date: 2026-08-25 }
+  ADR-0036: { title: The decompressed tar is staged in a Blob, not in one ArrayBuffer, status: Proposed, date: 2026-08-28 }
   ADR-0037: { title: Repair-only full backup rewrite, status: Proposed, date: 2026-10-14 }
-  ADR-0038:
-    { title: Archive additions and renames for MBZ Doctor, status: Proposed, date: 2026-10-15 }
+  ADR-0038: { title: Archive additions and renames for MBZ Doctor, status: Proposed, date: 2026-10-15 }
 
 tasks:
   TASK-001: { title: Pin GitHub Actions to commit SHAs, status: open, priority: high }
   TASK-002: { title: Playwright matrix on Firefox/WebKit in CI, status: open, priority: medium }
-  TASK-003:
-    {
-      title: Large-file strategy spike (streaming TAR.GZ + lazy ZIP),
-      status: open,
-      priority: medium,
-    }
-  TASK-004:
-    {
-      title: Activity renderers (Page,
-      Label,
-      URL) behind capability model,
-      status: open,
-      priority: medium,
-    }
+  TASK-003: { title: Large-file strategy spike (streaming TAR.GZ + lazy ZIP), status: open, priority: medium }
+  TASK-004: { title: Activity renderers (Page, Label, URL) behind capability model, status: open, priority: medium }
   TASK-005: { title: Accessibility audit pass (axe + keyboard), status: open, priority: medium }
-  TASK-006:
-    {
-      title: File context graph (ContentAssociation + confidence),
-      status: open,
-      priority: medium,
-      date: 2026-08-25,
-    }
-  TASK-007:
-    {
-      title: Explorer filters + content/activity distinction,
-      status: open,
-      priority: low,
-      date: 2026-08-25,
-    }
-  TASK-008:
-    { title: Content QA tab (headings, alt, links), status: open, priority: low, date: 2026-08-25 }
+  TASK-006: { title: File context graph (ContentAssociation + confidence), status: open, priority: medium, date: 2026-08-25 }
+  TASK-007: { title: Explorer filters + content/activity distinction, status: open, priority: low, date: 2026-08-25 }
+  TASK-008: { title: Content QA tab (headings, alt, links), status: open, priority: low, date: 2026-08-25 }
 
 added:
   - date: 2026-08-25
@@ -149,11 +52,7 @@ added:
   - date: 2026-08-25
     note: Detail pane rebuilt as toolbar + Preview/Info/Raw tabs; per-activity export shipped — ADR-0016 (module XML, rendered content HTML, files ZIP; no whole-backup re-packaging). fflate declared in core and viewer.
   - date: 2026-08-25
-    note: >-
-      Sandboxed previews fixed against real backups — ADR-0017 supersedes ADR-0014
-      (inline data: assets instead of unusable app-origin blob: URLs; allow-popups
-      + escape so author links open a tab). Random quiz slots now resolve to their
-      bank category pool instead of claiming the questions are absent.
+    note: Sandboxed previews fixed against real backups — ADR-0017 supersedes ADR-0014 (inline data: assets instead of unusable app-origin blob: URLs; allow-popups + escape so author links open a tab). Random quiz slots now resolve to their bank category pool instead of claiming the questions are absent.
   - date: 2026-08-25
     note: Experimental H5P playback — ADR-0018 adopts h5p-standalone (TECH-014) inside the ADR-0017 opaque-origin sandbox via an in-memory virtual filesystem shim. Synthetic .h5p package added to the demo fixture. Vendored-core GPL question recorded as open risk.
   - date: 2026-08-25
@@ -257,19 +156,6 @@ added:
       per row; a lookup that misses now returns nothing rather than another
       row's file. Question files are pinned without a contextid: they hang off
       the question bank category, not the activity.
-  - date: 2026-08-28
-    note: >-
-      TAR.GZ is staged in a Blob (ADR-0036, supersedes ADR-0029). Pre-sizing
-      one buffer from the gzip trailer's ISIZE asked the renderer for the
-      whole decompressed tar in a single contiguous block before decompressing
-      anything, and a user opening a real course backup on Chrome/Windows got
-      V8's raw "Array buffer allocation failed" on the error card — unwrapped,
-      because the throw sat outside the try. The bytes now stream into a Blob
-      while ustar headers are indexed in passing, and readEntry slices out the
-      one entry asked for. Renderer peak on a 1,385 MB backup: 1,766 MB to
-      425 MB, at ~28 % more wall time (EXP-005). An allocation a browser still
-      refuses is now an MbzParseError naming the entry and its size, on both
-      readers.
   - date: 2026-10-14
     note: >-
       MBZ Doctor scans a backup in the browser and can download a new .mbz
@@ -392,3 +278,16 @@ risks:
       Moodle has not been verified. TASK-017 is the missing Moodle restore
       of the modern random-question repair. The original Blob is never written.
     status: open
+  - date: 2026-08-28
+    note: >-
+      TAR.GZ is staged in a Blob (ADR-0036, supersedes ADR-0029). Pre-sizing
+      one buffer from the gzip trailer's ISIZE asked the renderer for the
+      whole decompressed tar in a single contiguous block before decompressing
+      anything, and a user opening a real course backup on Chrome/Windows got
+      V8's raw "Array buffer allocation failed" on the error card — unwrapped,
+      because the throw sat outside the try. The bytes now stream into a Blob
+      while ustar headers are indexed in passing, and readEntry slices out the
+      one entry asked for. Renderer peak on a 1,385 MB backup: 1,766 MB to
+      425 MB, at ~28 % more wall time (EXP-005). An allocation a browser still
+      refuses is now an MbzParseError naming the entry and its size, on both
+      readers.

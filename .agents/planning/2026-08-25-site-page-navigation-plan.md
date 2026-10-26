@@ -69,9 +69,7 @@ test('parseNavigationRequest rejects hostile shapes', () => {
   expect(parseNavigationRequest(42)).toBeUndefined()
   expect(parseNavigationRequest([])).toBeUndefined()
   expect(parseNavigationRequest({ type: 'navigate', page: 'p.html' })).toBeUndefined()
-  expect(
-    parseNavigationRequest({ source: 'other', type: 'navigate', page: 'p.html' }),
-  ).toBeUndefined()
+  expect(parseNavigationRequest({ source: 'other', type: 'navigate', page: 'p.html' })).toBeUndefined()
   expect(parseNavigationRequest({ source: 'mbzoo', type: 'exec', page: 'p.html' })).toBeUndefined()
   expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: 42 })).toBeUndefined()
   expect(parseNavigationRequest({ source: 'mbzoo', type: 'navigate', page: '' })).toBeUndefined()
@@ -90,6 +88,7 @@ test('parseNavigationRequest is not fooled by a prototype-polluted payload', () 
 
 Run: `bun test apps/viewer/test/preview-utils.test.ts`
 Expected: FAIL — `splitRef` and `parseNavigationRequest` are not exported.
+
 - [ ] **Step 3: Implement the helpers**
 
 In `apps/viewer/src/lib/preview-utils.ts`, add above `resolveRelative`:
@@ -140,10 +139,12 @@ export function resolveRelative(dir: string, ref: string): string {
 ```
 
 The rest of the function body is unchanged (it already iterates `parts`).
+
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `bun test apps/viewer/test/preview-utils.test.ts`
 Expected: PASS, existing tests still green.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -194,10 +195,7 @@ test('the navigation script asks the parent instead of navigating itself', () =>
 test('the CSP meta precedes any script we inject into a sandboxed page', () => {
   // injectHead prepends, so whatever is injected last ends up first. A script
   // placed before the CSP meta would run before the policy applied.
-  const built = injectCsp(
-    injectHead('<html><head></head><body></body></html>', PAGE_NAV_SCRIPT),
-    SANDBOX_CSP,
-  )
+  const built = injectCsp(injectHead('<html><head></head><body></body></html>', PAGE_NAV_SCRIPT), SANDBOX_CSP)
   expect(built.indexOf('Content-Security-Policy')).toBeLessThan(built.indexOf('<script'))
 })
 ```
@@ -206,6 +204,7 @@ test('the CSP meta precedes any script we inject into a sandboxed page', () => {
 
 Run: `bun test apps/viewer/test/preview-utils.test.ts`
 Expected: FAIL — `PAGE_NAV_SCRIPT` is not exported.
+
 - [ ] **Step 3: Add the script constant**
 
 In `apps/viewer/src/lib/preview-utils.ts`:
@@ -232,10 +231,12 @@ export const PAGE_NAV_SCRIPT =
 ```
 
 Note: the source ends with `<\/script>` written as `'<\\/script>'` in TypeScript, which evaluates to the string `</script>` — correct in the document, while the literal in the `.ts` file cannot close a script element if this file is ever inlined.
+
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `bun test apps/viewer/test/preview-utils.test.ts`
 Expected: PASS.
+
 - [ ] **Step 5: Thread the options through the renderer**
 
 In `apps/viewer/src/renderers.ts`:
@@ -269,13 +270,13 @@ to
 and its sandboxed-HTML branch (~line 528) from
 
 ```ts
-await this.renderSandboxedHtml(data, rec, card)
+      await this.renderSandboxedHtml(data, rec, card)
 ```
 
 to
 
 ```ts
-await this.renderSandboxedHtml(data, rec, card, opts)
+      await this.renderSandboxedHtml(data, rec, card, opts)
 ```
 
 Change `renderSandboxedHtml` (~line 586) to accept the options and reorder the head injections so the CSP lands first:
@@ -307,10 +308,12 @@ Change `renderSandboxedHtml` (~line 586) to accept the options and reorder the h
 The rest of `renderSandboxedHtml` (title, className, sandbox tokens, append) is unchanged.
 
 Add `PAGE_NAV_SCRIPT` to the existing import block from `./lib/preview-utils.ts` at the top of `renderers.ts`, keeping the list alphabetical.
+
 - [ ] **Step 6: Verify nothing regressed**
 
 Run: `bun run check`
 Expected: PASS. If Biome reports import order, let `bun run check` fix it and re-run.
+
 - [ ] **Step 7: Commit**
 
 ```bash
@@ -427,6 +430,7 @@ Replace the body of the `if (pages.length > 1) { ... }` branch in `renderWebsite
 ```
 
 Add `parseNavigationRequest` and `splitRef` to the `./lib/preview-utils.ts` import block.
+
 - [ ] **Step 3: Update the hint in both languages**
 
 In `apps/viewer/src/lib/i18n.ts`, replace the English `site.pagesHint` (~line 77):
@@ -447,6 +451,7 @@ and the Spanish one (~line 203):
 
 Run: `bun run check`
 Expected: PASS.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -472,7 +477,7 @@ Replaces the ADR-0020 assertion that the link is inert.
 In `e2e/viewer.spec.ts`, replace the `html` and `page2` constants inside `websiteFixture()` (~line 476):
 
 ```ts
-const html = `<!doctype html>
+  const html = `<!doctype html>
 <html><head><link rel="stylesheet" href="site.css"></head>
 <body><p id="site-marker">site</p><img id="rel-img" src="pic.png" alt="">
 <a id="ext-link" href="https://example.com/docs">external</a>
@@ -481,9 +486,9 @@ const html = `<!doctype html>
 <button id="forge" onclick="parent.postMessage({source:'mbzoo',type:'navigate',page:'../../../secret.html'},'*')">forge</button>
 <button id="forge-known" onclick="parent.postMessage({source:'evil',type:'navigate',page:'page2.html'},'*')">forge known</button>
 </body></html>`
-// A second page of the same site, styled by the same relative stylesheet —
-// the shape every eXeLearning export has (SMR_SOR "Solución a la tarea").
-const page2 = `<!doctype html>
+  // A second page of the same site, styled by the same relative stylesheet —
+  // the shape every eXeLearning export has (SMR_SOR "Solución a la tarea").
+  const page2 = `<!doctype html>
 <html><head><link rel="stylesheet" href="site.css"></head>
 <body><p id="page2-marker">page two</p>
 <div style="height:200vh"></div>
@@ -561,10 +566,12 @@ test('a forged navigation request cannot leave the resource (ADR-0022)', async (
 
 Run: `bun run test:e2e`
 Expected: PASS. If Playwright browsers are missing, run `npx playwright install chromium` first.
+
 - [ ] **Step 4: Confirm the sandbox test still passes untouched**
 
 Run: `bun run test:e2e -- -g "external links in a sandboxed site"`
 Expected: PASS — proof that no sandbox token changed.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -594,17 +601,21 @@ The argument, in full, is in the spec at `docs/superpowers/specs/2026-08-25-site
 - [ ] **Step 2: Mark ADR-0020 superseded**
 
 Change only its front matter `status: Accepted` to `status: Superseded by ADR-0022`. Do not rewrite its body — accepted ADR history is never rewritten.
+
 - [ ] **Step 3: Append to `research/status.yaml`**
 
 Add the tracked task/risk entry for this change. Append only; do not reorder existing entries.
+
 - [ ] **Step 4: Regenerate the research indexes**
 
 Run: `bun run research:indexes`
 Expected: `research/indexes/*.yaml` updated. Never hand-edit them.
+
 - [ ] **Step 5: Full verification**
 
 Run: `bun run check && bun run test:e2e`
 Expected: both PASS.
+
 - [ ] **Step 6: Commit**
 
 ```bash
@@ -620,4 +631,4 @@ git commit -m "ADR-0022: navigate multi-page sites from validated in-frame reque
 
 **Type consistency.** `splitRef` returns `{ path, hash }` in Task 1 and is destructured as such in Tasks 2 and 3. `parseNavigationRequest` returns `string | undefined` and Task 3 tests it with `=== undefined`. `filePreview(rec, opts?)` is defined in Task 2 and called with `{ pageNav: true, hash }` in Task 3. `cleanups` is declared and drained in Task 3 only.
 
-**Additions beyond the spec, and why.** The spec did not mention two things this plan adds, both found while reading the code: the head-injection order (a script injected after `injectCsp` would land _before_ the CSP meta, so it would run before the policy applied) and the navigation rate guard (`this.urls` in `renderers.ts:67` only shrinks in `dispose()`, so a frame posting in a loop would grow blob-URL allocations without bound). Both are recorded here rather than left to the implementer.
+**Additions beyond the spec, and why.** The spec did not mention two things this plan adds, both found while reading the code: the head-injection order (a script injected after `injectCsp` would land *before* the CSP meta, so it would run before the policy applied) and the navigation rate guard (`this.urls` in `renderers.ts:67` only shrinks in `dispose()`, so a frame posting in a loop would grow blob-URL allocations without bound). Both are recorded here rather than left to the implementer.

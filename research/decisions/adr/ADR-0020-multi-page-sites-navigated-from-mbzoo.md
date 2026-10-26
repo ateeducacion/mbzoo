@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0020
 title: Multi-page sites are navigated from MBZoo, not by following links inside the sandbox
 status: Superseded
@@ -20,7 +19,7 @@ ai_model: claude-opus-5
 ADR-0017 renders a multi-file HTML resource by inlining every resolvable
 relative `src`/`href` as a `data:` URI, because an opaque-origin iframe
 cannot load a `blob:` URL minted by the app origin. That rule was written
-for _assets_ — stylesheets, scripts, images — and applied to every
+for *assets* — stylesheets, scripts, images — and applied to every
 reference, including links to **other HTML pages of the same site**.
 
 An eXeLearning export is exactly that shape. "Solución a la tarea. SOR01."
@@ -31,6 +30,7 @@ navigation, so every page links to all the others.
 
 Following one of those links inside the frame took the reader to
 `data:text/html;base64,…` holding the sibling page's **raw bytes**:
+
 - Its own `<link rel="stylesheet" href="base.css">` is still relative, and
   a relative URL cannot resolve against a `data:` base. The page arrived
   unstyled, unscripted and imageless — the reported symptom.
@@ -38,7 +38,7 @@ Following one of those links inside the frame took the reader to
   apply to it. A page reached this way could request remote content, which
   ADR-0009 forbids.
 
-Inlining the sibling _processed_ rather than raw does not work either: each
+Inlining the sibling *processed* rather than raw does not work either: each
 of the eight pages links to the other seven, so recursive inlining is
 O(pages^depth) — the assets would be duplicated into every copy.
 
@@ -71,6 +71,7 @@ site into every page and without leaking a document past the injected CSP?
 
 We will treat a relative reference that resolves to an HTML document as a
 **page**, not an asset:
+
 - `rewriteRelativeRefs` replaces its `href` with `data-mbz-page="<ref>"`.
   The link keeps its text, loses its target, and a stylesheet we inject
   marks it as inert. Assets are inlined exactly as before.
@@ -80,6 +81,7 @@ We will treat a relative reference that resolves to an HTML document as a
   not navigate.
 
 Standing rules:
+
 - Never inline an HTML document as a `data:` URI. A document that has not
   been through `rewriteRelativeRefs` + `retargetExternalLinks` +
   `injectCsp` must not be reachable from the frame.
@@ -128,12 +130,12 @@ The resource that exposed this (`activities/resource_57638`, contextid
 100344) holds 108 non-directory files under
 `/SMR_SOR01v3/SMR_SOR01ArchivosUnidad/Moodle/SOR01__SolucionTarea/`:
 
-| Kind        | Count                                                                        |
-| ----------- | ---------------------------------------------------------------------------- |
-| HTML pages  | 8 (`index.html`, `actividad_1..5__solucin.html`, `mquina_1..2.html`)         |
-| Stylesheets | 4 (`base.css`, `content.css`, `nav.css`, `exe_lightbox.css`)                 |
-| Scripts     | `exe_jquery.js`, `common.js`, `common_i18n.js`, `exe_html5.js`, `_fpd_js.js` |
-| Images      | ~90 JPG/PNG/GIF                                                              |
+| Kind | Count |
+| --- | --- |
+| HTML pages | 8 (`index.html`, `actividad_1..5__solucin.html`, `mquina_1..2.html`) |
+| Stylesheets | 4 (`base.css`, `content.css`, `nav.css`, `exe_lightbox.css`) |
+| Scripts | `exe_jquery.js`, `common.js`, `common_i18n.js`, `exe_html5.js`, `_fpd_js.js` |
+| Images | ~90 JPG/PNG/GIF |
 
 Each page's `<head>` links the same three stylesheets by relative name, and
 each page's `<nav id="siteNav">` links all eight pages. That is what makes

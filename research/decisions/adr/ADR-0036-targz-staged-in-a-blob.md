@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0036
 title: The decompressed tar is staged in a Blob, not in one ArrayBuffer
 status: Proposed
@@ -56,7 +55,7 @@ implementation for the browser (ADR-0004)?
 ### Option A: Keep one ArrayBuffer, allocate it in chunks
 
 Hold the tar as an array of fixed-size chunks and copy across boundaries in
-`readEntry`. Removes the _contiguous_ requirement but not the residency: the
+`readEntry`. Removes the *contiguous* requirement but not the residency: the
 renderer still holds the whole decompressed archive.
 
 ### Option B: Stage the decompressed tar in a Blob
@@ -79,6 +78,7 @@ one CI exercises under Bun.
 ## Decision
 
 We will stage the decompressed tar in a **Blob** (Option B).
+
 - `TarGzReader.open` pipes the source through `DecompressionStream('gzip')`
   and a `TransformStream` that indexes ustar headers as the bytes pass, into
   `new Response(stream).blob()`. The archive is decompressed once and never
@@ -91,6 +91,7 @@ We will stage the decompressed tar in a **Blob** (Option B).
   posting the `File` to the worker rather than its bytes.
 
 Standing rules (1, 2 and 4 carried from ADR-0029; 3 replaced; 5 new):
+
 1. An entry is inflated into a buffer one byte larger than the directory
    declared; filling that byte means the stream lies about its size and the
    entry is refused. fflate never grows a supplied buffer, so a bomb cannot
@@ -192,14 +193,14 @@ must survive being reached from a worker.
 
 ### Comparative matrix
 
-| Criterion                         | A: chunked ArrayBuffer | B: Blob staging                          | C: OPFS staging                                      |
-| --------------------------------- | ---------------------- | ---------------------------------------- | ---------------------------------------------------- |
-| Runtime / toolchain               | portable               | portable (`Blob`/`Response`)             | browser-only; second reader                          |
-| Removes the failing allocation    | yes                    | yes                                      | yes                                                  |
-| Removes residency in the renderer | no                     | yes                                      | yes                                                  |
-| Footprint / dependencies          | none                   | none                                     | none, but a viewer-side path CI cannot run under Bun |
-| Security / privacy                | unchanged              | unchanged; bomb cap moves to the indexer | unchanged; adds on-disk residue to clean up          |
-| Cost                              | none measured          | ~28 % slower on 1.4 GB                   | not measured                                         |
+| Criterion | A: chunked ArrayBuffer | B: Blob staging | C: OPFS staging |
+|---|---|---|---|
+| Runtime / toolchain | portable | portable (`Blob`/`Response`) | browser-only; second reader |
+| Removes the failing allocation | yes | yes | yes |
+| Removes residency in the renderer | no | yes | yes |
+| Footprint / dependencies | none | none | none, but a viewer-side path CI cannot run under Bun |
+| Security / privacy | unchanged | unchanged; bomb cap moves to the indexer | unchanged; adds on-disk residue to clean up |
+| Cost | none measured | ~28 % slower on 1.4 GB | not measured |
 
 ### Option notes
 

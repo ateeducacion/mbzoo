@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0021
 title: Read PHP-serialized backup fields with a refusing parser, never a reconstructing one
 status: Accepted
@@ -18,6 +17,7 @@ ai_model: claude-opus-5
 
 A few Moodle fields hold structured data inside a single XML leaf, written
 with PHP's `serialize()`:
+
 - `imscp.structure` — the IMS package table of contents, the only place the
   chapter titles of an IMS content package exist
   (`mod/imscp/lib.php`: `$imscp->structure = serialize($structure)`).
@@ -65,6 +65,7 @@ supporting exactly `N` (null), `b`, `i`, `d`, `s` and `a` (array), and
 (back-references) outright.
 
 Standing rules:
+
 - Never add object or reference support. `O:`/`C:` exist to instantiate
   classes, which has no meaning in a viewer; `R:`/`r:` can describe cycles
   that a consumer walking the result would not survive.

@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0034
 title: Classify package zips (SCORM, eXe) and render them from the resource path
 status: Accepted
@@ -48,6 +47,7 @@ We will peek a `.zip` file preview and classify its entries with one pure
 function, `classifyZip(entries)`, returning `scorm` (has `imsmanifest.xml`),
 `exe-nested-elp` (a `*.elp` entry inside), `exe` (`classifyExe` recognises it),
 or `other` (fall through to the existing download path — behaviour unchanged).
+
 - `scorm` → `parseImsManifest` (new, in `@mbzoo/core`) resolves the default
   organization's launchable items against `<resources>`, and `renderScormZip`
   shows those pages through the **same** page renderer, VFS shim, SCORM runtime

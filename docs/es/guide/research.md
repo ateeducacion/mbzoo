@@ -1,6 +1,7 @@
 # Sistema de investigación y evidencia
 
 Cada afirmación durable en MBZoo traza a un registro registrado:
+
 - `REPO-NNN` / `STD-NNN` / `TECH-NNN` — fuentes inspeccionadas
 - `AN-NNN` — análisis (hechos vs interpretación)
 - `EXP-NNN` — experimentos reproducibles (comandos, entorno, medidas)
@@ -25,17 +26,17 @@ Copias legibles por máquinas de este sitio:
 
 ## Especímenes
 
-El esquema dice lo que una copia _puede_ contener; solo un fichero real dice
-lo que una copia _contiene_. Por eso un parser escrito desde el fuente de
+El esquema dice lo que una copia *puede* contener; solo un fichero real dice
+lo que una copia *contiene*. Por eso un parser escrito desde el fuente de
 Moodle no está terminado hasta ejecutarlo contra una copia real, y los
 especímenes vienen de cuatro sitios:
 
-| Fuente                                            | Para qué sirve                                                                                                           |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Copias institucionales (nunca commiteadas)        | escala y formas del mundo real: cursos de 100+ actividades, exportaciones de eXeLearning, bancos de preguntas al azar    |
-| `saylordotorg/course_backups` (REPO-004)          | corpus público de cursos con mucha página/url/etiqueta, y enlaces `$@…@$`                                                |
-| Los propios fixtures de test de Moodle (REPO-005) | formas que el core mantiene vivas: un paquete IMS real, una sección delegada real                                        |
-| Un curso generado en un Moodle real               | lo que los corpus no traen: lección, consulta, base de datos, taller, rúbricas, y una copia hecha _con_ datos de usuario |
+| Fuente | Para qué sirve |
+|---|---|
+| Copias institucionales (nunca commiteadas) | escala y formas del mundo real: cursos de 100+ actividades, exportaciones de eXeLearning, bancos de preguntas al azar |
+| `saylordotorg/course_backups` (REPO-004) | corpus público de cursos con mucha página/url/etiqueta, y enlaces `$@…@$` |
+| Los propios fixtures de test de Moodle (REPO-005) | formas que el core mantiene vivas: un paquete IMS real, una sección delegada real |
+| Un curso generado en un Moodle real | lo que los corpus no traen: lección, consulta, base de datos, taller, rúbricas, y una copia hecha *con* datos de usuario |
 
 Lo último cuesta unos diez minutos:
 

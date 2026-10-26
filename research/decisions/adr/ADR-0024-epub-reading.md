@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0024
 title: EPUB reading — a spine reader of our own, not a reader library
 status: Accepted
@@ -55,6 +54,7 @@ epub.js — and both then drive their whole layout engine through that frame's
 `contentDocument`. Neither exposes an option to drop `allow-same-origin`, and
 neither degrades without it: a null `contentDocument` is a crash, not a
 reduced-feature mode. That leaves two places to run them and both are closed:
+
 - In the MBZoo origin, chapter XHTML becomes same-origin with the app. That
   is verbatim the option ADR-0017 says to reject loudly.
 - Inside the existing preview frame, `frame-src 'none'` blocks the nested
@@ -76,6 +76,7 @@ No reading. Honest, and what shipped until now.
 We will read EPUB with our own spine reader.
 
 Standing rules:
+
 1. Chapters render in the same opaque-origin sandbox with the same injected
    CSP as any other archive HTML. No new sandbox token, no CSP change.
 2. Every asset a chapter references is inlined from the package already in
@@ -151,7 +152,7 @@ host document. epub.js is additionally stale — last published 2023-09-26 —
 and pulls `jszip`, `lodash`, `core-js`, `@xmldom/xmldom` and `localforage`,
 the last of which writes to IndexedDB by default.
 
-Worth recording for a future reader: foliate-js's own EPUB _parser_ module is
+Worth recording for a future reader: foliate-js's own EPUB *parser* module is
 dependency-free and accepts an in-memory loader. Only its renderer is
 unusable here. If this reader ever needs to grow, that parser is the piece
 to reconsider — not the renderer.

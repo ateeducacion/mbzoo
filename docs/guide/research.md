@@ -1,6 +1,7 @@
 # Research & evidence system
 
 Every durable claim in MBZoo traces to a registered record:
+
 - `REPO-NNN` / `STD-NNN` / `TECH-NNN` — inspected sources
 - `AN-NNN` — analyses (facts vs interpretation)
 - `EXP-NNN` — reproducible experiments (commands, environment, measurements)
@@ -17,16 +18,16 @@ the repository, and `research/AGENTS.md` for the operational rules.
 
 ## Specimens
 
-The schema tells you what a backup _can_ contain; only a real file tells you
-what one _does_. So a parser written from Moodle source is not finished until
+The schema tells you what a backup *can* contain; only a real file tells you
+what one *does*. So a parser written from Moodle source is not finished until
 it has been run against a real backup, and specimens come from four places:
 
-| Source                                   | What it is good for                                                                                                   |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Institutional backups (never committed)  | real-world scale and shapes — 100+ activity courses, eXeLearning exports, random quiz banks                           |
-| `saylordotorg/course_backups` (REPO-004) | a public corpus of page/url/label-heavy courses, and `$@…@$` links                                                    |
-| Moodle's own test fixtures (REPO-005)    | shapes core itself keeps working — a real IMS content package, a real delegated section                               |
-| A course generated in a real Moodle      | anything the corpora do not contain: lesson, choice, database, workshop, rubrics, and a backup taken _with_ user data |
+| Source | What it is good for |
+|---|---|
+| Institutional backups (never committed) | real-world scale and shapes — 100+ activity courses, eXeLearning exports, random quiz banks |
+| `saylordotorg/course_backups` (REPO-004) | a public corpus of page/url/label-heavy courses, and `$@…@$` links |
+| Moodle's own test fixtures (REPO-005) | shapes core itself keeps working — a real IMS content package, a real delegated section |
+| A course generated in a real Moodle | anything the corpora do not contain: lesson, choice, database, workshop, rubrics, and a backup taken *with* user data |
 
 The last one is worth spelling out, because it costs about ten minutes:
 

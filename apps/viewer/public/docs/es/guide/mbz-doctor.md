@@ -1,4 +1,4 @@
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/mbz-doctor.md.
 
 # MBZ Doctor
 
@@ -146,7 +146,7 @@ El filtro que se escribe es el JSON heredado que Moodle 4.3 a 5.2 ya
 convierte:
 
 ```json
-{ "questioncategoryid": 5, "includingsubcategories": 0 }
+{"questioncategoryid": 5, "includingsubcategories": 0}
 ```
 
 Las etiquetas, si las hay, se copian como `"0,name"`. El id de categoría es

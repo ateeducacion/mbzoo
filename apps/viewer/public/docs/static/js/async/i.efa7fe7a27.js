@@ -1,1 +1,0 @@
-"use strict";(self.rspackChunk_mbzoo_docs=self.rspackChunk_mbzoo_docs||[]).push([["i"],{QT(){}}]);

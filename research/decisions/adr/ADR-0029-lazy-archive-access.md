@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0029
 title: Read archives lazily — ZIP by central directory, TAR.GZ streamed into one buffer
 status: Superseded
@@ -71,6 +70,7 @@ with one code path that runs identically in browsers, Bun and Node
   into JS memory whole.
 
 Standing rules:
+
 1. An entry is inflated into a buffer one byte larger than the directory
    declared; filling that byte means the stream lies about its size and the
    entry is refused. fflate never grows a supplied buffer, so a bomb cannot

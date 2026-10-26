@@ -1,11 +1,8 @@
 ---
-
 name: mbz-research
 description: Research Moodle internals or libraries for MBZoo following the evidence system. Use when investigating format facts, evaluating a library, or registering sources/experiments.
 ---
-
 # Skill: MBZoo research
-
 1. Read `research/AGENTS.md` and `research/status.yaml` before writing anything.
 2. Register every external source first: create `research/sources/{repositories|standards|technologies}/<ID>-<slug>.md` with frontmatter `id/title/kind/url/accessed/license`. Allocate IDs by scanning existing files.
 3. Separate FACT / INTERPRETATION / DECISION. Unverifiable claims get `[PENDING: verification required]`.

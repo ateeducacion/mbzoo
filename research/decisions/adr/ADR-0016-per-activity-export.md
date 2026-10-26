@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0016
 title: Per-activity export — module XML, rendered content HTML and a files ZIP
 status: Accepted
@@ -71,6 +70,7 @@ browser's own "Save page as".
 We will ship **per-activity export** in the detail pane toolbar.
 
 Standing rules for this surface:
+
 1. An export item is offered **only when it has content behind it**.
    Activity XML requires readable module XML; Content HTML requires
    authored content in the preview; Files ZIP requires at least one
@@ -179,18 +179,18 @@ memory, which the large-file question (Q-004 / Q-007) has not settled.
 
 ### Comparative matrix
 
-| Criterion                | A: per-activity                             | B: whole-backup site                                  | C: no export |
-| ------------------------ | ------------------------------------------- | ----------------------------------------------------- | ------------ |
-| Runtime / toolchain      | Viewer only, data already loaded            | Needs streaming + link rewriting across the course    | —            |
-| Footprint / dependencies | None new; `fflate` already ships (TECH-005) | None new, but large in-memory working set             | None         |
-| Security / privacy       | No upload; serializes already-sanitized DOM | Same, but far more surface to rewrite and re-sanitize | No change    |
-| License / maintenance    | MIT, small module                           | Large, ongoing                                        | None         |
-| Honest to advertise now  | Yes                                         | No — depends on unstarted work                        | Yes          |
+| Criterion | A: per-activity | B: whole-backup site | C: no export |
+|---|---|---|---|
+| Runtime / toolchain | Viewer only, data already loaded | Needs streaming + link rewriting across the course | — |
+| Footprint / dependencies | None new; `fflate` already ships (TECH-005) | None new, but large in-memory working set | None |
+| Security / privacy | No upload; serializes already-sanitized DOM | Same, but far more surface to rewrite and re-sanitize | No change |
+| License / maintenance | MIT, small module | Large, ongoing | None |
+| Honest to advertise now | Yes | No — depends on unstarted work | Yes |
 
 ### Option notes
 
 **Option A.** The decisive property is that the HTML export serializes
-the _rendered_ DOM. A first sketch re-resolved `intro`/`content` fields
+the *rendered* DOM. A first sketch re-resolved `intro`/`content` fields
 per module, which would have needed a per-module branch for page,
 label, book, glossary, quiz and assign — and would have produced a
 second HTML-resolution path competing with ADR-0012. Serializing the
@@ -206,20 +206,20 @@ module XML at all.
 
 ### Adversarial review
 
-- _Does this create a second sanitization path?_ No. The exported
+- *Does this create a second sanitization path?* No. The exported
   markup is `preview.innerHTML` after DOMPurify already processed it;
   nothing new is parsed, and the wrapper is assembled from escaped
   text.
-- _Can a hostile backup write outside the download folder?_ The
+- *Can a hostile backup write outside the download folder?* The
   filename is rebuilt from a slug of `[a-z0-9]+` runs, so separators
   and `..` cannot survive. ZIP entry names are reduced to their last
   path segment. Both are unit tested.
-- _Can a sandboxed HTML resource escape by being exported?_ Sandboxed
+- *Can a sandboxed HTML resource escape by being exported?* Sandboxed
   iframes are removed and replaced by a note, so ADR-0014's isolation
   is never serialized into a file that would open without it.
-- _Does inlining assets leak anything?_ `data:` URIs are built from
+- *Does inlining assets leak anything?* `data:` URIs are built from
   bytes already read from the user's own file. Nothing is fetched.
-- _What breaks first at scale?_ A media-heavy page: each asset under
+- *What breaks first at scale?* A media-heavy page: each asset under
   2 MB is base64-inlined, so a page with many images produces a large
   file. The cap bounds each asset, not the total. Acceptable for one
   activity; it would not be for Option B.
@@ -234,5 +234,5 @@ module XML at all.
   both `packages/core` and `apps/viewer`.
 - The "offer only what exists" rule was found by testing, not by
   design: an early build offered a Content HTML export for an activity
-  whose preview held only a _"not available"_ note, and again for one
+  whose preview held only a *"not available"* note, and again for one
   holding only a metadata disclosure. Both are now excluded.

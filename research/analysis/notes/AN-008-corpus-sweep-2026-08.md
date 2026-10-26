@@ -1,5 +1,4 @@
 ---
-
 id: AN-008
 title: What 114 real backups say about where MBZoo should go next
 date: 2026-08-25
@@ -50,7 +49,7 @@ later, SMR is 3.1.4+.
 
 **Course format.** 111 of 111 Saylor backups are `flexsections`, and every
 one of their 3,755 sections carries `course_format_options` with `parent`
-(a section _number_), `collapsed` and `visibleold`. Nesting reaches three
+(a section *number*), `collapsed` and `visibleold`. Nesting reaches three
 levels (`Unit 1 → 1.1 → 1.1.1`). The two SMR courses are `topics`.
 Before ADR-0030 MBZoo flattened all of this with no warning — the "0
 warnings" above was the parser being silent about the one thing it did not
@@ -58,19 +57,19 @@ model, which is the failure mode Q-002 predicted.
 
 **Modules** (activities / backups containing them):
 
-| module                   | activities | backups | note                                          |
-| ------------------------ | ---------: | ------: | --------------------------------------------- |
-| url                      |      6,015 |     105 | **51 % of every activity in the corpus**      |
-| page                     |      4,650 |     113 |                                               |
-| resource                 |        646 |      49 | SMR: 265 `.elp` among these                   |
-| label                    |        339 |      41 |                                               |
-| hvp                      |        106 |       4 | 2020 ESL/COMM courses; real H5P packages      |
-| assign                   |         52 |       3 | ENGL210 has 40                                |
-| book, quiz               |    18 each |       2 | quiz and forum only in SMR                    |
-| forum                    |         15 |       2 |                                               |
-| folder                   |          9 |       5 |                                               |
-| chat, feedback, glossary |     2 each |       2 | SMR                                           |
-| scorm                    |          1 |       1 | PRSM107 — the corpus's one real SCORM package |
+| module | activities | backups | note |
+| --- | ---: | ---: | --- |
+| url | 6,015 | 105 | **51 % of every activity in the corpus** |
+| page | 4,650 | 113 | |
+| resource | 646 | 49 | SMR: 265 `.elp` among these |
+| label | 339 | 41 | |
+| hvp | 106 | 4 | 2020 ESL/COMM courses; real H5P packages |
+| assign | 52 | 3 | ENGL210 has 40 |
+| book, quiz | 18 each | 2 | quiz and forum only in SMR |
+| forum | 15 | 2 | |
+| folder | 9 | 5 | |
+| chat, feedback, glossary | 2 each | 2 | SMR |
+| scorm | 1 | 1 | PRSM107 — the corpus's one real SCORM package |
 
 **Files** (top extensions, all backups): png 19,433 · jpg 8,951 · json
 6,664 · js 3,542 · gif 2,870 · css 1,857 · html 1,773 · xml 719 · pdf 406 ·
@@ -87,8 +86,8 @@ the problem — SMR_SOR opens in 2 s — memory was (EXP-004).
 
 1. **The corpus is half URLs.** MBZoo renders a `url` as one button and the
    address. For a Saylor-shaped course that is the primary content type, and
-   the question a reviewer actually has — _where does this course send
-   students, and is any of it dead?_ — has no answer today. A course-level
+   the question a reviewer actually has — *where does this course send
+   students, and is any of it dead?* — has no answer today. A course-level
    external-link inventory (by host, with the activities that point there)
    is the single highest-leverage view this corpus argues for. It also
    folds in the `scanExternalRefs` panel that already exists per activity.

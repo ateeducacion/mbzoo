@@ -5,10 +5,10 @@ sections, activities, files, settings and (optionally) user data.
 
 ## Container formats
 
-| Format | Since                          | Notes                                                      |
-| ------ | ------------------------------ | ---------------------------------------------------------- |
-| ZIP    | Moodle 2.0                     | No ZIP64 support inside Moodle itself (4 GB practical cap) |
-| TAR.GZ | default since 2.9 (opt-in 2.6) | POSIX ustar; no size cap in practice                       |
+| Format | Since | Notes |
+|---|---|---|
+| ZIP | Moodle 2.0 | No ZIP64 support inside Moodle itself (4 GB practical cap) |
+| TAR.GZ | default since 2.9 (opt-in 2.6) | POSIX ustar; no size cap in practice |
 
 MBZoo detects the format from magic bytes and supports **both**.
 
@@ -45,17 +45,17 @@ activities/assign_42/
 
 The single most useful thing to know about a `.mbz` is whether it was taken
 **with user data**. Every module writes its full XML tree either way; what the
-`users` setting gates is each element's _data source_.
+`users` setting gates is each element's *data source*.
 
 Two modules that look equally rich in the schema can be worlds apart in a real
 file. A `lesson` writes all of its pages and answers unconditionally — the
 whole authored lesson is there. A `forum` writes nothing but the forum record;
 every discussion and post is user data. That is why an empty glossary in a
-content-only backup is not a bug, and why MBZoo says _why_ it is empty rather
+content-only backup is not a bug, and why MBZoo says *why* it is empty rather
 than just that it is.
 
-| Always in the backup                                                                                                                                                              | Only with user data                                                                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Always in the backup | Only with user data |
+|---|---|
 | lesson pages and answers, choice options, database fields, workshop instructions and examples, quiz slots and the question bank, grade items and rubrics, the gradebook structure | forum discussions and posts, glossary entries, database records, wiki pages, chat messages, assignment submissions, quiz attempts, everyone's marks |
 
 ## Links that point nowhere

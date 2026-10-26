@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0027
 title: Every browser runs on every change, and the worker stays one chunk
 status: Accepted
@@ -70,6 +69,7 @@ course structure, and finds that no activity will open.
    wins.
 
 Standing rules:
+
 - A browser that is not in CI is a browser MBZoo does not support. Adding a
   browser to the matrix is how support is claimed; a scheduled job is not.
 - Worker state lives in module scope, so the worker's bundle must stay one
@@ -87,7 +87,7 @@ roughly three times the e2e minutes, and a browser-specific failure now
 blocks a merge. That is the point, but it is a real cost on a repository
 that will accumulate tests.
 
-**Neutral.** The runner still goes through Node. Bun _can_ host it — with
+**Neutral.** The runner still goes through Node. Bun *can* host it — with
 `node` absent from `PATH`, `bunx --bun playwright test` passes the full suite
 locally — but shipping that to CI crashed the preview server it spawns
 (`ERR_STREAM_WRITE_AFTER_END` out of `[WebServer]`), taking 16 Firefox tests
@@ -155,7 +155,7 @@ gradebook assertion, was simply the test in flight when the server went.
 The cause was not the browser matrix. It was a second change made in the same
 push: invoking the runner under Bun. That had been verified locally, on
 macOS, including with `node` removed from `PATH` — and it was still wrong,
-because what broke was Playwright piping a _child_ process's output, on
+because what broke was Playwright piping a *child* process's output, on
 Linux, under load. Two of the three engines passed anyway, which is exactly
 the shape of a flake that would have reddened random PRs for weeks.
 

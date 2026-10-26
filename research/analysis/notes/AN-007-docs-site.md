@@ -1,5 +1,4 @@
 ---
-
 id: AN-007
 title: Documentation site strategy and framework evaluation
 date: 2026-08-25
@@ -16,6 +15,7 @@ Interpretation, not a decision. Feeds ADR-0015.
 ## Problem and motivation
 
 MBZoo needs a documentation site that:
+
 1. Surfaces architecture, privacy, format notes and the activity matrix
    from the existing `docs/` tree.
 2. Deploys as one static artifact with `@mbzoo/viewer` on GitHub Pages.
@@ -38,14 +38,14 @@ MBZoo needs a documentation site that:
 3. **Starlight / Astro** (TECH-013) — Pagefind, i18n/a11y, heavier setup.
 4. **bunpress / hand-rolled** — unreleased or a custom generator.
 
-| Criterion         | Rspress 2               | VitePress   | Starlight           | bunpress / custom |
-| ----------------- | ----------------------- | ----------- | ------------------- | ----------------- |
-| Bundler           | Rspack                  | Vite        | Astro / Vite        | Bun               |
-| Offline search    | built-in                | MiniSearch  | Pagefind            | none              |
-| `docs/` as source | yes                     | yes         | content collections | yes               |
-| Maturity          | v2 installed here       | v1.x        | production theme    | 0.1.x / none      |
-| Extra toolchain   | React + native binaries | Vue 3       | Astro               | none              |
-| Isolation         | `apps/docs`             | `apps/docs` | `apps/docs`         | in-tree script    |
+| Criterion | Rspress 2 | VitePress | Starlight | bunpress / custom |
+|---|---|---|---|---|
+| Bundler | Rspack | Vite | Astro / Vite | Bun |
+| Offline search | built-in | MiniSearch | Pagefind | none |
+| `docs/` as source | yes | yes | content collections | yes |
+| Maturity | v2 installed here | v1.x | production theme | 0.1.x / none |
+| Extra toolchain | React + native binaries | Vue 3 | Astro | none |
+| Isolation | `apps/docs` | `apps/docs` | `apps/docs` | in-tree script |
 
 ## Adversarial review
 

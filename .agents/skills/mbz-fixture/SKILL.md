@@ -1,9 +1,7 @@
 ---
-
 name: mbz-fixture
 description: Create or modify synthetic test Moodle backups safely. Use when adding fixtures, changing the generator, or documenting real-world specimens.
 ---
-
 # Skill: MBZoo fixtures
 
 1. Committed `.mbz` fixtures MUST be synthetic, deterministic and free of real user/institution data. Edit `fixtures/scripts/generate-fixture.ts`; do not hand-edit generated binary archives.

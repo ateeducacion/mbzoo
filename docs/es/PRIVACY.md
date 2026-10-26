@@ -1,6 +1,7 @@
 # Privacidad
 
 **Nada de lo que abras en MBZoo sale de tu dispositivo.**
+
 - El visor es una aplicación web estática. Las copias se leen con la File API
   del navegador y se analizan dentro de un Web Worker en tu máquina. No existe
   ruta de subida: sin backend, sin telemetría, sin analíticas.
@@ -17,7 +18,7 @@ Esto es una propiedad del producto, garantizada por la arquitectura
 ## Cuando una copia contiene personas
 
 De tu dispositivo no sale nada, **pero el archivo sí**. Una copia de curso
-hecha _con datos de usuario_ lleva un `users.xml` en la raíz, y no es una
+hecha *con datos de usuario* lleva un `users.xml` en la raíz, y no es una
 lista de nombres. Un solo registro guarda:
 
 > nombre de usuario · correo · nombre y apellidos · número de identificación ·

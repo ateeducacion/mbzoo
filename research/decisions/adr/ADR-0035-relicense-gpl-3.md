@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0035
 title: Relicense MBZoo under GPL-3.0-or-later
 status: Accepted
@@ -24,7 +23,7 @@ repository distribution (`h5p/h5p-php-library`) is GPL-3.0. RISK-004 tracked the
 ambiguity and blocked promoting playback beyond experimental.
 
 The upstream question (tunapanda/h5p-standalone#188, opened 2026-08-25) was
-answered on 2026-08-26 by a project collaborator: the npm package _should_ be
+answered on 2026-08-26 by a project collaborator: the npm package *should* be
 distributed under GPL-3.0 because the shipped bundle includes GPL-licensed H5P
 code, and no specific upstream `h5p/h5p-php-library` version corresponds to the
 vendored `vendor/h5p/` tree. The npm metadata still declares MIT.
@@ -82,6 +81,7 @@ We will license MBZoo under **GPL-3.0-or-later**. `LICENSE` carries the verbatim
 GPL-3.0 text; the root and workspace manifests declare `GPL-3.0-or-later`.
 
 Standing rules:
+
 1. New shipped dependencies must be GPL-3.0-or-later compatible, and their
    licence is recorded in `research/compliance/licensing/dependency-report.md`.
    An AGPL-3.0, proprietary or otherwise GPL-incompatible dependency requires its
@@ -179,12 +179,12 @@ Standing rules:
 
 ### Comparative matrix
 
-| Criterion                | A: GPL-3.0-or-later  | B: MIT, drop H5P              | C: MIT source, GPL build                  |
-| ------------------------ | -------------------- | ----------------------------- | ----------------------------------------- |
-| Runtime / toolchain      | unchanged            | removes a renderer path       | unchanged                                 |
-| Footprint / dependencies | unchanged            | −190 KB lazy chunk            | unchanged                                 |
-| Security / privacy       | unchanged            | unchanged                     | unchanged                                 |
-| License / maintenance    | one label everywhere | permissive kept, feature lost | correct but needs explaining per artifact |
+| Criterion | A: GPL-3.0-or-later | B: MIT, drop H5P | C: MIT source, GPL build |
+|---|---|---|---|
+| Runtime / toolchain | unchanged | removes a renderer path | unchanged |
+| Footprint / dependencies | unchanged | −190 KB lazy chunk | unchanged |
+| Security / privacy | unchanged | unchanged | unchanged |
+| License / maintenance | one label everywhere | permissive kept, feature lost | correct but needs explaining per artifact |
 
 ### Option notes
 
@@ -199,19 +199,19 @@ so the correction lives only in prose that tooling never reads.
 
 ### Adversarial review
 
-- _Is the maintainer's comment authoritative?_ It is a statement by a repository
+- *Is the maintainer's comment authoritative?* It is a statement by a repository
   collaborator on the project's own issue tracker, consistent with the upstream
   `h5p/h5p-php-library` README that TECH-014 already recorded. It is the best
   available evidence; a metadata change in the npm package would be stronger and
   has been requested in the same thread.
-- _Does relicensing over-correct?_ It is broader than strictly required (Option C
+- *Does relicensing over-correct?* It is broader than strictly required (Option C
   is narrower), but the cost of the broader move is adoption breadth, and the
   cost of the narrower one is a permanent explanation attached to every artifact.
-- _Does GPL-3.0 conflict with any current dependency?_ No. MIT, ISC and
+- *Does GPL-3.0 conflict with any current dependency?* No. MIT, ISC and
   Apache-2.0 are all compatible into a GPL-3.0 work; DOMPurify's MPL-2.0 OR
   Apache-2.0 dual licence is satisfied by taking the Apache-2.0 arm. Nothing
   shipped is AGPL, GPL-2.0-only or proprietary.
-- _Is AGPL needed instead?_ No. MBZoo runs entirely in the visitor's browser;
+- *Is AGPL needed instead?* No. MBZoo runs entirely in the visitor's browser;
   serving the JavaScript already constitutes conveying under GPL-3.0, so the
   AGPL network clause would add obligations without closing a gap.
 

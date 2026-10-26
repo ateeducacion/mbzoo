@@ -6,19 +6,19 @@ Evidence-first research system for MBZoo, adapted from the methodologies of
 
 ## Layout
 
-| Path                    | Purpose                                 | ID series |
-| ----------------------- | --------------------------------------- | --------- |
-| `sources/repositories/` | Inspected external repositories         | REPO-NNN  |
-| `sources/standards/`    | Specifications and format standards     | STD-NNN   |
-| `sources/technologies/` | Libraries, runtimes and tools           | TECH-NNN  |
-| `analysis/notes/`       | Interpretations built on top of sources | AN-NNN    |
-| `decisions/adr/`        | Architecture decision records           | ADR-NNNN  |
-| `experiments/results/`  | Reproducible experiment records         | EXP-NNN   |
-| `tasks/questions/`      | Open research questions                 | Q-NNN     |
-| `tasks/backlog/`        | Tracked work items                      | TASK-NNN  |
-| `compliance/`           | Security, privacy, licensing analyses   | —         |
-| `indexes/`              | **Generated** — never edit by hand      | —         |
-| `tools/`                | Index generation and validation scripts | —         |
+| Path | Purpose | ID series |
+|---|---|---|
+| `sources/repositories/` | Inspected external repositories | REPO-NNN |
+| `sources/standards/` | Specifications and format standards | STD-NNN |
+| `sources/technologies/` | Libraries, runtimes and tools | TECH-NNN |
+| `analysis/notes/` | Interpretations built on top of sources | AN-NNN |
+| `decisions/adr/` | Architecture decision records | ADR-NNNN |
+| `experiments/results/` | Reproducible experiment records | EXP-NNN |
+| `tasks/questions/` | Open research questions | Q-NNN |
+| `tasks/backlog/` | Tracked work items | TASK-NNN |
+| `compliance/` | Security, privacy, licensing analyses | — |
+| `indexes/` | **Generated** — never edit by hand | — |
+| `tools/` | Index generation and validation scripts | — |
 
 ## Ground rules (binding)
 

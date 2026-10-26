@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0037
 title: Repair-only full backup rewrite
 status: Proposed
@@ -76,6 +75,7 @@ We will rewrite a full backup only as MBZ Doctor repair output (Option B).
 This does not supersede ADR-0016 and it is not a general course editor.
 
 Standing rules:
+
 1. `rewriteArchive` takes an explicit replacement map. Every other entry is
    copied. The source Blob is never written.
 2. Do not offer "export this course as an .mbz" from the activity toolbar.
@@ -195,13 +195,13 @@ restore code.
 
 ### Comparative matrix
 
-| Criterion       | A Diagnosis only   | B Stored fflate rewrite     | C zip.js passThrough             | D Model rebuild  |
-| --------------- | ------------------ | --------------------------- | -------------------------------- | ---------------- |
-| Runtime         | core               | core, fflate already in use | zip.js, unused by the reader     | core             |
-| New dependency  | no                 | no                          | no, but a second writer          | no               |
-| Unrelated bytes | untouched          | copied                      | copied if metadata is exact      | dropped          |
-| Failure mode    | user edits by hand | larger ZIP; no ZIP64        | a wrong field corrupts the entry | silent data loss |
-| Privacy         | local              | local                       | local                            | local            |
+| Criterion | A Diagnosis only | B Stored fflate rewrite | C zip.js passThrough | D Model rebuild |
+|---|---|---|---|---|
+| Runtime | core | core, fflate already in use | zip.js, unused by the reader | core |
+| New dependency | no | no | no, but a second writer | no |
+| Unrelated bytes | untouched | copied | copied if metadata is exact | dropped |
+| Failure mode | user edits by hand | larger ZIP; no ZIP64 | a wrong field corrupts the entry | silent data loss |
+| Privacy | local | local | local | local |
 
 ### Option notes
 

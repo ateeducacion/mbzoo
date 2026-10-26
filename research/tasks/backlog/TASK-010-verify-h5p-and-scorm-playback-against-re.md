@@ -1,11 +1,9 @@
 ---
-
 id: TASK-010
 title: Verify H5P and SCORM playback against real packages
 status: mostly-done
 priority: high
 ---
-
 ADR-0018 rule 5 and ADR-0023 rule 5 forbid compatibility claims beyond the synthetic fixture. The corpus supplies 106 hvp activities (esl001/esl002/esl003/comm411-20200901) and one scorm (PRSM107-2017-07-21). Open each, record what renders and what fails, and either widen the claims or file the failure classes as fixtures.
 
 ## Verification log (2026-08-25)
@@ -30,20 +28,20 @@ ADR-0031 composes the package from those pieces.
 manifest only; esl002 and comm411 — esl001 and esl003 exceeded the driver's
 50 MB in-memory limit on that run and are counted in the next table):
 
-| main library           |    rendered |
-| ---------------------- | ----------: |
-| H5P.DragText           |     20 / 20 |
-| H5P.SingleChoiceSet    |       5 / 5 |
-| H5P.Summary            |       4 / 4 |
-| H5P.Essay              |       2 / 2 |
-| H5P.Blanks             |       1 / 1 |
-| H5P.MultiChoice        |      0 / 10 |
-| H5P.Accordion          |       0 / 8 |
-| H5P.QuestionSet        |       0 / 7 |
-| H5P.CoursePresentation |       0 / 3 |
-| H5P.DocumentationTool  |       0 / 2 |
-| H5P.InteractiveVideo   |       0 / 2 |
-| **total**              | **34 / 67** |
+| main library | rendered |
+| --- | ---: |
+| H5P.DragText | 20 / 20 |
+| H5P.SingleChoiceSet | 5 / 5 |
+| H5P.Summary | 4 / 4 |
+| H5P.Essay | 2 / 2 |
+| H5P.Blanks | 1 / 1 |
+| H5P.MultiChoice | 0 / 10 |
+| H5P.Accordion | 0 / 8 |
+| H5P.QuestionSet | 0 / 7 |
+| H5P.CoursePresentation | 0 / 3 |
+| H5P.DocumentationTool | 0 / 2 |
+| H5P.InteractiveVideo | 0 / 2 |
+| **total** | **34 / 67** |
 
 Every failure was one signature: `Unable to find constructor for:
 H5P.AdvancedText 1.1` (32×), `H5P.StandardPage 1.5`, `H5P.Image 1.1` — all
@@ -60,7 +58,7 @@ interception.
 
 **A second defect the sweep exposed: no real activity showed its media.**
 Every row of the first run had `visibleImgs: 0`. `mod_hvp` keys the media
-area by the hvp _instance_ id, and the viewer only had the course-module
+area by the hvp *instance* id, and the viewer only had the course-module
 id from the tree — the two differ in every real backup (esl001: instance
 6, module 22504) — so the media filter matched nothing and the composed
 package carried no images or video. The generic activity parser did not
@@ -73,18 +71,18 @@ saying it did. It does now (`ParsedActivity.instanceId`), and the fixture's
 H5P playback against the 106 real `mod_hvp` activities went from **0** to
 **97**. Remaining failures, filed not fixed:
 
-| main library           |   rendered | note                                       |
-| ---------------------- | ---------: | ------------------------------------------ |
-| DragText               |      30/30 |                                            |
-| SingleChoiceSet        |      18/18 |                                            |
-| MultiChoice            |      12/12 | fixed by the eval allowance                |
-| QuestionSet            |        7/7 | "                                          |
-| CoursePresentation     |        7/8 | one still empty                            |
-| Accordion              |      10/11 | one still empty                            |
-| DocumentationTool      |        4/4 |                                            |
-| Essay, Summary, Blanks |        9/9 |                                            |
-| InteractiveVideo       |        0/7 | video-heavy; empty frame, no error (below) |
-| **total**              | **97/107** | 0 external requests throughout             |
+| main library | rendered | note |
+| --- | ---: | --- |
+| DragText | 30/30 | |
+| SingleChoiceSet | 18/18 | |
+| MultiChoice | 12/12 | fixed by the eval allowance |
+| QuestionSet | 7/7 | " |
+| CoursePresentation | 7/8 | one still empty |
+| Accordion | 10/11 | one still empty |
+| DocumentationTool | 4/4 | |
+| Essay, Summary, Blanks | 9/9 | |
+| InteractiveVideo | 0/7 | video-heavy; empty frame, no error (below) |
+| **total** | **97/107** | 0 external requests throughout |
 
 **InteractiveVideo (0/7)** is the one class left dark. Each carries a ~25 MB
 mp4; the frame instantiates and stays empty with no error. Likely the media
@@ -99,6 +97,6 @@ but the export never self-starts: it is Cordova-wrapped and waits for a
 fails identically in any browser, so this is the package, not MBZoo.
 
 **Method note kept for the next specimen.** The failure that took longest to
-see was a CSP eval violation reported only as a _page error_; the sweep
-recorded it but the first analysis pass read only _console_ errors and so
+see was a CSP eval violation reported only as a *page error*; the sweep
+recorded it but the first analysis pass read only *console* errors and so
 called it a silent empty frame. Read both when scoring a frame.

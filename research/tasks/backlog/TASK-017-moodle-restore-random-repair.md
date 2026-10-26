@@ -1,5 +1,4 @@
 ---
-
 id: TASK-017
 title: Restore a repaired random-question backup in Moodle
 status: open
@@ -15,6 +14,7 @@ records a real restore.
 
 Do it on a disposable Moodle 5.2 (and, if the same file is claimed for an
 older target, on that version too):
+
 1. Build the synthetic backup already covered by
    `packages/core/test/doctor.test.ts` (modern bank entry, one random
    question, a quiz slot with `usingcontextid` / `component` /
@@ -36,6 +36,7 @@ ADR-0038 adds three more shapes that this task must restore before anyone
 sets `moodleRestoreVerified` for them. None of these was executed on a
 disposable Moodle while the records were written (2026-10-15). Structural
 checks in `packages/core/test/doctor-restore.test.ts` are not a substitute.
+
 1. Empty `roles.xml`. The document is the Moodle 5.2 writer root
    `roles_definition` with no `role` child. Restore it only on a backup
    that names no role id. Confirm `restore_dbops::load_roles_to_tempids`

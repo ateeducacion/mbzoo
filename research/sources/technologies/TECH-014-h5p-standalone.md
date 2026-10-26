@@ -1,5 +1,4 @@
 ---
-
 id: TECH-014
 title: h5p-standalone
 kind: technology
@@ -8,7 +7,6 @@ version: 3.8.2 (installed, viewer only)
 accessed: 2026-08-26
 license: MIT declared in npm metadata; GPL-3.0 in practice (see below)
 ---
-
 Client-side H5P player: displays extracted `.h5p` packages without an H5P
 server. `dist/main.bundle.js` (~23 KB) fetches `h5p.json`, `content.json` and
 each dependency's `library.json` via `fetch()`, then injects library

@@ -1,5 +1,4 @@
 ---
-
 id: AN-005
 title: How each Moodle activity type can be rendered from backup data
 date: 2026-08-25
@@ -7,9 +6,7 @@ sources: [REPO-004, REPO-005, REPO-002]
 ai_tool: opencode
 ai_model: ox-alpha
 ---
-
 ## FACTS (observed in REPO-004/SMR_SEGI/CS401 samples + REPO-005)
-
 - page/label: HTML in page.xml/label.xml (`<content>`/`<intro>`, escaped) — rendered since ADR-0013.
 - url: `<externalurl>` in url.xml — linkable.
 - resource/file/folder: payload files in the content-addressed pool keyed by
@@ -37,7 +34,6 @@ ai_model: ox-alpha
   format facts).
 
 ## INTERPRETATION
-
-Everything except faithful quiz/SCORM/H5P _execution_ is inspectable from
+Everything except faithful quiz/SCORM/H5P *execution* is inspectable from
 backup XML alone. Renderers are incremental work behind the ADR-0013
 capability model; unknown plugins already fall back to metadata display.

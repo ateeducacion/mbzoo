@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0030
 title: Sections form a tree when the course format says so
 status: Accepted
@@ -18,10 +17,11 @@ ai_model: claude-opus-5
 
 `moodle_backup.xml` lists sections flat, and MBZoo rendered them flat. Two
 Moodle mechanisms put hierarchy elsewhere:
+
 - **Course formats** may store per-section options in
   `<course_format_options>` (`backup_stepslib.php:493-503`: `format`,
   `name`, `value`). `format_flexsections` keeps its nesting there as
-  `parent` = the parent's section _number_, plus `collapsed` and
+  `parent` = the parent's section *number*, plus `collapsed` and
   `visibleold`.
 - **Delegated sections** (Moodle 4.5+, `mod_subsection`) are owned by an
   activity, which MBZoo already placed under that activity.
@@ -53,6 +53,7 @@ understand formats it has not seen?
 
 `CourseInfo` gains `format`. `SectionInfo` gains `formatOptions` (the raw
 name → value map, whatever the format) and `parentId`, resolved at assembly:
+
 - a **delegated** section's parent is the section holding its owning
   activity;
 - a section whose `parent` option names a section number resolves that
@@ -67,10 +68,11 @@ The viewer renders the list as a tree: each section's activities, then the
 sections that name it as parent, one indent per level.
 
 Standing rules:
+
 1. Hierarchy is read from what the backup carries and never inferred from
    names or numbering.
-2. A format not modelled degrades to the flat list _and keeps its raw
-   options on the model_, so the data is not lost between parse and render.
+2. A format not modelled degrades to the flat list *and keeps its raw
+   options on the model*, so the data is not lost between parse and render.
 3. Every unresolved or contradictory parent is a warning, never a guess.
 
 ## Consequences
@@ -89,7 +91,7 @@ render exactly as before (verified: 0 options on any SMR section).
 
 - A future format storing parents under another option name will flatten
   silently again. Mitigation: rule 2 keeps the options on the model, and
-  AN-008 lists the formats the corpus has _not_ covered (`weeks`, `social`,
+  AN-008 lists the formats the corpus has *not* covered (`weeks`, `social`,
   `singleactivity`).
 
 ## Validation

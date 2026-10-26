@@ -1,9 +1,7 @@
 ---
-
 name: mbz-security
 description: Security review rules for hostile MBZ input and browser trust boundaries. Use when reviewing a vulnerability or changing trust boundaries in archive/XML parsing, previews, URLs or worker messages.
 ---
-
 # Skill: MBZoo security review
 
 1. Start from the threat model and ADR-0009. Assume the attacker controls the archive structure, file names, XML, HTML, MIME metadata, URLs and embedded files.

@@ -1,14 +1,13 @@
 ---
-
 name: mbz-content-sandbox
 description: Preserve MBZoo executable-preview isolation when changing CSP, iframe permissions, SCORM/H5P players or navigation messages.
 ---
-
 # MBZoo content sandbox
 
 Read `research/compliance/security/threat-model.md` and the relevant decisions:
 ADR-0017 supersedes the initial HTML-preview policy in ADR-0014; ADR-0018 covers
 H5P, ADR-0022 navigation, ADR-0023 SCORM, and ADR-0032 composed SCO documents.
+
 - Backup JavaScript never runs in the application origin. No preview grants
   `allow-same-origin`.
 - HTML/site frames in `apps/viewer/src/renderers.ts` currently grant

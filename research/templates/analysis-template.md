@@ -1,5 +1,4 @@
 ---
-
 id: AN-NNN
 title: Concise analysis title
 date: YYYY-MM-DD
@@ -21,12 +20,12 @@ here — that belongs in `research/decisions/adr/`.
 
 ## Options and comparative matrix
 
-| Criterion           | Option 1 | Option 2 | Option 3 |
-| ------------------- | -------- | -------- | -------- |
-| Runtime / toolchain |          |          |          |
-| Footprint           |          |          |          |
-| Security / privacy  |          |          |          |
-| Maintenance         |          |          |          |
+| Criterion | Option 1 | Option 2 | Option 3 |
+|---|---|---|---|
+| Runtime / toolchain | | | |
+| Footprint | | | |
+| Security / privacy | | | |
+| Maintenance | | | |
 
 ## Adversarial review
 

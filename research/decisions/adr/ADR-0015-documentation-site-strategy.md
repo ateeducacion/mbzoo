@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0015
 title: Documentation site — Rspress 2 in an isolated workspace, unified static deploy
 status: Accepted
@@ -70,6 +69,7 @@ size (AN-007).
 ## Decision
 
 We will:
+
 1. Keep `@mbzoo/docs` as an isolated workspace under `apps/docs/`,
    generating the site with **Rspress 2** (TECH-011) from the repo
    `docs/` tree (`rspress.config.ts` `root: '../../docs'`).
@@ -85,6 +85,7 @@ We will:
    without rewriting content. That switch is a new ADR.
 
 Standing rules:
+
 - Documentation build must not enter `@mbzoo/core` or the viewer
   runtime bundle.
 - Search stays client-side. Adding Algolia (or any network search
@@ -163,27 +164,27 @@ evaluation, so the decision above does not depend on finding the note.
 
 ### Constraints
 
-| Constraint                                  | Source                      |
-| ------------------------------------------- | --------------------------- |
-| Static HTML/CSS/JS only; GitHub Pages       | existing viewer deploy      |
-| No telemetry, no third-party fetch          | ADR-0009, `docs/PRIVACY.md` |
-| Offline search; no Algolia                  | ADR-0009                    |
-| `docs/` is canonical; no README duplication | AN-007, original spike      |
-| Docs toolchain isolated from core/viewer    | ADR-0004, ADR-0011          |
-| Content portable across generators          | Markdown/MDX in `docs/`     |
+| Constraint | Source |
+|---|---|
+| Static HTML/CSS/JS only; GitHub Pages | existing viewer deploy |
+| No telemetry, no third-party fetch | ADR-0009, `docs/PRIVACY.md` |
+| Offline search; no Algolia | ADR-0009 |
+| `docs/` is canonical; no README duplication | AN-007, original spike |
+| Docs toolchain isolated from core/viewer | ADR-0004, ADR-0011 |
+| Content portable across generators | Markdown/MDX in `docs/` |
 
 ### Comparative matrix
 
-| Criterion                       | Rspress 2 (TECH-011)           | VitePress (TECH-012)         | Starlight (TECH-013)    | bunpress / hand-rolled |
-| ------------------------------- | ------------------------------ | ---------------------------- | ----------------------- | ---------------------- |
-| Bundler                         | Rspack (Rust)                  | Vite (same family as viewer) | Astro (Vite underneath) | Bun native             |
-| Offline search                  | built-in                       | MiniSearch, built-in         | Pagefind                | none (must build)      |
-| `docs/` as source               | `root` config                  | `srcDir`                     | content collections     | trivial                |
-| Unified static copy into viewer | yes                            | yes                          | yes                     | yes                    |
-| Maturity                        | v2.0.19 installed              | v1.x, large install base     | production Astro theme  | 0.1.x / unreleased     |
-| Docs-only dependency weight     | React + Rspack native binaries | Vue 3                        | Astro + Pagefind        | minimal                |
-| Isolation from `@mbzoo/core`    | workspace `apps/docs`          | same                         | same                    | in-tree script         |
-| Escapability of content         | Markdown/MDX                   | Markdown                     | Markdown                | Markdown               |
+| Criterion | Rspress 2 (TECH-011) | VitePress (TECH-012) | Starlight (TECH-013) | bunpress / hand-rolled |
+|---|---|---|---|---|
+| Bundler | Rspack (Rust) | Vite (same family as viewer) | Astro (Vite underneath) | Bun native |
+| Offline search | built-in | MiniSearch, built-in | Pagefind | none (must build) |
+| `docs/` as source | `root` config | `srcDir` | content collections | trivial |
+| Unified static copy into viewer | yes | yes | yes | yes |
+| Maturity | v2.0.19 installed | v1.x, large install base | production Astro theme | 0.1.x / unreleased |
+| Docs-only dependency weight | React + Rspack native binaries | Vue 3 | Astro + Pagefind | minimal |
+| Isolation from `@mbzoo/core` | workspace `apps/docs` | same | same | in-tree script |
+| Escapability of content | Markdown/MDX | Markdown | Markdown | Markdown |
 
 ### Option notes
 
@@ -219,8 +220,8 @@ reimplement search, highlighting and sidebar for no product gain.
   remote font/script URLs.
 - **Assumption challenged — "Rust core means we should prefer it."**
   Build speed is not a driver at this doc volume. The choice is search
-  - static output + already-working isolation. VitePress remains the
-    better _alignment_ option; Rspress wins on _already shipped_.
+  + static output + already-working isolation. VitePress remains the
+  better *alignment* option; Rspress wins on *already shipped*.
 - **Assumption challenged — "a custom Bun generator would be smaller."**
   True for Hello World, false once search and navigation exist. Rejected.
 

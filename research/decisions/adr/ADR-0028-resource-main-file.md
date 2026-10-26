@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0028
 title: A resource is the file Moodle marked, not the file whose name looks right
 status: Accepted
@@ -17,7 +16,7 @@ ai_model: claude-opus-5
 ## Context
 
 `mod_resource` points at one file. But a teacher who uploads a folder gets
-_every_ file in it stored under the activity's file area, so the record set
+*every* file in it stored under the activity's file area, so the record set
 for a resource is frequently not one file — it is a whole tree that happens
 to contain the one the activity means.
 
@@ -47,10 +46,11 @@ main file of its area — exactly one record per area carries it
 it rather than infer it.
 
 `BackupFileRecord` gains `sortOrder`, and `renderFileList`:
+
 - previews the marked file directly when it is not HTML, with the folder that
   travelled with it collapsed beneath — so a `.elp` resource reads as the
   eXeLearning package it is, not as a website;
-- renders a site from the marked file when it _is_ HTML, scoping the page set
+- renders a site from the marked file when it *is* HTML, scoping the page set
   to that file's own directory so one resource cannot present another's pages
   as its own;
 - falls back to the filename heuristic only when no record is marked.

@@ -1,6 +1,7 @@
 # Privacy
 
 **Nothing you open in MBZoo leaves your device.**
+
 - The viewer is a static web application. Backups are read with the browser
   File API and parsed inside a Web Worker on your machine. There is no upload
   path — no backend, no telemetry, no analytics.
@@ -16,7 +17,7 @@ server code), not just a policy statement.
 ## When a backup contains people
 
 Nothing leaves your device — **but the file does.** A course backup taken
-with _user data included_ carries a root `users.xml`, and it is not a list of
+with *user data included* carries a root `users.xml`, and it is not a list of
 names. One record holds:
 
 > username · email · first and last name · ID number · two phone numbers ·

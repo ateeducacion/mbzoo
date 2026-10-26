@@ -1,5 +1,4 @@
 ---
-
 id: AN-010
 title: Which Moodle restore failures can be repaired from the backup alone
 date: 2026-10-15
@@ -199,13 +198,13 @@ state. They are not properties of the `.mbz`.
 
 ## Options and comparative matrix
 
-| Criterion         | Replace-only writer     | Typed add/rename plan               | General backup editor        |
-| ----------------- | ----------------------- | ----------------------------------- | ---------------------------- |
-| Runtime           | fflate, already shipped | same writer, more plan fields       | new serializer               |
-| Unrelated bytes   | copied                  | copied, plus named adds and renames | easy to drop                 |
-| Empty `roles.xml` | impossible              | one added document                  | could invent roles           |
-| Wrapped root      | reported only           | prefix rename when the proof holds  | could flatten the wrong tree |
-| Misplaced file    | reported missing        | copy after SHA-1 match              | could rewrite the hash       |
+| Criterion | Replace-only writer | Typed add/rename plan | General backup editor |
+|---|---|---|---|
+| Runtime | fflate, already shipped | same writer, more plan fields | new serializer |
+| Unrelated bytes | copied | copied, plus named adds and renames | easy to drop |
+| Empty `roles.xml` | impossible | one added document | could invent roles |
+| Wrapped root | reported only | prefix rename when the proof holds | could flatten the wrong tree |
+| Misplaced file | reported missing | copy after SHA-1 match | could rewrite the hash |
 
 ## Adversarial review
 
@@ -233,6 +232,7 @@ state. They are not properties of the `.mbz`.
 
 ADR-0038 should allow add, rename, and omit-empty on the existing writer,
 and should offer:
+
 - unwrap of one proven enclosing directory (automatic),
 - empty `roles_definition` and empty `question_categories` only when no
   scanned reference needs them (confirmation required until TASK-017),

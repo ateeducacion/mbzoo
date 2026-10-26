@@ -1,9 +1,7 @@
 ---
-
 name: mbz-performance
 description: Performance and memory rules for archive parsing, workers and previews. Use when changing byte-buffer ownership, archive access, large-file behavior, PDF/rendering cost, streaming or lazy loading.
 ---
-
 # Skill: MBZoo performance
 
 1. Measure before optimizing. Define the workload, browser/runtime, fixture size and metric; never infer a performance win from code shape alone.

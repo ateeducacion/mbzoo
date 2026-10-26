@@ -1,9 +1,7 @@
 ---
-
 name: architecture-decision
 description: Decide whether an ADR is needed and write or supersede it correctly. Use for durable technical decisions in MBZoo.
 ---
-
 # Skill: Architecture decisions
 
 1. Read `research/AGENTS.md` and `research/status.yaml` before changing research records.

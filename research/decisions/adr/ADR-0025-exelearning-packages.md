@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0025
 title: eXeLearning packages are classified by what is inside them, not by their extension
 status: Accepted
@@ -19,9 +18,10 @@ ai_model: claude-opus-5
 eXeLearning is the authoring tool behind a large share of the Spanish
 vocational-training courses MBZoo is meant to inspect; the backup that
 motivated ADR-0020 is one. Its output reaches a backup in several shapes:
+
 - a **published site**, unzipped into a resource — the `SMR_SOR_01_09` case;
-- a **`.elpx`** package, which carries _both_ the re-importable project
-  (`content.xml`, ODE 2.0) _and_ a rendered site;
+- a **`.elpx`** package, which carries *both* the re-importable project
+  (`content.xml`, ODE 2.0) *and* a rendered site;
 - a legacy **`.elp`**, a ZIP holding `content.data` — a Twisted jelly
   stream, a binary Python-object serialization — usually alongside a
   parseable XML mirror `contentv3.xml`;
@@ -53,15 +53,16 @@ adopting code from GPL/AGPL projects into an MIT codebase?
 We will classify a package by its ZIP entry names and show the most useful
 honest thing for each class.
 
-| Marker entries                                               | Class                             | Shown                                                  |
-| ------------------------------------------------------------ | --------------------------------- | ------------------------------------------------------ |
-| `index.html` + `content/css/base.css` + `libs/exe_export.js` | modern site                       | the site                                               |
-| `index.html` + `base.css` + `nav.css` + `exe_jquery.js`      | legacy site                       | the site                                               |
-| `content.xml`                                                | `.elpx` project                   | the site it also carries, else its title and file list |
-| `contentv3.xml` / `contentv2.xml`                            | legacy project with an XML mirror | title and file list                                    |
-| `content.data` only                                          | legacy project, opaque            | a statement of why, and the file list                  |
+| Marker entries | Class | Shown |
+| --- | --- | --- |
+| `index.html` + `content/css/base.css` + `libs/exe_export.js` | modern site | the site |
+| `index.html` + `base.css` + `nav.css` + `exe_jquery.js` | legacy site | the site |
+| `content.xml` | `.elpx` project | the site it also carries, else its title and file list |
+| `contentv3.xml` / `contentv2.xml` | legacy project with an XML mirror | title and file list |
+| `content.data` only | legacy project, opaque | a statement of why, and the file list |
 
 Standing rules:
+
 1. Classification reads entry names, never the file extension.
 2. Site markers are tested **before** source markers, because a `.elpx`
    carrying both is best shown as its render.
@@ -132,7 +133,7 @@ The two published-site layouts are the marker sets `exeviewer` tests
 (`js/app.js:692-725`); the same file is what made the initial, wrong reading
 of `.elpx` look plausible, since it opens `.elpx` and `.zip`
 interchangeably as sites. The correction — that a `.elpx` carries the
-project _and_ the render — came from the vendor's format documentation and
+project *and* the render — came from the vendor's format documentation and
 from inspecting real archives, where `content.xml` sits beside `index.html`,
 `html/*.html`, `theme/` and `libs/`. Across a sample of real legacy `.elp`
 files, the great majority carried a parseable `contentv3.xml` beside

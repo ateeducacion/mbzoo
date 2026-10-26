@@ -1,5 +1,4 @@
 ---
-
 id: ADR-0038
 title: Archive additions and renames for MBZ Doctor
 status: Proposed
@@ -75,6 +74,7 @@ We will extend the ADR-0037 writer with a typed plan (Option B) and use it
 only for the repairs named below.
 
 Standing rules:
+
 1. `rewriteArchive(source, plan | Map, options)` accepts
    `replacements`, `additions`, `renames`, and `omit`. A `Map` is
    replacements only. The source Blob is never written.
@@ -211,12 +211,12 @@ so the output does not depend on `Map` order.
 
 ### Comparative matrix
 
-| Criterion      | A Replacement map  | B Typed plan         | C General serializer |
-| -------------- | ------------------ | -------------------- | -------------------- |
-| Runtime        | fflate / ustar     | same                 | new writer           |
-| New dependency | no                 | no                   | no                   |
-| Plugin XML     | copied             | copied or renamed    | dropped              |
-| Wrong guess    | user edits by hand | refused before write | silent data loss     |
+| Criterion | A Replacement map | B Typed plan | C General serializer |
+|---|---|---|---|
+| Runtime | fflate / ustar | same | new writer |
+| New dependency | no | no | no |
+| Plugin XML | copied | copied or renamed | dropped |
+| Wrong guess | user edits by hand | refused before write | silent data loss |
 
 ### Adversarial review
 

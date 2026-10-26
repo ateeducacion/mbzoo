@@ -2,7 +2,7 @@
 url: /mbzoo/docs/guide/what-is-mbz.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/what-is-mbz.md.
 
 # What is an .mbz?
 
@@ -92,7 +92,7 @@ in your browser**. Nothing is uploaded — see [Privacy](/mbzoo/docs/PRIVACY.md)
 url: /mbzoo/docs/es/guide/what-is-mbz.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/what-is-mbz.md.
 
 # ¿Qué es un .mbz?
 
@@ -184,7 +184,7 @@ preguntas…) **bajo demanda, en tu navegador**. Nada se sube — ver
 url: /mbzoo/docs/guide/mbz-doctor.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/mbz-doctor.md.
 
 # MBZ Doctor
 
@@ -327,7 +327,7 @@ The filter written is the legacy JSON Moodle 4.3 through 5.2 already
 converts:
 
 ```json
-{ "questioncategoryid": 5, "includingsubcategories": 0 }
+{"questioncategoryid": 5, "includingsubcategories": 0}
 ```
 
 Tags, when present, are copied as `"0,name"`. The category id is a JSON
@@ -502,7 +502,7 @@ or a person. See [Privacy](/mbzoo/docs/PRIVACY.md).
 url: /mbzoo/docs/es/guide/mbz-doctor.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/mbz-doctor.md.
 
 # MBZ Doctor
 
@@ -650,7 +650,7 @@ El filtro que se escribe es el JSON heredado que Moodle 4.3 a 5.2 ya
 convierte:
 
 ```json
-{ "questioncategoryid": 5, "includingsubcategories": 0 }
+{"questioncategoryid": 5, "includingsubcategories": 0}
 ```
 
 Las etiquetas, si las hay, se copian como `"0,name"`. El id de categoría es
@@ -771,7 +771,7 @@ identificarían un curso o a una persona. Véase
 url: /mbzoo/docs/guide/activity-support.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/activity-support.md.
 
 # Activity & content support
 
@@ -872,7 +872,7 @@ rather than pretending to point somewhere.
 url: /mbzoo/docs/es/guide/activity-support.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/activity-support.md.
 
 # Actividades y contenidos soportados
 
@@ -975,7 +975,7 @@ pero no lleva a ninguna parte, en vez de fingir que apunta a algún sitio.
 url: /mbzoo/docs/ARCHITECTURE.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/ARCHITECTURE.md.
 
 # Architecture
 
@@ -1076,7 +1076,7 @@ collided with a Moodle constant.
 url: /mbzoo/docs/PRIVACY.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/PRIVACY.md.
 
 # Privacy
 
@@ -1150,7 +1150,7 @@ left out of the tree.
 url: /mbzoo/docs/es/PRIVACY.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/PRIVACY.md.
 
 # Privacidad
 
@@ -1232,7 +1232,7 @@ parsers se registran ahí con su procedencia y se dejan fuera del árbol.
 url: /mbzoo/docs/es/guide/research.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/guide/research.md.
 
 # Sistema de investigación y evidencia
 
@@ -1305,7 +1305,7 @@ como una constante de Moodle que pertenece a otro campo.
 url: /mbzoo/docs/es/index.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/es/index.md.
 
 # 
 
@@ -1317,17 +1317,17 @@ name: MBZoo
 tagline: Mira qué hay dentro de tu MBZ.
 text: Abre, inspecciona y previsualiza copias de seguridad de Moodle directamente en tu navegador. Local-first, sin subidas.
 actions:
+\- theme: brand
+text: Abrir el visor
+link: [https://ateeducacion.github.io/mbzoo/](https://ateeducacion.github.io/mbzoo/)
+\- theme: alt
+text: ¿Qué es un .mbz?
+link: /es/guide/what-is-mbz.html
+\- theme: alt
+text: GitHub
+link: [https://github.com/ateeducacion/mbzoo](https://github.com/ateeducacion/mbzoo)
+features:
 
-- theme: brand
-  text: Abrir el visor
-  link: [https://ateeducacion.github.io/mbzoo/](https://ateeducacion.github.io/mbzoo/)
-- theme: alt
-  text: ¿Qué es un .mbz?
-  link: /es/guide/what-is-mbz.html
-- theme: alt
-  text: GitHub
-  link: [https://github.com/ateeducacion/mbzoo](https://github.com/ateeducacion/mbzoo)
-  features:
 - title: 100 % local
   details: Las copias se analizan en tu navegador con un Web Worker. No hay servidor ni telemetría: la privacidad es una propiedad del producto.
 - title: Los dos formatos reales
@@ -1349,7 +1349,7 @@ actions:
 url: /mbzoo/docs/guide/development.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/development.md.
 
 # Development
 
@@ -1397,7 +1397,7 @@ Pages via `.github/workflows/deploy-pages.yml`.
 url: /mbzoo/docs/guide/research.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/guide/research.md.
 
 # Research & evidence system
 
@@ -1465,7 +1465,24 @@ Markdown** control.
 url: /mbzoo/docs/index.md
 ---
 
-> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt.
+> For AI agents: the complete documentation index is available at /mbzoo/docs/llms.txt, the full documentation bundle is available at /mbzoo/docs/llms-full.txt, and this page is available as Markdown at /mbzoo/docs/index.md.
 
+# MBZoo
+
+Open, inspect and preview Moodle course backups right in your browser. Local-first, no upload.
+
+> See what's inside your MBZ.
+
+[Open the viewer](https://ateeducacion.github.io/mbzoo/) | [What is an .mbz?](/guide/what-is-mbz) | [GitHub](https://github.com/ateeducacion/mbzoo)
+
+## Features
+
+- **100% local**: Backups are parsed in your browser via a Web Worker. There is no server and no telemetry — privacy is a product property.
+- **Both real formats**: ZIP and TAR.GZ containers (tgz is Moodle's default since 2.9), with lazy metadata parsing and on-demand content extraction.
+- **Reads the whole course**: 22 of Moodle 5.3's 23 activity modules, plus three Moodle has retired — and the grade items, rubrics and gradebook that sit beside them.
+- **Tells you when a file names people**: A backup taken with user data carries names, emails and IP addresses. MBZoo says how many people and what kinds of data, before you share the file.
+- **Safe by design**: Hostile-input posture — sanitized HTML, sandboxed opaque-origin previews, no content execution in the app origin.
+- **Evidence-driven**: Every durable claim traces to a registered source, experiment or ADR. Machine-validated research indexes.
+- **MBZ Doctor**: Scan a backup for structural problems and download a new file for a few verified repairs. The original stays put, and a scan is not a Moodle restore.
 
 

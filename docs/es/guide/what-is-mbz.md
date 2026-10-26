@@ -6,10 +6,10 @@ usuario del curso.
 
 ## Formatos de contenedor
 
-| Formato | Desde                                   | Notas                                                              |
-| ------- | --------------------------------------- | ------------------------------------------------------------------ |
-| ZIP     | Moodle 2.0                              | Sin soporte ZIP64 dentro del propio Moodle (tope práctico de 4 GB) |
-| TAR.GZ  | por defecto desde 2.9 (opcional en 2.6) | ustar POSIX; sin límite de tamaño en la práctica                   |
+| Formato | Desde | Notas |
+|---|---|---|
+| ZIP | Moodle 2.0 | Sin soporte ZIP64 dentro del propio Moodle (tope práctico de 4 GB) |
+| TAR.GZ | por defecto desde 2.9 (opcional en 2.6) | ustar POSIX; sin límite de tamaño en la práctica |
 
 MBZoo detecta el formato por los magic bytes y soporta **ambos**.
 
@@ -46,17 +46,17 @@ activities/assign_42/
 
 Lo más útil que se puede saber de un `.mbz` es si se hizo **con datos de
 usuario**. Todos los módulos escriben su árbol XML completo en cualquier caso;
-lo que el ajuste `users` condiciona es la _fuente de datos_ de cada elemento.
+lo que el ajuste `users` condiciona es la *fuente de datos* de cada elemento.
 
 Dos módulos que en el esquema parecen igual de ricos pueden ser mundos
 distintos en un fichero real. Una `lección` escribe todas sus páginas y
 respuestas sin condiciones: la unidad didáctica entera está ahí. Un `foro` no
 escribe más que el registro del foro; cada debate y cada mensaje son datos de
 usuario. Por eso un glosario vacío en una copia sin usuarios no es un fallo, y
-por eso MBZoo dice _por qué_ está vacío y no solo que lo está.
+por eso MBZoo dice *por qué* está vacío y no solo que lo está.
 
-| Siempre en la copia                                                                                                                                                                                                                      | Solo con datos de usuario                                                                                                                                                         |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Siempre en la copia | Solo con datos de usuario |
+|---|---|
 | páginas y respuestas de lección, opciones de consulta, campos de base de datos, instrucciones y ejemplos de taller, slots de cuestionario y banco de preguntas, ítems de calificación y rúbricas, estructura del libro de calificaciones | debates y mensajes de foro, entradas de glosario, registros de base de datos, páginas de wiki, mensajes de chat, entregas de tareas, intentos de cuestionario, las notas de todos |
 
 ## Enlaces que no llevan a ninguna parte

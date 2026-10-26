@@ -1,5 +1,4 @@
 ---
-
 id: AN-001
 title: Conventions adopted from reference repositories
 date: 2026-08-24
@@ -7,9 +6,7 @@ sources: [REPO-001, REPO-002, REPO-003]
 ai_tool: opencode
 ai_model: ox-alpha
 ---
-
 ## Interpretation
-
 MBZoo is a browser-first TS monorepo; the three references contribute process
 discipline rather than code.
 

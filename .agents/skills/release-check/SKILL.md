@@ -1,12 +1,11 @@
 ---
-
 name: release-check
 description: Pre-release gate checklist for MBZoo. Use before publishing a version or deploying.
 ---
-
 # Skill: Release check
 
 Run in order and stop on the first failure:
+
 1. `bun run check` — lint, format, typecheck, unit tests, coverage, build and research validation.
 2. `bun run test:e2e` — all configured Chromium, Firefox and WebKit projects.
 3. Fixture determinism — regenerate fixtures and confirm generated archives + manifest match the committed intended state; unexpected drift blocks the release.

@@ -13,6 +13,7 @@ Pre-release software; only the latest `main` receives security fixes.
 
 Open a private security advisory via GitHub ("Report a vulnerability" on the
 repository's Security tab). Please include:
+
 - affected area (parser, viewer, CLI),
 - steps to reproduce (a crafted `.mbz` fixture is ideal — do not attach real
   backups containing personal data),
