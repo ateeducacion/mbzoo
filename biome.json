@@ -40,9 +40,7 @@
     }
   },
   "javascript": {
-    "globals": [
-      "Bun"
-    ],
+    "globals": ["Bun"],
     "formatter": {
       "quoteStyle": "single",
       "semicolons": "asNeeded"
@@ -57,9 +55,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "**/*.css"
-      ],
+      "includes": ["**/*.css"],
       "linter": {
         "rules": {
           "style": {
@@ -69,9 +65,7 @@
       }
     },
     {
-      "includes": [
-        "apps/docs/styles.css"
-      ],
+      "includes": ["apps/docs/styles.css"],
       "linter": {
         "rules": {
           "complexity": {
