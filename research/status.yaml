@@ -52,7 +52,8 @@ added:
   - date: 2026-08-25
     note: Detail pane rebuilt as toolbar + Preview/Info/Raw tabs; per-activity export shipped — ADR-0016 (module XML, rendered content HTML, files ZIP; no whole-backup re-packaging). fflate declared in core and viewer.
   - date: 2026-08-25
-    note: Sandboxed previews fixed against real backups — ADR-0017 supersedes ADR-0014 (inline data: assets instead of unusable app-origin blob: URLs; allow-popups + escape so author links open a tab). Random quiz slots now resolve to their bank category pool instead of claiming the questions are absent.
+    note: >-
+      Sandboxed previews fixed against real backups — ADR-0017 supersedes ADR-0014 (inline data: assets instead of unusable app-origin blob: URLs; allow-popups + escape so author links open a tab). Random quiz slots now resolve to their bank category pool instead of claiming the questions are absent.
   - date: 2026-08-25
     note: Experimental H5P playback — ADR-0018 adopts h5p-standalone (TECH-014) inside the ADR-0017 opaque-origin sandbox via an in-memory virtual filesystem shim. Synthetic .h5p package added to the demo fixture. Vendored-core GPL question recorded as open risk.
   - date: 2026-08-25
@@ -176,6 +177,19 @@ added:
       diagnostic. noticenewerbackup stays a warning. AN-010 records the
       Moodle 4.5 and 5.2 evidence. No experiment was run.
 
+  - date: 2026-08-28
+    note: >-
+      TAR.GZ is staged in a Blob (ADR-0036, supersedes ADR-0029). Pre-sizing
+      one buffer from the gzip trailer's ISIZE asked the renderer for the
+      whole decompressed tar in a single contiguous block before decompressing
+      anything, and a user opening a real course backup on Chrome/Windows got
+      V8's raw "Array buffer allocation failed" on the error card — unwrapped,
+      because the throw sat outside the try. The bytes now stream into a Blob
+      while ustar headers are indexed in passing, and readEntry slices out the
+      one entry asked for. Renderer peak on a 1,385 MB backup: 1,766 MB to
+      425 MB, at ~28 % more wall time (EXP-005). An allocation a browser still
+      refuses is now an MbzParseError naming the entry and its size, on both
+      readers.
 risks:
   RISK-001:
     title: fflate materializes every entry in memory during unzip
@@ -278,16 +292,3 @@ risks:
       Moodle has not been verified. TASK-017 is the missing Moodle restore
       of the modern random-question repair. The original Blob is never written.
     status: open
-  - date: 2026-08-28
-    note: >-
-      TAR.GZ is staged in a Blob (ADR-0036, supersedes ADR-0029). Pre-sizing
-      one buffer from the gzip trailer's ISIZE asked the renderer for the
-      whole decompressed tar in a single contiguous block before decompressing
-      anything, and a user opening a real course backup on Chrome/Windows got
-      V8's raw "Array buffer allocation failed" on the error card — unwrapped,
-      because the throw sat outside the try. The bytes now stream into a Blob
-      while ustar headers are indexed in passing, and readEntry slices out the
-      one entry asked for. Renderer peak on a 1,385 MB backup: 1,766 MB to
-      425 MB, at ~28 % more wall time (EXP-005). An allocation a browser still
-      refuses is now an MbzParseError naming the entry and its size, on both
-      readers.
