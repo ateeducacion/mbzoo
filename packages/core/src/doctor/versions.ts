@@ -15,7 +15,8 @@ export interface ParsedRelease {
 }
 
 export function parseRelease(release: string): ParsedRelease {
-  const match = /(\d+)\.(\d+)/.exec(release)
+  // Starting only at a digit-run boundary keeps this linear on hostile releases.
+  const match = /(?<!\d)(\d+)\.(\d+)/.exec(release)
   if (!match) return { major: undefined, minor: undefined }
   return { major: Number(match[1]), minor: Number(match[2]) }
 }
