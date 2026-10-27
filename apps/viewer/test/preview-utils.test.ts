@@ -268,6 +268,39 @@ describe('ALLOWED_URI_REGEXP', () => {
   })
 })
 
+describe('contentKind office MIME types (#51)', () => {
+  test('names Word, slide and sheet MIME types by what they are', () => {
+    const ooxml = 'application/vnd.openxmlformats-officedocument'
+    const odf = 'application/vnd.oasis.opendocument'
+    const kinds = [
+      'application/msword',
+      `${ooxml}.wordprocessingml.document`,
+      `${odf}.text`,
+      'application/vnd.ms-powerpoint',
+      `${ooxml}.presentationml.presentation`,
+      `${odf}.presentation`,
+      'application/vnd.ms-excel',
+      `${ooxml}.spreadsheetml.sheet`,
+      `${odf}.spreadsheet`,
+    ].map((mime) => contentKind(mime, 'stored'))
+    expect(kinds).toEqual([
+      'Document',
+      'Document',
+      'Document',
+      'Slides',
+      'Slides',
+      'Slides',
+      'Spreadsheet',
+      'Spreadsheet',
+      'Spreadsheet',
+    ])
+  })
+
+  test('the MIME type still wins over a misleading extension', () => {
+    expect(contentKind('application/vnd.ms-excel', 'report.docx')).toBe('Spreadsheet')
+  })
+})
+
 describe('placeholderizeEmbeds', () => {
   const BLOB = 'blob:http://localhost/9f2c-1'
   const register = (): ((url: string) => string) => {
