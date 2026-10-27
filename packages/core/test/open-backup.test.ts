@@ -214,3 +214,65 @@ describe('delegated sections', () => {
     expect(delegated?.activityIds).toEqual([3026])
   })
 })
+
+describe('degraded backup entries', () => {
+  async function fixtureEntries(): Promise<Record<string, Uint8Array>> {
+    const { unzipSync } = await import('fflate')
+    return unzipSync(new Uint8Array(await Bun.file(FIXTURE).arrayBuffer()))
+  }
+
+  test('opens the same backup packed as TAR.GZ', async () => {
+    const { gzipSync } = await import('fflate')
+    const entries = await fixtureEntries()
+    const b = await openBackup(new Blob([gzipSync(tarOf(entries))]))
+    expect(b.format).toBe('targz')
+    expect(b.course.fullname).toBe('Demo Course for MBZoo')
+  })
+
+  test('a malformed module.xml becomes a warning, not a failure', async () => {
+    const { zipSync, strToU8 } = await import('fflate')
+    const entries = await fixtureEntries()
+    const name = Object.keys(entries).find((key) => key.endsWith('/module.xml'))
+    if (!name) throw new Error('fixture has no module.xml')
+    entries[name] = strToU8('<module><unclosed>')
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.warnings.some((w) => w.code === 'module-xml-malformed')).toBe(true)
+  })
+
+  test('a malformed course.xml falls back to the manifest course', async () => {
+    const { zipSync, strToU8 } = await import('fflate')
+    const entries = await fixtureEntries()
+    entries['course/course.xml'] = strToU8('<course><unclosed>')
+    const b = await openBackup(new Blob([zipSync(entries)]))
+    expect(b.course.id).toBe(1001)
+    expect(b.course.shortname).toBe('')
+  })
+})
+
+function tarOf(entries: Record<string, Uint8Array>): Uint8Array {
+  const enc = new TextEncoder()
+  const blocks: Uint8Array[] = []
+  for (const [name, data] of Object.entries(entries)) {
+    if (name.endsWith('/')) continue
+    const header = new Uint8Array(512)
+    header.set(enc.encode(name).slice(0, 100), 0)
+    header.set(enc.encode('0000644\0'), 100)
+    header.set(enc.encode(`${data.length.toString(8).padStart(11, '0')}\0`), 124)
+    header[156] = 0x30
+    header.set(enc.encode('ustar\0'), 257)
+    header.set(enc.encode('00'), 263)
+    header.set(enc.encode('        '), 148)
+    let sum = 0
+    for (const byte of header) sum += byte
+    header.set(enc.encode(`${sum.toString(8).padStart(6, '0')}\0 `), 148)
+    blocks.push(header, data, new Uint8Array((512 - (data.length % 512)) % 512))
+  }
+  blocks.push(new Uint8Array(1024))
+  const out = new Uint8Array(blocks.reduce((sum, block) => sum + block.byteLength, 0))
+  let offset = 0
+  for (const block of blocks) {
+    out.set(block, offset)
+    offset += block.byteLength
+  }
+  return out
+}

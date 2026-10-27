@@ -136,3 +136,93 @@ describe('LazyZipReader', () => {
     expect((await r.listEntries()).map((e) => e.name)).toEqual(['ok.txt'])
   })
 })
+
+/** Central directory index of `name` in `bytes`. */
+function centralIndexOf(bytes: Uint8Array, name: string): number {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const count = v.getUint16(eocdOffset(bytes) + 10, true)
+  for (let i = 0; i < count; i++) {
+    const at = centralOffset(bytes, i)
+    const nameLen = v.getUint16(at + 28, true)
+    if (new TextDecoder().decode(bytes.subarray(at + 46, at + 46 + nameLen)) === name) return i
+  }
+  throw new Error(`no ${name} in test archive`)
+}
+
+const stored = centralOffset(archive, centralIndexOf(archive, 'stored.txt'))
+const deflated = centralOffset(archive, centralIndexOf(archive, 'files/ab/abc'))
+
+describe('LazyZipReader hostile directories', () => {
+  test('a central directory larger than the file is refused', async () => {
+    const blob = patched(archive, eocdOffset(archive), (v) => v.setUint32(12, 0x7fffffff, true))
+    await expect(LazyZipReader.open(blob)).rejects.toThrow(/too large|out of range/i)
+  })
+
+  test('more declared entries than the directory holds is refused', async () => {
+    const blob = patched(archive, eocdOffset(archive), (v) => {
+      v.setUint16(8, 4, true)
+      v.setUint16(10, 4, true)
+    })
+    await expect(LazyZipReader.open(blob)).rejects.toThrow(/Truncated central directory/)
+  })
+
+  test('a corrupt central header signature is refused', async () => {
+    const blob = patched(archive, centralOffset(archive, 1), (v) => v.setUint32(0, 0, true))
+    await expect(LazyZipReader.open(blob)).rejects.toThrow(/central directory header signature/)
+  })
+
+  test('a name that overruns the directory is refused', async () => {
+    const blob = patched(archive, centralOffset(archive, 2), (v) => v.setUint16(28, 0xffff, true))
+    await expect(LazyZipReader.open(blob)).rejects.toThrow(/overruns/)
+  })
+
+  test('a local header offset past the file is refused at open time', async () => {
+    const blob = patched(archive, stored, (v) => v.setUint32(42, 0x7ffffff0, true))
+    await expect(LazyZipReader.open(blob)).rejects.toThrow(/Local header offset out of range/)
+  })
+
+  test('a local header without its signature is refused when read', async () => {
+    const blob = patched(archive, stored, (v) => v.setUint32(42, 1, true))
+    const r = await LazyZipReader.open(blob)
+    await expect(r.readEntry('stored.txt')).rejects.toThrow(/Bad local header signature/)
+  })
+
+  test('entry data running past the file is refused when read', async () => {
+    const blob = patched(archive, stored, (v) => v.setUint32(20, 0x7fffff, true))
+    const r = await LazyZipReader.open(blob)
+    await expect(r.readEntry('stored.txt')).rejects.toThrow(/Entry data out of range/)
+  })
+
+  test('a stored entry whose sizes disagree is refused when read', async () => {
+    const blob = patched(archive, stored, (v) => v.setUint32(24, 3, true))
+    const r = await LazyZipReader.open(blob)
+    await expect(r.readEntry('stored.txt')).rejects.toThrow(/Stored entry size mismatch/)
+  })
+
+  test('deflate data that cannot be inflated is refused when read', async () => {
+    const local = new DataView(archive.buffer, archive.byteOffset).getUint32(deflated + 42, true)
+    const copy = new Uint8Array(archive)
+    const view = new DataView(copy.buffer)
+    const dataStart =
+      local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true)
+    copy.fill(0xff, dataStart, dataStart + 16)
+    const r = await LazyZipReader.open(new Blob([copy]))
+    await expect(r.readEntry('files/ab/abc')).rejects.toThrow(/Failed to inflate|size mismatch/)
+  })
+
+  test('a repeated name is recorded as a duplicate and the later entry is kept', async () => {
+    const pair = zipSync({ 'a.txt': strToU8('first'), 'b.txt': strToU8('other') })
+    const at = centralOffset(pair, centralIndexOf(pair, 'b.txt'))
+    const copy = new Uint8Array(pair)
+    copy[at + 46] = 'a'.charCodeAt(0)
+    const r = await LazyZipReader.open(new Blob([copy]))
+    expect(r.anomalies().duplicateNames).toEqual(['a.txt'])
+    expect((await r.listEntries()).map((e) => e.name)).toEqual(['a.txt'])
+    expect(new TextDecoder().decode(await r.readEntry('a.txt'))).toBe('other')
+  })
+
+  test('a ZIP64 size without its extra field is refused', async () => {
+    const blob = patched(archive, stored, (v) => v.setUint32(24, 0xffffffff, true))
+    await expect(LazyZipReader.open(blob)).rejects.toThrow(/extra field missing/)
+  })
+})

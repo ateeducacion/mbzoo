@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   ALLOWED_URI_REGEXP,
+  contentKind,
   decodeRefPath,
   formatBytes,
   formatDate,
@@ -356,5 +357,46 @@ describe('SCORM_CSP', () => {
     // The network stays shut: eval changes how package code may run, never what it may reach.
     expect(SCORM_CSP).toContain("connect-src 'none'")
     expect(SCORM_CSP).toContain("frame-src 'none'")
+  })
+})
+
+describe('contentKind', () => {
+  test('names a file by its MIME type first', () => {
+    expect(contentKind('text/html', 'x')).toBe('Website')
+    expect(contentKind('application/pdf', 'x')).toBe('PDF')
+    expect(contentKind('IMAGE/PNG', 'x')).toBe('Image')
+    expect(contentKind('video/mp4', 'x')).toBe('Video')
+    expect(contentKind('audio/ogg', 'x')).toBe('Audio')
+    expect(contentKind('application/zip', 'x')).toBe('Archive')
+    expect(
+      contentKind('application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'x'),
+    ).toBe('Document')
+    expect(contentKind('application/vnd.ms-powerpoint', 'x')).toBe('Slides')
+    expect(contentKind('application/vnd.ms-excel', 'x')).toBe('Spreadsheet')
+    expect(contentKind('text/plain', 'x')).toBe('Text')
+  })
+
+  test('falls back to the extension when the MIME type says nothing', () => {
+    const kinds = ['a.htm', 'a.PDF', 'a.h5p', 'a.elpx', 'a.elp', 'a.scorm', 'a.odt', 'a.pptx']
+      .concat(['a.csv', 'a.md', 'a.json'])
+      .map((name) => contentKind('', name))
+    expect(kinds).toEqual([
+      'Website',
+      'PDF',
+      'H5P package',
+      'eXeLearning 4.x',
+      'eXeLearning 2.x',
+      'Archive',
+      'Document',
+      'Slides',
+      'Spreadsheet',
+      'Text',
+      'Text',
+    ])
+  })
+
+  test('anything else is a plain file', () => {
+    expect(contentKind('application/octet-stream', 'blob.bin')).toBe('File')
+    expect(contentKind('', 'noextension')).toBe('File')
   })
 })
