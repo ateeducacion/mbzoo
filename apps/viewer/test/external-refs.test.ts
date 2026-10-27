@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { classifyProvider, nameRemoteEmbeds } from '../src/lib/external-refs.ts'
+import { classifyProvider, nameRemoteEmbeds, scanExternalRefs } from '../src/lib/external-refs.ts'
 
 const L = { external: 'Embedded from another site', open: 'Open in a new tab ↗' }
 
@@ -64,5 +64,25 @@ describe('nameRemoteEmbeds', () => {
   test('ampersands in the URL are escaped into the href', () => {
     const out = nameRemoteEmbeds('<iframe src="https://x.example/?a=1&b=2"></iframe>', L)
     expect(out).toContain('href="https://x.example/?a=1&amp;b=2"')
+  })
+})
+
+describe('scanExternalRefs', () => {
+  test('collects absolute http(s) URLs once each, with their provider', () => {
+    const html = `<iframe src="https://www.youtube.com/embed/a"></iframe>
+      <a href='https://example.org/page'>x</a>
+      <video poster="https://www.youtube.com/embed/a"></video>
+      <object data="http://cdn.example.net/f.swf"></object>`
+    expect(scanExternalRefs(html)).toEqual([
+      { provider: 'YouTube', url: 'https://www.youtube.com/embed/a' },
+      { provider: 'example.org', url: 'https://example.org/page' },
+      { provider: 'cdn.example.net', url: 'http://cdn.example.net/f.swf' },
+    ])
+  })
+
+  test('ignores relative, protocol-relative and non-http URLs', () => {
+    const html = `<img src="/local.png"><a href="//cdn.example/x"></a>
+      <a href="javascript:alert(1)"></a><a href="@@PLUGINFILE@@/a.pdf"></a>`
+    expect(scanExternalRefs(html)).toEqual([])
   })
 })

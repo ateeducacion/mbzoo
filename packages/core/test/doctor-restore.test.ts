@@ -193,6 +193,21 @@ describe('archive unwrap', () => {
     ).rejects.toThrow(/not available/)
   })
 
+  test('previews a long unwrap with a sample and a count of the rest', async () => {
+    const extra: Record<string, string> = {}
+    for (let i = 0; i < 12; i++) extra[`course/extra_${i}.txt`] = `${i}`
+    const report = await inspect(zip(wrap('my-course/', base(extra))), { filename: 'course.mbz' })
+    const repair = report.report.findings.find(
+      (item) => item.ruleId === 'archive.unwrap-root',
+    )?.repair
+    expect(repair?.entries).toHaveLength(8)
+    expect(repair?.preview.at(-1)).toEqual({
+      entry: 'my-course/',
+      before: '9 further paths stay under my-course/',
+      after: '9 further paths move with the same suffix',
+    })
+  })
+
   test('unwraps two nested directories in one step', async () => {
     const source = zip(wrap('outer/inner/', base()))
     const outcome = await applyRepairs(source, ['archive.unwrap-root'], { filename: 'course.mbz' })
@@ -353,6 +368,17 @@ describe('empty roles.xml and questions.xml', () => {
       report.report.findings.find((item) => item.id === 'metadata.missing-roles')?.repairability,
     ).toBe('manual')
     expect(report.archiveEdits.some((step) => step.id === 'metadata.create-empty-roles')).toBe(
+      false,
+    )
+  })
+
+  test('does not replace a questions.xml whose root is not question_categories', async () => {
+    const source = zip(base({ 'questions.xml': `${XML}<questions><question id="1"/></questions>` }))
+    const report = await inspect(source, { filename: 'course.mbz' })
+    const finding = report.report.findings.find((item) => item.id === 'questions.missing-bank-file')
+    expect(finding?.repairability).toBe('manual')
+    expect(finding?.evidence[0]?.entry).toBe('questions.xml')
+    expect(report.archiveEdits.some((step) => step.id === 'questions.create-empty-bank')).toBe(
       false,
     )
   })
