@@ -290,9 +290,15 @@ export function contentKind(mime: string, fileName: string): string {
   if (ext === 'elpx') return 'eXeLearning 4.x'
   if (ext === 'elp') return 'eXeLearning 2.x'
   if (m === 'application/zip' || ext === 'zip' || ext === 'scorm') return 'Archive'
-  if (/\bword|document\b/.test(m) || ['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'Document'
-  if (/\bpowerpoint|presentation\b/.test(m) || ['ppt', 'pptx', 'odp'].includes(ext)) return 'Slides'
-  if (/\bexcel|sheet\b/.test(m) || ['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return 'Spreadsheet'
+  // OOXML and ODF slide/sheet types contain "officedocument"/"opendocument",
+  // so they are matched before the document pattern, and every MIME check
+  // runs before any extension check (#51).
+  if (/powerpoint|presentation/.test(m)) return 'Slides'
+  if (/excel|sheet/.test(m)) return 'Spreadsheet'
+  if (/word|opendocument\.text/.test(m)) return 'Document'
+  if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'Document'
+  if (['ppt', 'pptx', 'odp'].includes(ext)) return 'Slides'
+  if (['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return 'Spreadsheet'
   if (m.startsWith('text/') || ext === 'json' || ext === 'xml' || ext === 'md') return 'Text'
   return 'File'
 }
