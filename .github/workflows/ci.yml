@@ -69,7 +69,7 @@ jobs:
       # Build first: vite preview serves apps/viewer/dist.
       - run: bun run build:viewer
       - run: bunx playwright install ${{ matrix.browser }} --with-deps
-      - run: bunx playwright test --project=${{ matrix.browser }}
+      - run: bunx --bun playwright test --project=${{ matrix.browser }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
