@@ -26,8 +26,9 @@ function portFor(path: string): number {
   return 20_000 + (Math.abs(hash) % 20_000)
 }
 
-// import.meta.url, not Bun's import.meta.dir: Playwright loads this config
-// under Node, where the Bun-only property is undefined.
+// import.meta.url, not Bun's import.meta.dir: `test:e2e` runs Playwright under
+// Bun, but `bunx playwright` without `--bun` still loads this config under
+// Node, where the Bun-only property is undefined.
 const port = Number(process.env.MBZOO_E2E_PORT) || portFor(import.meta.url)
 const baseURL = `http://127.0.0.1:${port}`
 
