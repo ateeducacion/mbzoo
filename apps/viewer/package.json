@@ -20,6 +20,6 @@
     "scorm-again": "3.5.0"
   },
   "devDependencies": {
-    "vite": "8.3.6"
+    "vite": "8.3.8"
   }
 }
